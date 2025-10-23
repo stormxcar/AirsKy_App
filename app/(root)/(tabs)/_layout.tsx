@@ -1,15 +1,10 @@
 import TabIcon from "@/components/tabs/tab-icon";
 import { Tabs } from "expo-router";
-import { Text, View } from "react-native";
 
 
 export default function TabLayout() {
   return (
-    <>
-      <View className="flex justify-between flex-1">
-        <View className="bg-blue-900 pt-12 flex justify- items-center">
-          <Text className="text-center  text-white text-xl font-semibold ">Header</Text>
-        </View>
+   
         <Tabs
           screenOptions={{
             headerShown: false,
@@ -70,7 +65,5 @@ export default function TabLayout() {
             }}
           />
         </Tabs>
-      </View>
-    </>
   );
 }

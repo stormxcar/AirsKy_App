@@ -1,4 +1,5 @@
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
@@ -14,7 +15,7 @@ function FormSearchFlight() {
     const [returnDate, setReturnDate] = useState<string | undefined>(undefined);
     return (
         <>
-            <ScrollView className="bg-white flex-1 p-4 rounded-t-3xl">
+            <ScrollView className="bg-white flex-1 p-4 rounded-t-[40px]">
                 <View className="px-4 mt-4  ">
                     {/* Trip Type Tabs */}
                     <View className="flex-row bg-gray-100 rounded-full p-1 mb-5 justify-between">
@@ -103,7 +104,7 @@ function FormSearchFlight() {
                         </View>
 
                         {/* Search Button */}
-                        <TouchableOpacity className="bg-blue-900 py-4 rounded-full mt-6 shadow-md">
+                        <TouchableOpacity onPress={()=>(router.navigate('/(root)/(booking)/flight-list'))} className="bg-blue-900 py-4 rounded-full mt-6 shadow-md">
                             <Text className="text-white text-center font-bold text-lg">
                                 TÌM CHUYÉN BAY
                             </Text>
