@@ -1,9 +1,11 @@
 import FlightItem, { Flight, TicketClass } from "@/components/screens/book-flight/flight-item";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import React, { useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useMemo, useState } from "react";
 import { FlatList, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+type SelectionPhase = 'depart' | 'return';
 
 // Dữ liệu mẫu cho chuyến bay
 const MOCK_FLIGHTS: Flight[] = [
@@ -63,46 +65,126 @@ const MOCK_DATES = [
 ];
 
 function FlightList() {
+  const params = useLocalSearchParams<{
+    tripType: 'one-way' | 'round-trip';
+    originCode: string;
+    destinationCode: string;
+    departureDate: string;
+    returnDate?: string;
+    adults: string;
+    children: string;
+    infants: string;
+  }>();
+
+  // State để quản lý giai đoạn chọn (đi hoặc về)
+  const [selectionPhase, setSelectionPhase] = useState<SelectionPhase>('depart');
+
   const [selectedDate, setSelectedDate] = useState("T6, 16/08");
+
+  // State cho chuyến bay đi
+  const [selectedDepartureFlight, setSelectedDepartureFlight] = useState<{ flight: Flight, ticketClass: TicketClass } | null>(null);
+
+  // State cho lựa chọn hiện tại (có thể là đi hoặc về)
   const [selectedFlightId, setSelectedFlightId] = useState<string | null>(null);
   const [selectedClass, setSelectedClass] = useState<TicketClass | null>(null);
 
   // Hàm xử lý khi chọn một chuyến bay
   const handleSelectFlight = (flightId: string) => {
-    // Nếu bấm vào chuyến bay đã chọn thì bỏ chọn, ngược lại thì chọn chuyến bay mới
     const newSelectedId = selectedFlightId === flightId ? null : flightId;
     setSelectedFlightId(newSelectedId);
-    // Khi chọn chuyến bay mới, reset hạng vé đã chọn
     if (selectedFlightId !== flightId) {
       setSelectedClass(null);
     }
   };
 
-  // Hàm xử lý khi chọn một hạng vé
   const handleSelectClass = (ticketClass: TicketClass | null) => {
     setSelectedClass(ticketClass);
   };
 
-  // Tìm chuyến bay đã chọn để lấy thông tin giá
+  const handleContinue = () => {
+    if (!selectedFlight || !selectedClass) return;
+
+    if (params.tripType === 'round-trip' && selectionPhase === 'depart') {
+      // 1. Lưu chuyến bay đi đã chọn
+      setSelectedDepartureFlight({ flight: selectedFlight, ticketClass: selectedClass });
+      // 2. Chuyển sang giai đoạn chọn chuyến về
+      setSelectionPhase('return');
+      // 3. Reset lựa chọn cho chuyến về
+      setSelectedFlightId(null);
+      setSelectedClass(null);
+    } else {
+      // Điều hướng đến trang tiếp theo (thanh toán, thông tin hành khách,...)
+      const departureFlightData = params.tripType === 'round-trip' ? selectedDepartureFlight : { flight: selectedFlight, ticketClass: selectedClass };
+      const returnFlightData = params.tripType === 'round-trip' ? { flight: selectedFlight, ticketClass: selectedClass } : null;
+
+      const navigationParams = {
+        ...params, // Pass along original search params like passenger counts
+        departureFlight: JSON.stringify(departureFlightData),
+        ...(returnFlightData && { returnFlight: JSON.stringify(returnFlightData) }),
+      };
+
+      router.navigate({
+        pathname: '/(root)/(booking)/user-booking-info',
+        params: navigationParams
+      });
+    }
+  };
+
   const selectedFlight = MOCK_FLIGHTS.find(flight => flight.id === selectedFlightId);
 
-  // Tính toán tổng giá tiền
   const totalPrice = selectedFlight && selectedClass
     ? Math.round(selectedFlight.price * selectedClass.priceModifier)
     : 0;
 
   const showContinueButton = !!(selectedFlightId && selectedClass && totalPrice > 0);
 
+  // Tùy chỉnh header dựa trên giai đoạn chọn
+  const headerInfo = useMemo(() => {
+    const totalPassengers = parseInt(params.adults || '1') + parseInt(params.children || '0');
+    const passengerText = `${totalPassengers} hành khách`;
+
+    if (selectionPhase === 'return') {
+      return {
+        title: `${params.destinationCode} → ${params.originCode}`,
+        subtitle: passengerText,
+        listTitle: "Chọn chuyến bay về"
+      };
+    }
+    // Mặc định là 'depart'
+    return {
+      title: `${params.originCode} → ${params.destinationCode}`,
+      subtitle: passengerText,
+      listTitle: "Chọn chuyến bay đi"
+    };
+  }, [
+      selectionPhase, 
+      params.originCode, 
+      params.destinationCode, 
+      params.adults, 
+      params.children
+    ]
+  );
+
   return (
     <SafeAreaView className="flex-1 bg-blue-900" edges={["top"]}>
       {/* Header */}
       <View className="bg-blue-900 pb-8 pt-4 px-4 ">
-        <TouchableOpacity onPress={() => router.back()} className="absolute top-4 left-4 z-10">
+        <TouchableOpacity onPress={() => {
+          // Nếu đang chọn chuyến về, nút back sẽ quay lại chọn chuyến đi
+          if (params.tripType === 'round-trip' && selectionPhase === 'return') {
+            setSelectionPhase('depart');
+            setSelectedFlightId(selectedDepartureFlight?.flight.id || null);
+            setSelectedClass(selectedDepartureFlight?.ticketClass || null);
+            setSelectedDepartureFlight(null);
+          } else {
+            router.back();
+          }
+        }} className="absolute top-4 left-4 z-10">
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <View className="items-center">
-          <Text className="text-white text-lg font-bold">SGN → HAN</Text>
-          <Text className="text-blue-200 text-sm">1 hành khách, Phổ thông</Text>
+          <Text className="text-white text-lg font-bold">{headerInfo.title}</Text>
+          <Text className="text-blue-200 text-sm">{headerInfo.subtitle}</Text>
         </View>
       </View>
 
@@ -138,15 +220,14 @@ function FlightList() {
           )}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
-          ListHeaderComponent={<Text className="text-lg font-bold text-blue-900 mb-4">Chọn chuyến bay đi</Text>}
+          ListHeaderComponent={<Text className="text-lg font-bold text-blue-900 mb-4">{headerInfo.listTitle}</Text>}
         />
       </View>
 
       {/* Nút Tiếp tục chỉ hiển thị khi đã chọn chuyến bay và hạng vé */}
       {showContinueButton && (
         <View className="absolute bottom-0 left-0 right-0 bg-white p-4 border-t border-gray-200">
-          <TouchableOpacity
-            onPress={() => console.log(`Tiếp tục với chuyến bay ${selectedFlightId}, hạng ${selectedClass.name}`)}
+          <TouchableOpacity onPress={handleContinue}
             className="bg-blue-900 py-3 rounded-full shadow-md flex-row justify-between items-center px-6"
           >
             <Text className="text-white font-bold text-lg">

@@ -27,7 +27,7 @@ const App = () => {
   return (
     <SafeAreaView className="bg-white flex-1">
       <View className="flex-1 justify-center items-center">
-        <Text className="text-xl font-bold text-blue-500 mb-5">
+        <Text className="text-xl font-bold text-blue-900 mb-5">
           Welcome to AirSky
         </Text>
 

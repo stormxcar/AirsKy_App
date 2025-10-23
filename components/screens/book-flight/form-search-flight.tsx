@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { DateData } from 'react-native-calendars';
 
 type TripType = "round-trip" | "one-way" | "multi-city";
@@ -131,6 +131,29 @@ function FormSearchFlight() {
         setInfants(passengers.infants);
     };
 
+    const handleSearch = () => {
+        if (!departureDate) {
+            Alert.alert("Thông báo", "Vui lòng chọn ngày đi.");
+            return;
+        }
+        if (tripType === 'round-trip' && !returnDate) {
+            Alert.alert("Thông báo", "Vui lòng chọn ngày về cho chuyến khứ hồi.");
+            return;
+        }
+
+        const params = {
+            tripType,
+            originCode: origin.code,
+            destinationCode: destination.code,
+            departureDate,
+            returnDate: returnDate ?? '', // Ensure it's a string
+            adults: adults.toString(),
+            children: children.toString(),
+            infants: infants.toString(),
+        };
+        router.navigate({ pathname: '/(root)/(booking)/flight-list', params });
+    };
+
     return (
         <>
             <ScrollView className="bg-white flex-1 p-4 rounded-t-[40px]">
@@ -244,7 +267,7 @@ function FormSearchFlight() {
                         </View>
 
                         {/* Search Button */}
-                        <TouchableOpacity onPress={()=>(router.navigate('/(root)/(booking)/flight-list'))} className="bg-blue-900 py-4 rounded-full mt-6 shadow-md">
+                        <TouchableOpacity onPress={handleSearch} className="bg-blue-900 py-4 rounded-full mt-6 shadow-md">
                             <Text className="text-white text-center font-bold text-lg">
                                 TÌM CHUYÉN BAY
                             </Text>
@@ -282,4 +305,3 @@ function FormSearchFlight() {
 }
 
 export default FormSearchFlight;
-

@@ -1,0 +1,159 @@
+import AdditionalServices from "@/components/screens/book-flight/additional-services";
+import BookingStepper from "@/components/screens/book-flight/booking-stepper";
+import SeatMap, { Seat, SeatStatus } from "@/components/screens/book-flight/seat-map";
+import { Ionicons } from "@expo/vector-icons";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useMemo, useState } from "react";
+import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+// --- Mock Data & Types ---
+
+
+// Tạo dữ liệu ghế ngồi mẫu (30 hàng, 6 cột)
+const generateMockSeats = (): Seat[] => {
+    const seats: Seat[] = [];
+    const rows = 30;
+    const cols = ['A', 'B', 'C', 'D', 'E', 'F'];
+    for (let i = 1; i <= rows; i++) {
+        cols.forEach(col => {
+            const id = `${i}${col}`;
+            let status: SeatStatus = 'available';
+            let price: number | undefined = 50000; // Giá ghế tiêu chuẩn
+
+            // Giả lập một số ghế đã bị chiếm
+            if (Math.random() > 0.8) status = 'occupied';
+            // Giả lập hàng ghế thoát hiểm (giá cao hơn)
+            if (i === 12 || i === 14) {
+                status = 'exit';
+                price = 150000;
+            }
+            // Ghế gần cửa sổ (A, F) giá cao hơn một chút
+            if (col === 'A' || col === 'F') price += 20000;
+
+            if (status === 'occupied') price = undefined;
+
+            seats.push({ id, status, price });
+        });
+    }
+    return seats;
+};
+
+const MOCK_SEATS = generateMockSeats();
+
+const ServiceAndSeatSelection = () => {
+    const params = useLocalSearchParams();
+    const passengers = useMemo(() => params.passengers ? JSON.parse(params.passengers as string) : [], [params.passengers]);
+
+    const [seats, setSeats] = useState<Seat[]>(MOCK_SEATS);
+    const [selectedSeats, setSelectedSeats] = useState<{ [passengerId: number]: string }>({});
+    const [currentPassengerIndex, setCurrentPassengerIndex] = useState(0);
+
+    // Dịch vụ cộng thêm
+    const [extraBaggage, setExtraBaggage] = useState(0); // tính theo kg
+    const [selectedMeal, setSelectedMeal] = useState(false);
+
+    const currentPassenger = passengers[currentPassengerIndex];
+
+    const handleSelectSeat = (seatId: string) => {
+        const seat = seats.find(s => s.id === seatId);
+        if (!seat || seat.status === 'occupied') {
+            Alert.alert("Ghế đã có người", "Vui lòng chọn một ghế khác.");
+            return;
+        }
+
+        // Bỏ chọn ghế hiện tại của hành khách nếu có
+        const currentSeatId = selectedSeats[currentPassenger.id];
+        if (currentSeatId) {
+            setSeats(prev => prev.map(s => s.id === currentSeatId ? { ...s, status: s.id.includes('12') || s.id.includes('14') ? 'exit' : 'available' } : s));
+        }
+
+        // Nếu ghế được chọn lại là ghế đang chọn, thì bỏ chọn
+        if (currentSeatId === seatId) {
+            const { [currentPassenger.id]: _, ...rest } = selectedSeats;
+            setSelectedSeats(rest);
+            return;
+        }
+
+        // Cập nhật ghế mới
+        setSelectedSeats(prev => ({ ...prev, [currentPassenger.id]: seatId }));
+        setSeats(prev => prev.map(s => s.id === seatId ? { ...s, status: 'selected' } : s));
+
+        // Tự động chuyển sang hành khách tiếp theo nếu còn
+        if (currentPassengerIndex < passengers.length - 1) {
+            setCurrentPassengerIndex(currentPassengerIndex + 1);
+        }
+    };
+
+    const handleContinue = () => {
+        if (Object.keys(selectedSeats).length !== passengers.length) {
+            Alert.alert("Thiếu thông tin", "Vui lòng chọn đủ ghế cho tất cả hành khách.");
+            return;
+        }
+        // TODO: Navigate to Payment screen (Step 3)
+        console.log("Selected Seats:", selectedSeats);
+        console.log("Extra Baggage:", extraBaggage);
+        console.log("Selected Meal:", selectedMeal);
+        Alert.alert("Thành công", "Đã lưu lựa chọn. Sẵn sàng cho bước thanh toán!");
+    };
+
+    return (
+        <SafeAreaView className="flex-1 bg-gray-100" edges={["top"]}>
+            {/* Custom Header */}
+            <View className="bg-white flex-row items-center p-4 border-b border-gray-200">
+                <TouchableOpacity onPress={() => router.back()} className="p-1">
+                    <Ionicons name="arrow-back" size={24} color="#1e3a8a" />
+                </TouchableOpacity>
+                <Text className="text-lg font-bold text-blue-900 ml-4">Dịch vụ & Ghế ngồi</Text>
+            </View>
+
+            <BookingStepper currentStep={2} />
+
+            <ScrollView>
+                <View className="p-4">
+                    {/* Passenger Selector */}
+                    <View className="mb-4">
+                        <Text className="text-base font-bold text-blue-900 mb-2">Chọn ghế cho:</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                            {passengers.map((p: any, index: number) => (
+                                <TouchableOpacity
+                                    key={p.id}
+                                    onPress={() => setCurrentPassengerIndex(index)}
+                                    className={`px-4 py-2 rounded-full mr-2 border-2 ${currentPassengerIndex === index ? 'bg-blue-900 border-blue-900' : 'bg-white border-gray-300'}`}
+                                >
+                                    <Text className={`${currentPassengerIndex === index ? 'text-white' : 'text-gray-700'} font-semibold`}>
+                                        {p.lastName} {p.firstName} {selectedSeats[p.id] ? `(${selectedSeats[p.id]})` : ''}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+
+                    {/* Seat Map */}
+                    <SeatMap
+                        seats={seats}
+                        onSelectSeat={handleSelectSeat}
+                        selectedSeatId={selectedSeats[currentPassenger?.id]}
+                    />
+
+                    {/* Services Section */}
+                    <AdditionalServices
+                        extraBaggage={extraBaggage}
+                        onBaggageChange={setExtraBaggage}
+                        selectedMeal={selectedMeal}
+                        onMealChange={setSelectedMeal}
+                    />
+                </View>
+            </ScrollView>
+
+            {/* Continue Button */}
+            <View className="p-4 bg-white border-t border-gray-200">
+                <TouchableOpacity onPress={handleContinue} className="bg-blue-900 py-3 rounded-full shadow-md">
+                    <Text className="text-white text-center font-bold text-lg">Tiếp tục</Text>
+                </TouchableOpacity>
+            </View>
+        </SafeAreaView>
+    );
+};
+
+export default ServiceAndSeatSelection;
