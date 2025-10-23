@@ -1,32 +1,9 @@
 
+import { TICKET_CLASSES } from "@/app/constants/data";
+import { Flight, TicketClass } from "@/app/types";
 import { FontAwesome } from "@expo/vector-icons";
 import React from "react";
 import { Dimensions, Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
-export type Flight = {
-    id: string;
-    airline: string;
-    airlineLogo: any; // Sử dụng require, nên kiểu là any hoặc number
-    flightNumber: string;
-    departure: { code: string; time: string };
-    arrival: { code: string; time: string };
-    duration: string;
-    price: number;
-    type: "Bay thẳng" | "1 điểm dừng";
-};
-
-// Define TicketClass type
-export type TicketClass = {
-    id: string;
-    name: string;
-    priceModifier: number; // e.g., 1 for Economy, 1.5 for Business, 2 for First
-    description: string;
-};
-
-const TICKET_CLASSES: TicketClass[] = [
-    { id: "economy", name: "Economy", priceModifier: 1, description: "Giá tiết kiệm" },
-    { id: "business", name: "Business", priceModifier: 1.8, description: "Thoải mái hơn" },
-    { id: "first", name: "First", priceModifier: 2.5, description: "Trải nghiệm cao cấp" },
-];
 
 type FlightItemProps = {
   flight: Flight;

@@ -1,9 +1,6 @@
+import { Seat, SeatStatus } from '@/app/types';
 import React from 'react';
 import { FlatList, Text, TouchableOpacity, View } from 'react-native';
-
-// --- Types ---
-export type SeatStatus = 'available' | 'occupied' | 'selected' | 'exit';
-export type Seat = { id: string; status: SeatStatus; price?: number };
 
 type SeatMapProps = {
     seats: Seat[];

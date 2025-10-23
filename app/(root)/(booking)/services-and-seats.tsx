@@ -1,45 +1,13 @@
+import { MOCK_SEATS } from "@/app/constants/data";
+import { Seat } from "@/app/types";
 import AdditionalServices from "@/components/screens/book-flight/additional-services";
 import BookingStepper from "@/components/screens/book-flight/booking-stepper";
-import SeatMap, { Seat, SeatStatus } from "@/components/screens/book-flight/seat-map";
+import SeatMap from "@/components/screens/book-flight/seat-map";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-// --- Mock Data & Types ---
-
-
-// Tạo dữ liệu ghế ngồi mẫu (30 hàng, 6 cột)
-const generateMockSeats = (): Seat[] => {
-    const seats: Seat[] = [];
-    const rows = 30;
-    const cols = ['A', 'B', 'C', 'D', 'E', 'F'];
-    for (let i = 1; i <= rows; i++) {
-        cols.forEach(col => {
-            const id = `${i}${col}`;
-            let status: SeatStatus = 'available';
-            let price: number | undefined = 50000; // Giá ghế tiêu chuẩn
-
-            // Giả lập một số ghế đã bị chiếm
-            if (Math.random() > 0.8) status = 'occupied';
-            // Giả lập hàng ghế thoát hiểm (giá cao hơn)
-            if (i === 12 || i === 14) {
-                status = 'exit';
-                price = 150000;
-            }
-            // Ghế gần cửa sổ (A, F) giá cao hơn một chút
-            if (col === 'A' || col === 'F') price += 20000;
-
-            if (status === 'occupied') price = undefined;
-
-            seats.push({ id, status, price });
-        });
-    }
-    return seats;
-};
-
-const MOCK_SEATS = generateMockSeats();
 
 const ServiceAndSeatSelection = () => {
     const params = useLocalSearchParams();

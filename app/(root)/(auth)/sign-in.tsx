@@ -1,18 +1,10 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { Button, MD3LightTheme, Provider as PaperProvider, TextInput } from "react-native-paper";
+import { Button, TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { FontAwesome } from '@expo/vector-icons'; // Import FontAwesome for icons
-// Theme Paper màu xanh đậm kiểu Zalo
-const theme = {
-  ...MD3LightTheme,
-  colors: {
-    ...MD3LightTheme.colors,
-    primary: "#1e3a8a", // xanh đậm
-  },
-};
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
@@ -35,8 +27,8 @@ const SignIn = () => {
   };
 
   return (
-    <PaperProvider theme={theme}>
-      <SafeAreaView className="mt-32 flex-1 bg-white px-6 justify-start rounded-t-3xl">
+    <>
+      <SafeAreaView className="mt-32 flex-1 bg-white px-6 justify-start rounded-t-3xl"> 
         {/* Tiêu đề */}
         <View className="mb-8 items-center">
           <Text className="text-3xl font-bold text-blue-900">Đăng nhập</Text>
@@ -49,8 +41,6 @@ const SignIn = () => {
           mode="outlined"
           value={email}
           onChangeText={setEmail}
-          outlineColor="#ccc"
-          activeOutlineColor={theme.colors.primary}
           className="mb-4"
           autoCapitalize="none" // Good practice for email inputs
           keyboardType="email-address" // Good practice for email inputs
@@ -62,8 +52,6 @@ const SignIn = () => {
           secureTextEntry
           value={password}
           onChangeText={setPassword}
-          outlineColor="#ccc"
-          activeOutlineColor={theme.colors.primary}
           className="mb-4" 
         />
 
@@ -99,7 +87,7 @@ const SignIn = () => {
           onPress={handleGoogleSignIn}
           className="bg-white py-3 rounded-2xl w-full items-center border border-blue-900 flex-row justify-center"
         >
-          <FontAwesome name="google" size={20} color={theme.colors.primary} className="mr-2" />
+          <FontAwesome name="google" size={20} color="#1e3a8a" className="mr-2" />
           <Text className="font-semibold text-blue-900 ml-2">Đăng nhập bằng Google</Text>
         </TouchableOpacity>
 
@@ -111,7 +99,7 @@ const SignIn = () => {
           </TouchableOpacity>
         </View>
       </SafeAreaView>
-    </PaperProvider>
+    </>
   );
 };
 

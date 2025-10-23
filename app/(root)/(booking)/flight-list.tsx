@@ -1,4 +1,6 @@
-import FlightItem, { Flight, TicketClass } from "@/components/screens/book-flight/flight-item";
+import { MOCK_FLIGHTS } from "@/app/constants/data";
+import { Flight, TicketClass } from "@/app/types";
+import FlightItem from "@/components/screens/book-flight/flight-item";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useMemo, useState } from "react";
@@ -6,54 +8,6 @@ import { FlatList, ScrollView, Text, TouchableOpacity, View } from "react-native
 import { SafeAreaView } from "react-native-safe-area-context";
 
 type SelectionPhase = 'depart' | 'return';
-
-// Dữ liệu mẫu cho chuyến bay
-const MOCK_FLIGHTS: Flight[] = [
-  {
-    id: "1",
-    airline: "Vietnam Airlines",
-    airlineLogo: null,
-    flightNumber: "VN245",
-    departure: { code: "SGN", time: "08:30" },
-    arrival: { code: "HAN", time: "10:35" },
-    duration: "2h 05m",
-    price: 1850000,
-    type: "Bay thẳng",
-  },
-  {
-    id: "2",
-    airline: "Vietjet Air",
-    airlineLogo: null,
-    flightNumber: "VJ150",
-    departure: { code: "SGN", time: "09:15" },
-    arrival: { code: "HAN", time: "11:20" },
-    duration: "2h 05m",
-    price: 1520000,
-    type: "Bay thẳng",
-  },
-  {
-    id: "3",
-    airline: "Bamboo Airways",
-    airlineLogo: null,
-    flightNumber: "QH202",
-    departure: { code: "SGN", time: "11:00" },
-    arrival: { code: "HAN", time: "13:10" },
-    duration: "2h 10m",
-    price: 1780000,
-    type: "Bay thẳng",
-  },
-  {
-    id: "4",
-    airline: "Vietnam Airlines",
-    airlineLogo: null,
-    flightNumber: "VN255",
-    departure: { code: "SGN", time: "14:00" },
-    arrival: { code: "HAN", time: "16:05" },
-    duration: "2h 05m",
-    price: 2100000,
-    type: "Bay thẳng",
-  },
-];
 
 // Dữ liệu mẫu cho thanh chọn ngày
 const MOCK_DATES = [

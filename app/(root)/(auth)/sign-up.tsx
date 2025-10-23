@@ -1,17 +1,8 @@
 import { router } from "expo-router";
-import { useState } from "react";
+import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { Button, MD3LightTheme, Provider as PaperProvider, TextInput } from "react-native-paper";
+import { Button, TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-// Theme Paper màu xanh đậm
-const theme = {
-  ...MD3LightTheme,
-  colors: {
-    ...MD3LightTheme.colors,
-    primary: "#1e3a8a", // blue-900
-  },
-};
 
 const SignUp = () => {
   const [fullName, setFullName] = useState("");
@@ -32,8 +23,8 @@ const SignUp = () => {
   };
 
   return (
-    <PaperProvider theme={theme}>
-      <SafeAreaView className="mt-32 flex-1 bg-white px-6 justify-start rounded-t-3xl">
+    <>
+      <SafeAreaView className="mt-32 flex-1 bg-white px-6 justify-start rounded-t-3xl"> 
         {/* Tiêu đề */}
         <View className="mb-8 items-center">
           <Text className="text-3xl font-bold text-blue-900">Tạo tài khoản</Text>
@@ -46,8 +37,6 @@ const SignUp = () => {
           mode="outlined"
           value={fullName}
           onChangeText={setFullName}
-          outlineColor="#ccc"
-          activeOutlineColor={theme.colors.primary}
           className="mb-4"
         />
         <TextInput
@@ -55,8 +44,6 @@ const SignUp = () => {
           mode="outlined"
           value={email}
           onChangeText={setEmail}
-          outlineColor="#ccc"
-          activeOutlineColor={theme.colors.primary}
           className="mb-4"
           autoCapitalize="none"
           keyboardType="email-address"
@@ -64,12 +51,9 @@ const SignUp = () => {
         <TextInput
           label="Mật khẩu"
           mode="outlined"
-          secureTextEntry
           secureTextEntry={!isPasswordVisible}
           value={password}
           onChangeText={setPassword}
-          outlineColor="#ccc"
-          activeOutlineColor={theme.colors.primary}
           className="mb-4"
           right={
             <TextInput.Icon
@@ -84,8 +68,6 @@ const SignUp = () => {
           secureTextEntry={!isPasswordVisible}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
-          outlineColor="#ccc"
-          activeOutlineColor={theme.colors.primary}
           className="mb-4"
           right={
             <TextInput.Icon
@@ -108,7 +90,7 @@ const SignUp = () => {
           </TouchableOpacity>
         </View>
       </SafeAreaView>
-    </PaperProvider>
+    </>
   );
 };
 

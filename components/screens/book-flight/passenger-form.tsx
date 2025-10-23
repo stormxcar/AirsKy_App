@@ -1,21 +1,11 @@
+import { Passenger } from '@/app/types';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { differenceInYears, format } from 'date-fns';
 import React, { useState } from 'react';
 import { Modal, Platform, Text, TouchableOpacity, View } from 'react-native';
-import { MD3LightTheme, Provider as PaperProvider, TextInput } from 'react-native-paper';
+import { TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-// Re-define types from user-booking-info.tsx for clarity
-export type Passenger = {
-    id: number;
-    firstName: string;
-    lastName: string;
-    dob: Date | null;
-    gender: 'male' | 'female' | null;
-    idCard: string;
-    type: 'adult' | 'child' | 'infant';
-};
 
 // Helper to calculate age and determine passenger type
 export const getPassengerType = (dob: Date | null): 'adult' | 'child' | 'infant' => {
@@ -43,15 +33,6 @@ const processNameInput = (text: string) => {
         .toUpperCase(); // Chuyển thành chữ hoa
 };
 
-// Theme Paper màu xanh đậm
-const theme = {
-    ...MD3LightTheme,
-    colors: {
-        ...MD3LightTheme.colors,
-        primary: "#1e3a8a", // blue-900
-    },
-};
-
 const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: PassengerFormProps) => {
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showGenderPicker, setShowGenderPicker] = useState(false);
@@ -73,7 +54,7 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
     };
 
     return (
-        <PaperProvider theme={theme}>
+        <>
             <View className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
                 <View className="flex-row justify-between items-center mb-3">
                     <Text className="text-lg font-bold text-blue-900">Hành khách {index + 1} ({passenger.type === 'adult' ? 'Người lớn' : passenger.type === 'child' ? 'Trẻ em' : 'Em bé'})</Text>
@@ -88,8 +69,6 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
                     mode="outlined"
                     value={passenger.lastName}
                     onChangeText={(text) => onChange(passenger.id, 'lastName', processNameInput(text))}
-                    outlineColor="#ccc"
-                    activeOutlineColor={theme.colors.primary}
                     className="flex-1 "
                     style={{ backgroundColor: 'transparent' }}
                     autoCapitalize="characters"
@@ -99,8 +78,6 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
                     mode="outlined"
                     value={passenger.firstName}
                     onChangeText={(text) => onChange(passenger.id, 'firstName', processNameInput(text))}
-                    outlineColor="#ccc"
-                    activeOutlineColor={theme.colors.primary}
                     className="flex-1"
                     style={{ backgroundColor: 'transparent' }}
                     autoCapitalize="characters"
@@ -114,8 +91,6 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
                         value={passenger.dob ? format(passenger.dob, 'dd/MM/yyyy') : ''}
                         editable={false}
                         pointerEvents="none" // Prevent keyboard from opening
-                        outlineColor="#ccc"
-                        activeOutlineColor={theme.colors.primary}
                         // right={<TextInput.Icon icon="calendar" />}
                         className="mb-3"
                         style={{ backgroundColor: 'transparent' }}
@@ -140,8 +115,6 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
                         value={passenger.gender === 'male' ? 'Nam' : passenger.gender === 'female' ? 'Nữ' : ''}
                         editable={false}
                         pointerEvents="none"
-                        outlineColor="#ccc"
-                        activeOutlineColor={theme.colors.primary}
                         // right={<TextInput.Icon icon="chevron-down" />}
                         className="mb-3"
                         style={{ backgroundColor: 'transparent' }}
@@ -181,14 +154,12 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
                         label="Số CCCD/Passport"
                         mode="outlined"
                         value={passenger.idCard}
-                        onChangeText={(text) => onChange(passenger.id, 'idCard', text)}
-                        outlineColor="#ccc"
-                        activeOutlineColor={theme.colors.primary}
+                        onChangeText={(text) => onChange(passenger.id, 'idCard', text)} 
                         style={{ backgroundColor: 'transparent' }}
                     />
                 )}
             </View>
-        </PaperProvider>
+        </>
     );
 };
 

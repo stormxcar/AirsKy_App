@@ -1,13 +1,8 @@
+import { Airport } from '@/app/types';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, Modal, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-export type Airport = {
-    code: string;
-    name: string;
-    city: string;
-};
 
 type AirportSelectionModalProps = {
     visible: boolean;

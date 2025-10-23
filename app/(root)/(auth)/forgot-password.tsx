@@ -1,17 +1,8 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { Text, View } from "react-native";
-import { Button, MD3LightTheme, Provider as PaperProvider, TextInput } from "react-native-paper";
+import { Button, TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-// Theme Paper màu xanh đậm
-const theme = {
-  ...MD3LightTheme,
-  colors: {
-    ...MD3LightTheme.colors,
-    primary: "#1e3a8a", // blue-900
-  },
-};
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -29,7 +20,7 @@ const ForgotPassword = () => {
   };
 
   return (
-    <PaperProvider theme={theme}>
+    <>
       <SafeAreaView className="mt-32 flex-1 bg-white px-6 justify-start rounded-t-3xl">
         {/* Tiêu đề */}
         <View className="mb-8 items-center">
@@ -43,8 +34,6 @@ const ForgotPassword = () => {
           mode="outlined"
           value={email}
           onChangeText={setEmail}
-          outlineColor="#ccc"
-          activeOutlineColor={theme.colors.primary}
           className="p-6"
           autoCapitalize="none"
           keyboardType="email-address"
@@ -55,8 +44,8 @@ const ForgotPassword = () => {
           Gửi mã
         </Button>
 
-      </SafeAreaView>
-    </PaperProvider>
+      </SafeAreaView> 
+    </>
   );
 };
 

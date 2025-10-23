@@ -1,4 +1,6 @@
-import AirportSelectionModal, { Airport } from '@/components/screens/book-flight/modals/airport-selection-modal';
+import { AIRPORTS } from '@/app/constants/data';
+import { Airport } from '@/app/types';
+import AirportSelectionModal from '@/components/screens/book-flight/modals/airport-selection-modal';
 import DatePickerModal from '@/components/screens/book-flight/modals/date-picker-modal';
 import PassengerSelectionModal from '@/components/screens/book-flight/modals/passenger-selection-modal';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
@@ -10,17 +12,6 @@ import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { DateData } from 'react-native-calendars';
 
 type TripType = "round-trip" | "one-way" | "multi-city";
-
-// Dữ liệu sân bay mẫu
-const AIRPORTS = [
-    { code: "SGN", name: "Tân Sơn Nhất", city: "TP. Hồ Chí Minh" },
-    { code: "HAN", name: "Nội Bài", city: "Hà Nội" },
-    { code: "DAD", name: "Sân bay Đà Nẵng", city: "Đà Nẵng" },
-    { code: "CXR", name: "Cam Ranh", city: "Nha Trang" },
-    { code: "PQC", name: "Phú Quốc", city: "Phú Quốc" },
-    { code: "HPH", name: "Cát Bi", city: "Hải Phòng" },
-    { code: "VCA", name: "Sân bay Cần Thơ", city: "Cần Thơ" },
-];
 
 function FormSearchFlight() {
     const [tripType, setTripType] = useState<TripType>("one-way");

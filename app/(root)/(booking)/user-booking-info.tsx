@@ -1,28 +1,13 @@
+import { Passenger, SelectedFlight } from "@/app/types";
 import BookingStepper from "@/components/screens/book-flight/booking-stepper";
-import { Flight, TicketClass } from "@/components/screens/book-flight/flight-item";
 import PassengerForm from "@/components/screens/book-flight/passenger-form";
 import { Ionicons } from "@expo/vector-icons";
 import { differenceInYears, format, parseISO } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { MD3LightTheme, PaperProvider, TextInput } from "react-native-paper";
+import { TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-type SelectedFlight = {
-    flight: Flight;
-    ticketClass: TicketClass;
-};
-
-type Passenger = {
-    id: number;
-    firstName: string;
-    lastName: string;
-    dob: Date | null;
-    gender: 'male' | 'female' | null;
-    idCard: string;
-    type: 'adult' | 'child' | 'infant';
-};
 
 // Helper để tính tuổi và xác định loại hành khách
 const getPassengerType = (dob: Date | null): 'adult' | 'child' | 'infant' => {
@@ -31,15 +16,6 @@ const getPassengerType = (dob: Date | null): 'adult' | 'child' | 'infant' => {
     if (age < 2) return 'infant';
     if (age < 12) return 'child';
     return 'adult';
-};
-
-// Theme Paper màu xanh đậm
-const theme = {
-    ...MD3LightTheme,
-    colors: {
-        ...MD3LightTheme.colors,
-        primary: "#1e3a8a", // blue-900
-    },
 };
 
 function UserBookingInfo() {
@@ -187,7 +163,7 @@ function UserBookingInfo() {
     };
 
     return (
-        <PaperProvider theme={theme}>
+    <>
             <SafeAreaView className="flex-1 bg-gray-100" edges={["top"]}>
                 {/* Custom Header */}
                 <View className="bg-white flex-row items-center p-4 border-b border-gray-200">
@@ -239,18 +215,14 @@ function UserBookingInfo() {
                                     label="Họ và tên"
                                     mode="outlined"
                                     value={bookerName}
-                                    onChangeText={setBookerName}
-                                    outlineColor="#ccc"
-                                    activeOutlineColor={theme.colors.primary}
+                            onChangeText={setBookerName} 
                                     autoCapitalize="words"
                                 />
                                 <TextInput
                                     label="Email"
                                     mode="outlined"
                                     value={bookerEmail}
-                                    onChangeText={setBookerEmail}
-                                    outlineColor="#ccc"
-                                    activeOutlineColor={theme.colors.primary}
+                            onChangeText={setBookerEmail} 
                                     autoCapitalize="none"
                                     keyboardType="email-address"
                                 />
@@ -283,8 +255,8 @@ function UserBookingInfo() {
                         </TouchableOpacity>
                     </View>
                 </KeyboardAvoidingView>
-            </SafeAreaView>
-        </PaperProvider>
+            </SafeAreaView> 
+    </>
     );
 }
 
