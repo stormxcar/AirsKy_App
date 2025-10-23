@@ -1,11 +1,11 @@
 import { Passenger } from '@/app/types';
+import GenderSelectionModal from '@/components/screens/book-flight/modals/gender-selection-modal';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { differenceInYears, format } from 'date-fns';
 import React, { useState } from 'react';
-import { Modal, Platform, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, Text, TouchableOpacity, View } from 'react-native';
 import { TextInput } from 'react-native-paper';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Helper to calculate age and determine passenger type
 export const getPassengerType = (dob: Date | null): 'adult' | 'child' | 'infant' => {
@@ -121,33 +121,12 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
                     />
                 </TouchableOpacity>
 
-                <Modal
-                    transparent={true}
+                <GenderSelectionModal
                     visible={showGenderPicker}
-                    onRequestClose={() => setShowGenderPicker(false)}
-                    animationType="fade"
-                >
-                    <SafeAreaView className="flex-1 bg-black/30 justify-end">
-                        <View className="bg-white rounded-t-xl p-4">
-                            <Text className="text-lg font-bold text-blue-900 mb-4 text-center">Chọn giới tính</Text>
-                            <TouchableOpacity
-                                onPress={() => handleGenderSelect('male')}
-                                className={`p-3 rounded-lg mb-2 border-2 ${passenger.gender === 'male' ? 'border-blue-900 bg-blue-50' : 'border-gray-200'}`}
-                            >
-                                <Text className="text-center text-lg">Nam</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={() => handleGenderSelect('female')}
-                                className={`p-3 rounded-lg border-2 ${passenger.gender === 'female' ? 'border-blue-900 bg-blue-50' : 'border-gray-200'}`}
-                            >
-                                <Text className="text-center text-lg">Nữ</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => setShowGenderPicker(false)} className="mt-4 bg-gray-200 p-3 rounded-lg">
-                                <Text className="text-center text-lg font-semibold">Hủy</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </SafeAreaView>
-                </Modal>
+                    onClose={() => setShowGenderPicker(false)}
+                    onSelect={handleGenderSelect}
+                    currentGender={passenger.gender}
+                />
 
                 {isIdCardRequired && (
                     <TextInput
