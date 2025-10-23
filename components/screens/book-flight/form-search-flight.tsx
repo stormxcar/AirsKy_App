@@ -6,12 +6,12 @@ import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 type TripType = "round-trip" | "one-way" | "multi-city";
 
 function FormSearchFlight() {
-      const [tripType, setTripType] = useState<TripType>("one-way");
-    
-      const [origin, setOrigin] = useState("");
-      const [destination, setDestination] = useState("");
-      const [departureDate, setDepartureDate] = useState<string | undefined>(undefined);
-      const [returnDate, setReturnDate] = useState<string | undefined>(undefined);
+    const [tripType, setTripType] = useState<TripType>("one-way");
+
+    const [origin, setOrigin] = useState("");
+    const [destination, setDestination] = useState("");
+    const [departureDate, setDepartureDate] = useState<string | undefined>(undefined);
+    const [returnDate, setReturnDate] = useState<string | undefined>(undefined);
     return (
         <>
             <ScrollView className="bg-white flex-1 p-4 rounded-t-3xl">
