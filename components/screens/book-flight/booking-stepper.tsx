@@ -24,7 +24,7 @@ const BookingStepper = ({ currentStep = 1 }: { currentStep?: number }) => {
     ];
 
     return (
-        <View className="flex-row items-start justify-center p-4 bg-white">
+        <View className="flex-row items-start justify-between p-4 bg-white">
             {steps.map((step, index) => (
                 <React.Fragment key={step.number}>
                     <Step number={step.number} label={step.label} isActive={currentStep >= step.number} />

@@ -163,14 +163,19 @@ function UserBookingInfo() {
     };
 
     return (
-    <>
-            <SafeAreaView className="flex-1 bg-gray-100" edges={["top"]}>
+        <>
+            <SafeAreaView className="flex-1 bg-blue-900" edges={["top", "left", "right"]}>
                 {/* Custom Header */}
-                <View className="bg-white flex-row items-center p-4 border-b border-gray-200">
-                    <TouchableOpacity onPress={() => router.back()} className="p-1">
-                        <Ionicons name="arrow-back" size={24} color="#1e3a8a" />
-                    </TouchableOpacity>
-                    <Text className="text-lg font-bold text-blue-900 ml-4">Thông tin hành khách</Text>
+                <View className="bg-white rounded-[40px] ">
+                    <View className=" flex-row items-center   p-4 border-b border-gray-200 ">
+                        <TouchableOpacity onPress={() => router.back()} className="p-1">
+                            <Ionicons name="arrow-back" size={24} color="#1e3a8a" />
+                        </TouchableOpacity>
+                        <Text className="text-lg font-bold flex-1 text-center text-blue-900 mr-6">Thông tin hành khách</Text>
+
+
+                    </View>
+                    <BookingStepper currentStep={1} />
                 </View>
 
                 <KeyboardAvoidingView
@@ -178,31 +183,31 @@ function UserBookingInfo() {
                     style={{ flex: 1 }}
                     keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
                 >
-                    <ScrollView>
-                        <BookingStepper currentStep={1} />
+                    <ScrollView className="bg-white">
 
-                        <View className="p-4">
+
+                        <View className="p-4 ">
                             {/* Flight Info Summary */}
                             {departureFlight && (
                                 <View className="bg-white rounded-xl p-4 mb-2 border border-gray-200">
                                     <Text className="text-base font-semibold text-gray-700">Chuyến đi:</Text>
                                     <Text className="text-lg font-bold text-blue-900">
-                                        {departureFlight.flight.departure.code} ({departureFlight.flight.departure.time}) → {departureFlight.flight.arrival.code} ({departureFlight.flight.arrival.time})
+                                        {departureFlight.flight?.departure?.code} ({departureFlight.flight?.departure?.time}) → {departureFlight.flight?.arrival?.code} ({departureFlight.flight?.arrival?.time})
                                     </Text>
                                     <Text className="text-sm text-gray-500">Ngày: {format(parseISO(params.departureDate as string), 'dd/MM/yyyy')}</Text>
-                                    <Text className="text-sm text-gray-500">Hãng: {departureFlight.flight.airline} - {departureFlight.flight.flightNumber}</Text>
-                                    <Text className="text-sm text-gray-500">Hạng vé: {departureFlight.ticketClass.name}</Text>
+                                    <Text className="text-sm text-gray-500">Hãng: {departureFlight.flight?.airline} - {departureFlight.flight?.flightNumber}</Text>
+                                    <Text className="text-sm text-gray-500">Hạng vé: {departureFlight.ticketClass?.name}</Text>
                                 </View>
                             )}
                             {returnFlight && (
                                 <View className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
                                     <Text className="text-base font-semibold text-gray-700">Chuyến về:</Text>
                                     <Text className="text-lg font-bold text-blue-900">
-                                        {returnFlight.flight.departure.code} ({returnFlight.flight.departure.time}) → {returnFlight.flight.arrival.code} ({returnFlight.flight.arrival.time})
+                                        {returnFlight.flight?.departure?.code} ({returnFlight.flight?.departure?.time}) → {returnFlight.flight?.arrival?.code} ({returnFlight.flight?.arrival?.time})
                                     </Text>
                                     <Text className="text-sm text-gray-500">Ngày: {format(parseISO(params.returnDate as string), 'dd/MM/yyyy')}</Text>
-                                    <Text className="text-sm text-gray-500">Hãng: {returnFlight.flight.airline} - {returnFlight.flight.flightNumber}</Text>
-                                    <Text className="text-sm text-gray-500">Hạng vé: {returnFlight.ticketClass.name}</Text>
+                                    <Text className="text-sm text-gray-500">Hãng: {returnFlight.flight?.airline} - {returnFlight.flight?.flightNumber}</Text>
+                                    <Text className="text-sm text-gray-500">Hạng vé: {returnFlight.ticketClass?.name}</Text>
                                 </View>
                             )}
 
@@ -215,14 +220,14 @@ function UserBookingInfo() {
                                     label="Họ và tên"
                                     mode="outlined"
                                     value={bookerName}
-                            onChangeText={setBookerName} 
+                                    onChangeText={setBookerName}
                                     autoCapitalize="words"
                                 />
                                 <TextInput
                                     label="Email"
                                     mode="outlined"
                                     value={bookerEmail}
-                            onChangeText={setBookerEmail} 
+                                    onChangeText={setBookerEmail}
                                     autoCapitalize="none"
                                     keyboardType="email-address"
                                 />
@@ -255,8 +260,8 @@ function UserBookingInfo() {
                         </TouchableOpacity>
                     </View>
                 </KeyboardAvoidingView>
-            </SafeAreaView> 
-    </>
+            </SafeAreaView>
+        </>
     );
 }
 

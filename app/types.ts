@@ -11,15 +11,17 @@ export type Airport = {
  * Represents a flight.
  */
 export type Flight = {
-  id: string;
+  id: string; // Sẽ được map từ flightId (number)
   airline: string;
-  airlineLogo: any; // Using require, so type is any or number
+  airlineLogo: string | null; // URL ảnh từ API
   flightNumber: string;
   departure: { code: string; time: string };
   arrival: { code: string; time: string };
   duration: string;
-  price: number;
-  type: "Bay thẳng" | "1 điểm dừng";
+  price: number; // Giá cơ bản (basePrice)
+  type: "Bay thẳng" | "1 điểm dừng" | string;
+  // Thêm các hạng vé cho chuyến bay này
+  ticketClasses: TicketClass[];
 };
 
 /**
@@ -28,8 +30,9 @@ export type Flight = {
 export type TicketClass = {
   id: string;
   name: string;
-  priceModifier: number;
-  description: string;
+  priceModifier: number; // Sẽ được map từ travelClass.priceMultiplier
+  description: string; // Sẽ được map từ travelClass.benefits
+  finalPrice: number; // Giá cuối cùng cho hạng vé này
 };
 
 /**

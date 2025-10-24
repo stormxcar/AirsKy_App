@@ -1,13 +1,17 @@
-import { MOCK_FLIGHTS } from "@/app/constants/data";
 import { Flight, TicketClass } from "@/app/types";
 import FlightItem from "@/components/screens/book-flight/flight-item";
+import FlightItemSkeleton from "@/components/screens/book-flight/flight-item-skeleton";
+import { searchFlights } from "@/services/flight-service";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useMemo, useState } from "react";
-import { FlatList, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useMemo, useState } from 'react';
+import { FlatList, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
 
+// Số lượng skeleton item sẽ hiển thị khi đang tải
+const SKELETON_COUNT = 3;
 type SelectionPhase = 'depart' | 'return';
+
 
 // Dữ liệu mẫu cho thanh chọn ngày
 const MOCK_DATES = [
@@ -33,14 +37,51 @@ function FlightList() {
   // State để quản lý giai đoạn chọn (đi hoặc về)
   const [selectionPhase, setSelectionPhase] = useState<SelectionPhase>('depart');
 
+  // State cho dữ liệu chuyến bay, loading và lỗi
+  const [flights, setFlights] = useState<Flight[]>([]); // Bắt đầu với mảng rỗng
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [selectedDate, setSelectedDate] = useState("T6, 16/08");
 
   // State cho chuyến bay đi
   const [selectedDepartureFlight, setSelectedDepartureFlight] = useState<{ flight: Flight, ticketClass: TicketClass } | null>(null);
 
-  // State cho lựa chọn hiện tại (có thể là đi hoặc về)
+  // State cho lựa chọn hiện tại trên list
   const [selectedFlightId, setSelectedFlightId] = useState<string | null>(null);
   const [selectedClass, setSelectedClass] = useState<TicketClass | null>(null);
+
+  useEffect(() => {
+    // Reset state khi các tham số tìm kiếm chính thay đổi (ví dụ: người dùng quay lại và tìm kiếm lại)
+    setSelectionPhase('depart');
+    setSelectedDepartureFlight(null);
+    setSelectedFlightId(null);
+    setSelectedClass(null);
+
+    const fetchFlights = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Xác định tham số cho API call dựa trên giai đoạn chọn (đi hoặc về)
+        const isReturnPhase = params.tripType === 'round-trip' && selectionPhase === 'return';
+        const from = isReturnPhase ? params.destinationCode : params.originCode;
+        const to = isReturnPhase ? params.originCode : params.destinationCode;
+        const date = isReturnPhase ? params.returnDate : params.departureDate;
+
+        // Gọi hàm từ service để lấy dữ liệu đã được map
+        const mappedFlights = await searchFlights({ from, to, date: date || '' });
+        setFlights(mappedFlights);
+      } catch (e: any) {
+        console.error("Lỗi khi gọi API:", e);
+        setError("Không thể tải danh sách chuyến bay. Vui lòng thử lại.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFlights();
+  }, [selectionPhase, params.originCode, params.destinationCode, params.departureDate, params.returnDate]);
 
   // Hàm xử lý khi chọn một chuyến bay
   const handleSelectFlight = (flightId: string) => {
@@ -58,6 +99,10 @@ function FlightList() {
   const handleContinue = () => {
     if (!selectedFlight || !selectedClass) return;
 
+    // Tìm lại selectedFlight để đảm bảo nó không undefined trước khi tiếp tục
+    const currentSelectedFlight = flights.find(f => f.id === selectedFlightId);
+    if (!currentSelectedFlight) return; // An toàn: không làm gì nếu không tìm thấy chuyến bay
+
     if (params.tripType === 'round-trip' && selectionPhase === 'depart') {
       // 1. Lưu chuyến bay đi đã chọn
       setSelectedDepartureFlight({ flight: selectedFlight, ticketClass: selectedClass });
@@ -68,8 +113,8 @@ function FlightList() {
       setSelectedClass(null);
     } else {
       // Điều hướng đến trang tiếp theo (thanh toán, thông tin hành khách,...)
-      const departureFlightData = params.tripType === 'round-trip' ? selectedDepartureFlight : { flight: selectedFlight, ticketClass: selectedClass };
-      const returnFlightData = params.tripType === 'round-trip' ? { flight: selectedFlight, ticketClass: selectedClass } : null;
+      const departureFlightData = params.tripType === 'round-trip' ? selectedDepartureFlight : { flight: currentSelectedFlight, ticketClass: selectedClass };
+      const returnFlightData = params.tripType === 'round-trip' ? { flight: currentSelectedFlight, ticketClass: selectedClass } : null;
 
       const navigationParams = {
         ...params, // Pass along original search params like passenger counts
@@ -84,10 +129,10 @@ function FlightList() {
     }
   };
 
-  const selectedFlight = MOCK_FLIGHTS.find(flight => flight.id === selectedFlightId);
+  const selectedFlight = flights.find(flight => flight.id === selectedFlightId);
 
   const totalPrice = selectedFlight && selectedClass
-    ? Math.round(selectedFlight.price * selectedClass.priceModifier)
+    ? selectedClass.finalPrice // Sử dụng giá cuối cùng đã có từ API
     : 0;
 
   const showContinueButton = !!(selectedFlightId && selectedClass && totalPrice > 0);
@@ -160,24 +205,43 @@ function FlightList() {
           </ScrollView>
         </View>
 
-        {/* Flight List */}
-        <FlatList
-          data={MOCK_FLIGHTS}
-          renderItem={({ item }) => (
-            <FlightItem
-              flight={item}
-              isSelected={selectedFlightId === item.id}
-              selectedClassId={selectedFlightId === item.id ? selectedClass?.id ?? null : null}
-              onSelect={() => handleSelectFlight(item.id)}
-              onSelectClass={handleSelectClass}
-            />
-          )}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
-          ListHeaderComponent={<Text className="text-lg font-bold text-blue-900 mb-4">{headerInfo.listTitle}</Text>}
-        />
+        {isLoading ? (
+          // Hiển thị Skeleton khi đang tải dữ liệu
+          <FlatList
+            data={Array.from({ length: SKELETON_COUNT })} // Tạo mảng rỗng với số lượng phần tử bằng SKELETON_COUNT
+            renderItem={() => <FlightItemSkeleton />}
+            keyExtractor={(_, index) => `skeleton-${index}`}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
+            ListHeaderComponent={<Text className="text-lg font-bold text-blue-900 mb-4">{headerInfo.listTitle}</Text>}
+          />
+        ) : (
+          // Hiển thị danh sách chuyến bay thực tế khi đã tải xong
+          <FlatList
+            data={flights}
+            renderItem={({ item }) => (
+              <FlightItem
+                flight={item}
+                isSelected={selectedFlightId === item.id}
+                selectedClassId={selectedFlightId === item.id ? selectedClass?.id ?? null : null}
+                onSelect={() => handleSelectFlight(item.id)}
+                onSelectClass={handleSelectClass}
+              />
+            )}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
+            ListHeaderComponent={<Text className="text-lg font-bold text-blue-900 mb-4">{headerInfo.listTitle}</Text>}
+            ListEmptyComponent={
+              <View className="items-center mt-10 p-4">
+                {error ? ( // Hiển thị lỗi nếu có
+                  <Text className="text-red-500 text-center">{error}</Text>
+                ) : ( // Hoặc thông báo không tìm thấy chuyến bay
+                  <Text>Không tìm thấy chuyến bay nào.</Text>
+                )}
+              </View>
+            }
+          />
+        )}
       </View>
-
       {/* Nút Tiếp tục chỉ hiển thị khi đã chọn chuyến bay và hạng vé */}
       {showContinueButton && (
         <View className="absolute bottom-0 left-0 right-0 bg-white p-4 border-t border-gray-200">

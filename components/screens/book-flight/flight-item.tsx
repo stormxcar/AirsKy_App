@@ -1,21 +1,16 @@
-
-import { TICKET_CLASSES } from "@/app/constants/data";
 import { Flight, TicketClass } from "@/app/types";
 import { FontAwesome } from "@expo/vector-icons";
 import React from "react";
-import { Dimensions, Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Image, Text, TouchableOpacity, View } from "react-native";
+import TicketClassCarousel from "./ticket-class-carousel";
 
 type FlightItemProps = {
-  flight: Flight;
-  isSelected: boolean;
-  selectedClassId: string | null;
-  onSelect: () => void;
-  onSelectClass: (ticketClass: TicketClass | null) => void;
+    flight: Flight;
+    isSelected: boolean;
+    selectedClassId: string | null;
+    onSelect: () => void;
+    onSelectClass: (ticketClass: TicketClass | null) => void;
 };
-
-// Lấy chiều rộng màn hình để tính toán chiều rộng cho mỗi item hạng vé
-// Trừ đi padding của FlatList (16*2) và padding của card (16*2)
-const TICKET_CLASS_ITEM_WIDTH = Dimensions.get('window').width - 32 - 32;
 
 function FlightItem({ flight, isSelected, selectedClassId, onSelect, onSelectClass }: FlightItemProps) {
     return (
@@ -23,7 +18,8 @@ function FlightItem({ flight, isSelected, selectedClassId, onSelect, onSelectCla
         <TouchableOpacity onPress={onSelect} className="bg-white rounded-xl p-4 mb-4 border border-gray-100 shadow-sm">
             {/* Airline Info */}
             <View className="flex-row items-center mb-3">
-                {flight.airlineLogo && <Image source={flight.airlineLogo} className="w-6 h-6 rounded-full mr-2" />}
+                {/* Sử dụng uri để tải ảnh từ URL */}
+                {flight.airlineLogo && <Image source={{ uri: flight.airlineLogo }} className="w-6 h-6 rounded-full mr-2" />}
                 <Text className="text-gray-600 font-medium">{flight.airline}</Text>
                 <Text className="text-gray-400 text-xs mx-1">•</Text>
                 <Text className="text-gray-500 text-sm">{flight.flightNumber}</Text>
@@ -66,32 +62,11 @@ function FlightItem({ flight, isSelected, selectedClassId, onSelect, onSelectCla
             {isSelected && (
                 <View className="mt-4 pt-4 border-t border-gray-100">
                     <Text className="text-gray-700 font-semibold mb-3">Chọn hạng vé:</Text>
-                    <ScrollView
-                        horizontal
-                        pagingEnabled // Bật chế độ lật trang
-                        showsHorizontalScrollIndicator={false}
-                        decelerationRate="fast"
-                        snapToInterval={TICKET_CLASS_ITEM_WIDTH} // Quan trọng: đảm bảo nó dừng đúng ở mỗi item
-                        className="-mx-1" // Bù lại cho mx-1 của item con
-                    >
-                        {TICKET_CLASSES.map((ticketClass) => (
-                            <TouchableOpacity
-                                key={ticketClass.id}
-                                // Bấm để chọn hoặc bỏ chọn hạng vé
-                                onPress={() => onSelectClass(selectedClassId === ticketClass.id ? null : ticketClass)}
-                                style={{ width: TICKET_CLASS_ITEM_WIDTH }}
-                                className={`items-center p-4 mx-1 rounded-lg border-2 ${selectedClassId === ticketClass.id ? "border-blue-900 bg-blue-50" : "border-gray-200 bg-gray-50"}`}
-                            >
-                                <Text className={`text-lg font-bold ${selectedClassId === ticketClass.id ? "text-blue-900" : "text-gray-500"}`}>
-                                    {ticketClass.name}
-                                </Text>
-                                <Text className={`text-xl font-bold mt-2 ${selectedClassId === ticketClass.id ? "text-blue-900" : "text-gray-500"}`}>
-                                    {Math.round(flight.price * ticketClass.priceModifier).toLocaleString('vi-VN')} ₫
-                                </Text>
-                                <Text className="text-sm text-gray-500 mt-1">{ticketClass.description}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
+                    <TicketClassCarousel
+                        ticketClasses={flight.ticketClasses}
+                        selectedClassId={selectedClassId}
+                        onSelectClass={onSelectClass}
+                    />
                 </View>
             )}
         </TouchableOpacity>
