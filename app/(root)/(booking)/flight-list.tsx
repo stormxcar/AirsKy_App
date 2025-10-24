@@ -1,6 +1,7 @@
 import { Flight, TicketClass } from "@/app/types";
 import FlightItem from "@/components/screens/book-flight/flight-item";
 import FlightItemSkeleton from "@/components/screens/book-flight/flight-item-skeleton";
+import { useLoading } from "@/context/loading-context";
 import { searchFlights } from "@/services/flight-service";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from 'expo-router';
@@ -23,6 +24,7 @@ const MOCK_DATES = [
 ];
 
 function FlightList() {
+  const { showLoading } = useLoading();
   const params = useLocalSearchParams<{
     tripType: 'one-way' | 'round-trip';
     originCode: string;
@@ -122,10 +124,15 @@ function FlightList() {
         ...(returnFlightData && { returnFlight: JSON.stringify(returnFlightData) }),
       };
 
-      router.navigate({
-        pathname: '/(root)/(booking)/user-booking-info',
-        params: navigationParams
-      });
+      // Bật loading trước khi chuyển màn hình
+      showLoading();
+      // Dùng setTimeout để đảm bảo UI kịp hiển thị loading overlay trước khi bắt đầu tác vụ nặng (chuyển trang)
+      setTimeout(() => {
+        router.navigate({
+          pathname: '/(root)/(booking)/user-booking-info',
+          params: navigationParams
+        });
+      }, 50); // 50ms là đủ
     }
   };
 

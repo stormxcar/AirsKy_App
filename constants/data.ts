@@ -1,4 +1,4 @@
-import { Airport, Flight, Seat, SeatStatus, TicketClass } from "@/app/types";
+import { Airport, Seat, SeatStatus } from "@/app/types";
 
 // --- AIRPORTS ---
 export const AIRPORTS: Airport[] = [
@@ -11,20 +11,20 @@ export const AIRPORTS: Airport[] = [
     { code: "VCA", name: "Sân bay Cần Thơ", city: "Cần Thơ" },
 ];
 
-// --- TICKET CLASSES ---
-export const TICKET_CLASSES: TicketClass[] = [
-    { id: "economy", name: "Economy", priceModifier: 1, description: "Giá tiết kiệm" },
-    { id: "business", name: "Business", priceModifier: 1.8, description: "Thoải mái hơn" },
-    { id: "first", name: "First", priceModifier: 2.5, description: "Trải nghiệm cao cấp" },
-];
+// // --- TICKET CLASSES ---
+// export const TICKET_CLASSES: TicketClass[] = [
+//     { id: "economy", name: "Economy", priceModifier: 1, description: "Giá tiết kiệm" },
+//     { id: "business", name: "Business", priceModifier: 1.8, description: "Thoải mái hơn" },
+//     { id: "first", name: "First", priceModifier: 2.5, description: "Trải nghiệm cao cấp" },
+// ];
 
-// --- MOCK FLIGHTS ---
-export const MOCK_FLIGHTS: Flight[] = [
-  { id: "1", airline: "Vietnam Airlines", airlineLogo: null, flightNumber: "VN245", departure: { code: "SGN", time: "08:30" }, arrival: { code: "HAN", time: "10:35" }, duration: "2h 05m", price: 1850000, type: "Bay thẳng" },
-  { id: "2", airline: "Vietjet Air", airlineLogo: null, flightNumber: "VJ150", departure: { code: "SGN", time: "09:15" }, arrival: { code: "HAN", time: "11:20" }, duration: "2h 05m", price: 1520000, type: "Bay thẳng" },
-  { id: "3", airline: "Bamboo Airways", airlineLogo: null, flightNumber: "QH202", departure: { code: "SGN", time: "11:00" }, arrival: { code: "HAN", time: "13:10" }, duration: "2h 10m", price: 1780000, type: "Bay thẳng" },
-  { id: "4", airline: "Vietnam Airlines", airlineLogo: null, flightNumber: "VN255", departure: { code: "SGN", time: "14:00" }, arrival: { code: "HAN", time: "16:05" }, duration: "2h 05m", price: 2100000, type: "Bay thẳng" },
-];
+// // --- MOCK FLIGHTS ---
+// export const MOCK_FLIGHTS: Flight[] = [
+//   { id: "1", airline: "Vietnam Airlines", airlineLogo: null, flightNumber: "VN245", departure: { code: "SGN", time: "08:30" }, arrival: { code: "HAN", time: "10:35" }, duration: "2h 05m", price: 1850000, type: "Bay thẳng" },
+//   { id: "2", airline: "Vietjet Air", airlineLogo: null, flightNumber: "VJ150", departure: { code: "SGN", time: "09:15" }, arrival: { code: "HAN", time: "11:20" }, duration: "2h 05m", price: 1520000, type: "Bay thẳng" },
+//   { id: "3", airline: "Bamboo Airways", airlineLogo: null, flightNumber: "QH202", departure: { code: "SGN", time: "11:00" }, arrival: { code: "HAN", time: "13:10" }, duration: "2h 10m", price: 1780000, type: "Bay thẳng" },
+//   { id: "4", airline: "Vietnam Airlines", airlineLogo: null, flightNumber: "VN255", departure: { code: "SGN", time: "14:00" }, arrival: { code: "HAN", time: "16:05" }, duration: "2h 05m", price: 2100000, type: "Bay thẳng" },
+// ];
 
 // --- MOCK SEATS ---
 /**

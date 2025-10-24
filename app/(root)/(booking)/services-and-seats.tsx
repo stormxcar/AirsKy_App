@@ -1,8 +1,8 @@
-import { MOCK_SEATS } from "@/app/constants/data";
 import { Seat } from "@/app/types";
 import AdditionalServices from "@/components/screens/book-flight/additional-services";
 import BookingStepper from "@/components/screens/book-flight/booking-stepper";
 import SeatMap from "@/components/screens/book-flight/seat-map";
+import { MOCK_SEATS } from "@/constants/data";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useMemo, useState } from "react";

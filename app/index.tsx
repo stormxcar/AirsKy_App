@@ -1,9 +1,12 @@
+import { useLoading } from "@/context/loading-context";
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
 import { Animated, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+
 const App = () => {
+  const { showLoading } = useLoading();
   const progress = useRef(new Animated.Value(0)).current;
   const router = useRouter();
 
@@ -15,6 +18,7 @@ const App = () => {
       useNativeDriver: false,
     }).start(() => {
       // Sau khi hoàn tất, điều hướng sang trang home
+      showLoading();
       router.replace("/(root)/(tabs)/home");
     });
   }, []);

@@ -8,7 +8,6 @@ import React, { useEffect, useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-
 // Helper để tính tuổi và xác định loại hành khách
 const getPassengerType = (dob: Date | null): 'adult' | 'child' | 'infant' => {
     if (!dob) return 'adult'; // Mặc định
@@ -63,8 +62,9 @@ function UserBookingInfo() {
         params.returnFlight,
         params.adults,
         params.children,
-        params.infants
+        params.infants,
     ]);
+    
 
     const handlePassengerChange = (id: number, field: keyof Passenger, value: any) => {
         setPassengers(prev =>
@@ -150,13 +150,13 @@ function UserBookingInfo() {
             [
                 { text: "Kiểm tra lại", style: "cancel" },
                 {
-                    text: "Xác nhận", onPress: () => {
-                        // Chuyển sang màn hình chọn dịch vụ và ghế
+                    text: "Xác nhận", 
+                    onPress: () => {
                         router.navigate({
                             pathname: '/(root)/(booking)/services-and-seats',
                             params: { ...params, passengers: JSON.stringify(passengers) }
                         });
-                    }
+                    },
                 }
             ]
         );

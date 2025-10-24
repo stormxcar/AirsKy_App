@@ -1,8 +1,9 @@
-import { AIRPORTS } from '@/app/constants/data';
 import { Airport } from '@/app/types';
 import AirportSelectionModal from '@/components/screens/book-flight/modals/airport-selection-modal';
 import DatePickerModal from '@/components/screens/book-flight/modals/date-picker-modal';
 import PassengerSelectionModal from '@/components/screens/book-flight/modals/passenger-selection-modal';
+import { AIRPORTS } from '@/constants/data';
+import { useLoading } from "@/context/loading-context";
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -15,6 +16,7 @@ type TripType = "round-trip" | "one-way" | "multi-city";
 
 function FormSearchFlight() {
     const [tripType, setTripType] = useState<TripType>("one-way");
+  const {showLoading} = useLoading();
 
     const [origin, setOrigin] = useState({ code: "SGN", city: "TP. Hồ Chí Minh" });
     const [destination, setDestination] = useState({ code: "HAN", city: "Hà Nội" });
@@ -142,6 +144,7 @@ function FormSearchFlight() {
             children: children.toString(),
             infants: infants.toString(),
         };
+        showLoading();
         router.navigate({ pathname: '/(root)/(booking)/flight-list', params });
     };
 
