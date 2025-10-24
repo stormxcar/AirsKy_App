@@ -64,7 +64,7 @@ function UserBookingInfo() {
         params.children,
         params.infants,
     ]);
-    
+
 
     const handlePassengerChange = (id: number, field: keyof Passenger, value: any) => {
         setPassengers(prev =>
@@ -108,58 +108,65 @@ function UserBookingInfo() {
 
     const handleContinue = () => {
         // 1. Validate Booker Info
-        if (!bookerName.trim()) {
-            Alert.alert("Lỗi", "Vui lòng nhập họ và tên người đặt vé.");
-            return;
-        }
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!bookerEmail.trim() || !emailRegex.test(bookerEmail)) {
-            Alert.alert("Lỗi", "Vui lòng nhập một địa chỉ email hợp lệ.");
-            return;
-        }
+        // if (!bookerName.trim()) {
+        //     Alert.alert("Lỗi", "Vui lòng nhập họ và tên người đặt vé.");
+        //     return;
+        // }
+        // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        // if (!bookerEmail.trim() || !emailRegex.test(bookerEmail)) {
+        //     Alert.alert("Lỗi", "Vui lòng nhập một địa chỉ email hợp lệ.");
+        //     return;
+        // }
 
-        // 2. Validate Passenger Info
-        for (let i = 0; i < passengers.length; i++) {
-            const p = passengers[i];
-            const passengerLabel = `Hành khách ${i + 1}`;
+        // // 2. Validate Passenger Info
+        // for (let i = 0; i < passengers.length; i++) {
+        //     const p = passengers[i];
+        //     const passengerLabel = `Hành khách ${i + 1}`;
 
-            if (!p.lastName.trim() || !p.firstName.trim()) {
-                Alert.alert("Thiếu thông tin", `Vui lòng nhập đầy đủ Họ và Tên cho ${passengerLabel}.`);
-                return;
-            }
-            if (!p.dob) {
-                Alert.alert("Thiếu thông tin", `Vui lòng chọn ngày sinh cho ${passengerLabel}.`);
-                return;
-            }
-            if (!p.gender) {
-                Alert.alert("Thiếu thông tin", `Vui lòng chọn giới tính cho ${passengerLabel}.`);
-                return;
-            }
-            // Kiểm tra CCCD nếu hành khách từ 14 tuổi trở lên
-            const age = differenceInYears(new Date(), p.dob);
-            if (age >= 14 && !p.idCard.trim()) {
-                Alert.alert("Thiếu thông tin", `${passengerLabel} từ 14 tuổi trở lên, vui lòng nhập số CCCD/Passport.`);
-                return;
-            }
-        }
+        //     if (!p.lastName.trim() || !p.firstName.trim()) {
+        //         Alert.alert("Thiếu thông tin", `Vui lòng nhập đầy đủ Họ và Tên cho ${passengerLabel}.`);
+        //         return;
+        //     }
+        //     if (!p.dob) {
+        //         Alert.alert("Thiếu thông tin", `Vui lòng chọn ngày sinh cho ${passengerLabel}.`);
+        //         return;
+        //     }
+        //     if (!p.gender) {
+        //         Alert.alert("Thiếu thông tin", `Vui lòng chọn giới tính cho ${passengerLabel}.`);
+        //         return;
+        //     }
+        //     // Kiểm tra CCCD nếu hành khách từ 14 tuổi trở lên
+        //     const age = differenceInYears(new Date(), p.dob);
+        //     if (age >= 14 && !p.idCard.trim()) {
+        //         Alert.alert("Thiếu thông tin", `${passengerLabel} từ 14 tuổi trở lên, vui lòng nhập số CCCD/Passport.`);
+        //         return;
+        //     }
+        // }
 
         // 3. Show Confirmation Dialog
-        Alert.alert(
-            "Xác nhận thông tin",
-            "Vui lòng đảm bảo tất cả thông tin đã được điền chính xác. Thông tin sai có thể ảnh hưởng đến việc làm thủ tục bay của bạn.",
-            [
-                { text: "Kiểm tra lại", style: "cancel" },
-                {
-                    text: "Xác nhận", 
-                    onPress: () => {
-                        router.navigate({
-                            pathname: '/(root)/(booking)/services-and-seats',
-                            params: { ...params, passengers: JSON.stringify(passengers) }
-                        });
-                    },
-                }
-            ]
-        );
+        // Alert.alert(
+        //     "Xác nhận thông tin",
+        //     "Vui lòng đảm bảo tất cả thông tin đã được điền chính xác. Thông tin sai có thể ảnh hưởng đến việc làm thủ tục bay của bạn.",
+        //     [
+        //         { text: "Kiểm tra lại", style: "cancel" },
+        //         {
+        //             text: "Xác nhận", 
+        //             onPress: () => {
+        //                 router.navigate({
+        //                     pathname: '/(root)/(booking)/services-and-seats',
+        //                     params: { ...params, passengers: JSON.stringify(passengers) }
+        //                 });
+        //             },
+        //         }
+        //     ]
+        // );
+
+
+        router.navigate({
+            pathname: '/(root)/(booking)/services-and-seats',
+            params: { ...params, passengers: JSON.stringify(passengers) }
+        });
+
     };
 
     return (
@@ -172,8 +179,6 @@ function UserBookingInfo() {
                             <Ionicons name="arrow-back" size={24} color="#1e3a8a" />
                         </TouchableOpacity>
                         <Text className="text-lg font-bold flex-1 text-center text-blue-900 mr-6">Thông tin hành khách</Text>
-
-
                     </View>
                     <BookingStepper currentStep={1} />
                 </View>

@@ -1,4 +1,4 @@
-import { Seat } from "@/app/types";
+import { BaggagePackage, Seat } from "@/app/types";
 import AdditionalServices from "@/components/screens/book-flight/additional-services";
 import BookingStepper from "@/components/screens/book-flight/booking-stepper";
 import SeatMap from "@/components/screens/book-flight/seat-map";
@@ -18,8 +18,8 @@ const ServiceAndSeatSelection = () => {
     const [currentPassengerIndex, setCurrentPassengerIndex] = useState(0);
 
     // Dịch vụ cộng thêm
-    const [extraBaggage, setExtraBaggage] = useState(0); // tính theo kg
-    const [selectedMeal, setSelectedMeal] = useState(false);
+    const [selectedBaggage, setSelectedBaggage] = useState<BaggagePackage | null>(null);
+    const [selectedMeal, setSelectedMeal] = useState(false); // Áp dụng cho tất cả hành khách
 
     const currentPassenger = passengers[currentPassengerIndex];
 
@@ -54,15 +54,23 @@ const ServiceAndSeatSelection = () => {
     };
 
     const handleContinue = () => {
-        if (Object.keys(selectedSeats).length !== passengers.length) {
-            Alert.alert("Thiếu thông tin", "Vui lòng chọn đủ ghế cho tất cả hành khách.");
-            return;
-        }
-        // TODO: Navigate to Payment screen (Step 3)
-        console.log("Selected Seats:", selectedSeats);
-        console.log("Extra Baggage:", extraBaggage);
-        console.log("Selected Meal:", selectedMeal);
-        Alert.alert("Thành công", "Đã lưu lựa chọn. Sẵn sàng cho bước thanh toán!");
+        // if (Object.keys(selectedSeats).length !== passengers.length) {
+        //     Alert.alert("Thiếu thông tin", "Vui lòng chọn đủ ghế cho tất cả hành khách.");
+        //     return;
+        // }
+        
+        // Điều hướng đến trang thanh toán (bước 3) và truyền dữ liệu
+        router.navigate({
+            pathname: '/(root)/(booking)/checkout',
+            params: { 
+                ...params, 
+                selectedSeats: JSON.stringify(selectedSeats),
+                selectedBaggage: selectedBaggage ? JSON.stringify(selectedBaggage) : '',
+                selectedMeal: selectedMeal.toString(),
+                // Thêm mã booking giả lập, bạn sẽ thay bằng mã thật từ API
+                bookingCode: `BKG${Math.floor(Math.random() * 90000) + 10000}`
+            }
+        });
     };
 
     return (
@@ -106,8 +114,8 @@ const ServiceAndSeatSelection = () => {
 
                     {/* Services Section */}
                     <AdditionalServices
-                        extraBaggage={extraBaggage}
-                        onBaggageChange={setExtraBaggage}
+                        selectedBaggage={selectedBaggage}
+                        onBaggageChange={setSelectedBaggage}
                         selectedMeal={selectedMeal}
                         onMealChange={setSelectedMeal}
                     />

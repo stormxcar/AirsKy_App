@@ -1,15 +1,27 @@
+import { BaggagePackage, BAGGAGE_PACKAGES } from '@/app/types';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 
 type AdditionalServicesProps = {
-    extraBaggage: number;
-    onBaggageChange: (value: number) => void;
+    selectedBaggage: BaggagePackage | null;
+    onBaggageChange: (pkg: BaggagePackage | null) => void;
     selectedMeal: boolean;
     onMealChange: (value: boolean) => void;
 };
 
-const AdditionalServices = ({ extraBaggage, onBaggageChange, selectedMeal, onMealChange }: AdditionalServicesProps) => {
+const AdditionalServices = ({ selectedBaggage, onBaggageChange, selectedMeal, onMealChange }: AdditionalServicesProps) => {
+    const handleBaggageChange = (direction: 'next' | 'prev') => {
+        const currentIndex = selectedBaggage ? BAGGAGE_PACKAGES.findIndex(p => p.key === selectedBaggage.key) : -1;
+        if (direction === 'next') {
+            const nextIndex = (currentIndex + 1) % BAGGAGE_PACKAGES.length;
+            onBaggageChange(BAGGAGE_PACKAGES[nextIndex]);
+        } else {
+            const prevIndex = (currentIndex - 1 + BAGGAGE_PACKAGES.length) % BAGGAGE_PACKAGES.length;
+            onBaggageChange(BAGGAGE_PACKAGES[prevIndex]);
+        }
+    };
+
     return (
         <View className="bg-white rounded-xl p-4 mb-4">
             <Text className="text-lg font-bold text-blue-900 mb-3">Dịch vụ cộng thêm</Text>
@@ -21,9 +33,9 @@ const AdditionalServices = ({ extraBaggage, onBaggageChange, selectedMeal, onMea
                     <Text className="text-sm text-gray-500">Thêm hành lý cho chuyến bay</Text>
                 </View>
                 <View className="flex-row items-center">
-                    <TouchableOpacity onPress={() => onBaggageChange(Math.max(0, extraBaggage - 5))} className="p-2 border border-gray-300 rounded-full"><Ionicons name="remove" size={20} color="#1e3a8a" /></TouchableOpacity>
-                    <Text className="text-lg font-bold mx-3 w-12 text-center">{extraBaggage} kg</Text>
-                    <TouchableOpacity onPress={() => onBaggageChange(extraBaggage + 5)} className="p-2 border border-gray-300 rounded-full"><Ionicons name="add" size={20} color="#1e3a8a" /></TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleBaggageChange('prev')} className="p-2 border border-gray-300 rounded-full"><Ionicons name="remove" size={20} color="#1e3a8a" /></TouchableOpacity>
+                    <Text className="text-lg font-bold mx-3 w-24 text-center">{selectedBaggage?.label ?? 'Không chọn'}</Text>
+                    <TouchableOpacity onPress={() => handleBaggageChange('next')} className="p-2 border border-gray-300 rounded-full"><Ionicons name="add" size={20} color="#1e3a8a" /></TouchableOpacity>
                 </View>
             </View>
 

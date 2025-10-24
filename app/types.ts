@@ -55,6 +55,21 @@ export type Passenger = {
   idCard: string;
   type: 'adult' | 'child' | 'infant';
 };
+// In app/types.ts
+
+export interface BaggagePackage {
+    key: string;
+    label: string;
+    price: number;
+}
+
+// Danh sách các gói hành lý có thể chọn
+export const BAGGAGE_PACKAGES: BaggagePackage[] = [
+    { key: 'NONE', label: 'Không chọn', price: 0 },
+    { key: 'PKG_20KG', label: 'Gói 20kg', price: 250000 },
+    { key: 'PKG_30KG', label: 'Gói 30kg', price: 350000 },
+    { key: 'PKG_40KG', label: 'Gói 40kg', price: 450000 },
+];
 
 /**
  * Represents the status and details of a seat on a plane.
