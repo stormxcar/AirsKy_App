@@ -1,5 +1,5 @@
-import { BaggagePackage, BAGGAGE_PACKAGES } from '@/app/types';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { BaggagePackage, BAGGAGE_PACKAGES } from '@/app/types/types';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 
@@ -11,32 +11,25 @@ type AdditionalServicesProps = {
 };
 
 const AdditionalServices = ({ selectedBaggage, onBaggageChange, selectedMeal, onMealChange }: AdditionalServicesProps) => {
-    const handleBaggageChange = (direction: 'next' | 'prev') => {
-        const currentIndex = selectedBaggage ? BAGGAGE_PACKAGES.findIndex(p => p.key === selectedBaggage.key) : -1;
-        if (direction === 'next') {
-            const nextIndex = (currentIndex + 1) % BAGGAGE_PACKAGES.length;
-            onBaggageChange(BAGGAGE_PACKAGES[nextIndex]);
-        } else {
-            const prevIndex = (currentIndex - 1 + BAGGAGE_PACKAGES.length) % BAGGAGE_PACKAGES.length;
-            onBaggageChange(BAGGAGE_PACKAGES[prevIndex]);
-        }
-    };
-
     return (
-        <View className="bg-white rounded-xl p-4 mb-4">
+        <View className="bg-white rounded-xl p-4 mb-4 border border-gray-200 shadow-sm">
             <Text className="text-lg font-bold text-blue-900 mb-3">Dịch vụ cộng thêm</Text>
 
             {/* Extra Baggage */}
-            <View className="flex-row justify-between items-center py-3 border-b border-gray-100">
-                <View>
+            <View className=" py-3 border-b border-gray-100 gap-2">
+                <View className='mb-3'>
                     <Text className="text-base font-semibold text-gray-800">Hành lý ký gửi</Text>
-                    <Text className="text-sm text-gray-500">Thêm hành lý cho chuyến bay</Text>
+                    <Text className="text-sm text-gray-500">Chọn gói hành lý cho hành khách này</Text>
                 </View>
-                <View className="flex-row items-center">
-                    <TouchableOpacity onPress={() => handleBaggageChange('prev')} className="p-2 border border-gray-300 rounded-full"><Ionicons name="remove" size={20} color="#1e3a8a" /></TouchableOpacity>
-                    <Text className="text-lg font-bold mx-3 w-24 text-center">{selectedBaggage?.label ?? 'Không chọn'}</Text>
-                    <TouchableOpacity onPress={() => handleBaggageChange('next')} className="p-2 border border-gray-300 rounded-full"><Ionicons name="add" size={20} color="#1e3a8a" /></TouchableOpacity>
-                </View>
+                {BAGGAGE_PACKAGES.map((pkg) => {
+                    const isSelected = selectedBaggage?.key === pkg.key;
+                    return (
+                        <TouchableOpacity key={pkg.key} onPress={() => onBaggageChange(isSelected ? null : pkg)} className={`p-4 border-2 rounded-xl flex-row justify-between items-center ${isSelected ? 'border-blue-900 bg-blue-50' : 'border-gray-300'}`}>
+                            <Text className={`font-bold ${isSelected ? 'text-blue-900' : 'text-gray-700'}`}>{pkg.label}</Text>
+                            <MaterialCommunityIcons name={isSelected ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"} size={28} color={isSelected ? "#1e3a8a" : "#ccc"} />
+                        </TouchableOpacity>
+                    );
+                })}
             </View>
 
             {/* Meal Selection */}

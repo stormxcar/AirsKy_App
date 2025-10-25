@@ -1,11 +1,21 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { router } from "expo-router";
 import React from "react";
 import { Image, ImageBackground, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, {
+  Extrapolate,
+  interpolate,
+  interpolateColor,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
+
+// Tạo một component Ionicons có thể được animate
+const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons);
 
 const Home = () => {
-  // Placeholder images and logo
+  // --- Reanimated Setup ---
+  const scrollY = useSharedValue(0);
   const HEADER_BACKGROUND_IMAGE = "https://images.unsplash.com/photo-1753958509957-c18ef30ffbba?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTAxfHxmbGlnaHQlMjBhdHRlbmRhbnQlMjB0YWtlJTIwY2FyZSUyMGN1c3RvbWVyfGVufDB8fDB8fHww&auto=format&fit=crop&q=60&w=500";
   const MALAYSIA_AIRLINES_LOGO = "https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Malaysia_Airlines_logo.svg/1200px-Malaysia_Airlines_logo.svg.png";
 
@@ -20,36 +30,71 @@ const Home = () => {
       title: 'More flights, more freedom to explore',
       image: 'https://images.unsplash.com/photo-1501785888041-af3ba6f60648?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
     },
-    {
-      id: '3',
-      title: 'Discover new destinations',
-      image: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=1948&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
-    },
   ];
 
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
+
+  // Style cho nền header
+  const animatedHeaderStyle = useAnimatedStyle(() => {
+    const backgroundColor = interpolateColor(
+      scrollY.value,
+      [0, 50], // Khoảng giá trị cuộn
+      ['rgba(255, 255, 255, 0)', 'rgba(255, 255, 255, 1)'] // Màu tương ứng
+    );
+    const shadowOpacity = interpolate(
+      scrollY.value,
+      [0, 50],
+      [0, 0.1],
+      Extrapolate.CLAMP
+    );
+    return {
+      backgroundColor,
+      shadowOpacity,
+    };
+  });
+
+  // Style cho màu của text và icon
+  const animatedHeaderContentStyle = useAnimatedStyle(() => {
+    const color = interpolateColor(
+      scrollY.value,
+      [0, 50],
+      ['#FFFFFF', '#1e3a8a'] // white -> blue-900
+    );
+    return { color };
+  });
+
   return (
-    <View className="flex-1 bg-white" >
-      <ScrollView className="flex-1">
+    <View className="flex-1 bg-white">
+      {/* Nội dung Header - Đã được đưa ra ngoài ScrollView */}
+      <Animated.View style={animatedHeaderStyle} className="absolute top-0 left-0 right-0 z-10 pt-12 px-4 pb-2 shadow-lg">
+        <View className="flex-row justify-between items-center">
+          <TouchableOpacity onPress={() => console.log("Menu pressed")}>
+            <AnimatedIonicons name="menu-outline" size={28} style={animatedHeaderContentStyle} />
+          </TouchableOpacity>
+
+          <Animated.Text className="font-bold uppercase" style={animatedHeaderContentStyle}>AirSky</Animated.Text>
+
+          <TouchableOpacity onPress={() => console.log("Notification pressed")}>
+            <AnimatedIonicons name="notifications-outline" size={28} style={animatedHeaderContentStyle} />
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+
+      <Animated.ScrollView
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+      >
         {/* Header Section */}
         <ImageBackground
           source={{ uri: HEADER_BACKGROUND_IMAGE }}
-          className="h-[470px] justify-between p-4"
+          className="h-[470px]"
         >
           {/* Nền đen mờ overlay */}
           <View className="absolute inset-0 bg-black/40" />
-
-          {/* Nội dung Header */}
-          <View className="flex-row justify-between items-center mt-12 px-2 relative z-10">
-            <TouchableOpacity onPress={() => console.log("Menu pressed")}>
-              <Ionicons name="menu-outline" size={28} color="white" />
-            </TouchableOpacity>
-
-            <Text className="font-bold text-white uppercase">AirSky</Text>
-
-            <TouchableOpacity onPress={() => console.log("Notification pressed")}>
-              <Ionicons name="notifications-outline" size={28} color="white" />
-            </TouchableOpacity>
-          </View>
         </ImageBackground>
 
 
@@ -86,9 +131,9 @@ const Home = () => {
         {/* Promotions Section */}
         <View className="p-4 bg-white">
           <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-xl font-bold text-blue-900">Promotions For You</Text>
+            <Text className="text-xl font-bold text-blue-900">Ưu đãi dành cho bạn</Text>
             <TouchableOpacity onPress={() => console.log("View All Promotions")}>
-              <Text className="text-blue-600 font-semibold">View All</Text>
+              <Text className="text-blue-600 font-semibold">Xem tất cả</Text>
             </TouchableOpacity>
           </View>
 
@@ -96,7 +141,7 @@ const Home = () => {
             {PROMOTIONS.map((promo) => (
               <TouchableOpacity key={promo.id} className="w-64 h-60 mr-4 rounded-xl overflow-hidden shadow-md bg-blue-900">
                 <ImageBackground
-                  // source={{ uri: promo.image }}
+                  source={{ uri: promo.image }}
                   className="flex-1 justify-end p-3"
                   imageStyle={{ borderRadius: 12 }}
                 >
@@ -111,7 +156,7 @@ const Home = () => {
 
         {/* Placeholder for more content */}
         <View className="h-20 bg-white"></View>
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 };

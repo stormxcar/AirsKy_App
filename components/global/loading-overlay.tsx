@@ -1,7 +1,7 @@
 import { useLoading } from '@/context/loading-context';
 import LottieView from 'lottie-react-native';
 import React from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
+import { Modal, StyleSheet, View,Text } from 'react-native';
 
 const LoadingOverlay = () => {
   const { isLoading } = useLoading();
@@ -21,6 +21,7 @@ const LoadingOverlay = () => {
             loop
             style={{ width: 400, height: 400 }}
           />
+          <Text className='text-blue-900  font-bold'>CHUẨN BỊ CẤT CÁNH!</Text>
         </View>
       </View>
     </Modal>

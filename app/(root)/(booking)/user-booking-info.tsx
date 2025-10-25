@@ -1,9 +1,9 @@
-import { Passenger, SelectedFlight } from "@/app/types";
+import { Passenger, SelectedFlight } from "@/app/types/types";
 import BookingStepper from "@/components/screens/book-flight/booking-stepper";
 import PassengerForm from "@/components/screens/book-flight/passenger-form";
 import { Ionicons } from "@expo/vector-icons";
 import { differenceInYears, format, parseISO } from "date-fns";
-import { router, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { TextInput } from "react-native-paper";
@@ -19,6 +19,7 @@ const getPassengerType = (dob: Date | null): 'adult' | 'child' | 'infant' => {
 
 function UserBookingInfo() {
     const params = useLocalSearchParams();
+    const router = useRouter();
     const [departureFlight, setDepartureFlight] = useState<SelectedFlight | null>(null);
     const [returnFlight, setReturnFlight] = useState<SelectedFlight | null>(null);
 
@@ -108,93 +109,88 @@ function UserBookingInfo() {
 
     const handleContinue = () => {
         // 1. Validate Booker Info
-        // if (!bookerName.trim()) {
-        //     Alert.alert("Lỗi", "Vui lòng nhập họ và tên người đặt vé.");
-        //     return;
-        // }
-        // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        // if (!bookerEmail.trim() || !emailRegex.test(bookerEmail)) {
-        //     Alert.alert("Lỗi", "Vui lòng nhập một địa chỉ email hợp lệ.");
-        //     return;
-        // }
+        if (!bookerName.trim()) {
+            Alert.alert("Lỗi", "Vui lòng nhập họ và tên người đặt vé.");
+            return;
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!bookerEmail.trim() || !emailRegex.test(bookerEmail)) {
+            Alert.alert("Lỗi", "Vui lòng nhập một địa chỉ email hợp lệ.");
+            return;
+        }
 
-        // // 2. Validate Passenger Info
-        // for (let i = 0; i < passengers.length; i++) {
-        //     const p = passengers[i];
-        //     const passengerLabel = `Hành khách ${i + 1}`;
+        // 2. Validate Passenger Info
+        for (let i = 0; i < passengers.length; i++) {
+            const p = passengers[i];
+            const passengerLabel = `Hành khách ${i + 1}`;
 
-        //     if (!p.lastName.trim() || !p.firstName.trim()) {
-        //         Alert.alert("Thiếu thông tin", `Vui lòng nhập đầy đủ Họ và Tên cho ${passengerLabel}.`);
-        //         return;
-        //     }
-        //     if (!p.dob) {
-        //         Alert.alert("Thiếu thông tin", `Vui lòng chọn ngày sinh cho ${passengerLabel}.`);
-        //         return;
-        //     }
-        //     if (!p.gender) {
-        //         Alert.alert("Thiếu thông tin", `Vui lòng chọn giới tính cho ${passengerLabel}.`);
-        //         return;
-        //     }
-        //     // Kiểm tra CCCD nếu hành khách từ 14 tuổi trở lên
-        //     const age = differenceInYears(new Date(), p.dob);
-        //     if (age >= 14 && !p.idCard.trim()) {
-        //         Alert.alert("Thiếu thông tin", `${passengerLabel} từ 14 tuổi trở lên, vui lòng nhập số CCCD/Passport.`);
-        //         return;
-        //     }
-        // }
+            if (!p.lastName.trim() || !p.firstName.trim()) {
+                Alert.alert("Thiếu thông tin", `Vui lòng nhập đầy đủ Họ và Tên cho ${passengerLabel}.`);
+                return;
+            }
+            if (!p.dob) {
+                Alert.alert("Thiếu thông tin", `Vui lòng chọn ngày sinh cho ${passengerLabel}.`);
+                return;
+            }
+            if (!p.gender) {
+                Alert.alert("Thiếu thông tin", `Vui lòng chọn giới tính cho ${passengerLabel}.`);
+                return;
+            }
+            // Kiểm tra CCCD nếu hành khách từ 14 tuổi trở lên
+            const age = differenceInYears(new Date(), p.dob);
+            if (age >= 14 && !p.idCard.trim()) {
+                Alert.alert("Thiếu thông tin", `${passengerLabel} từ 14 tuổi trở lên, vui lòng nhập số CCCD/Passport.`);
+                return;
+            }
+        }
 
         // 3. Show Confirmation Dialog
-        // Alert.alert(
-        //     "Xác nhận thông tin",
-        //     "Vui lòng đảm bảo tất cả thông tin đã được điền chính xác. Thông tin sai có thể ảnh hưởng đến việc làm thủ tục bay của bạn.",
-        //     [
-        //         { text: "Kiểm tra lại", style: "cancel" },
-        //         {
-        //             text: "Xác nhận", 
-        //             onPress: () => {
-        //                 router.navigate({
-        //                     pathname: '/(root)/(booking)/services-and-seats',
-        //                     params: { ...params, passengers: JSON.stringify(passengers) }
-        //                 });
-        //             },
-        //         }
-        //     ]
-        // );
+        Alert.alert(
+            "Xác nhận thông tin",
+            "Vui lòng đảm bảo tất cả thông tin đã được điền chính xác. Thông tin sai có thể ảnh hưởng đến việc làm thủ tục bay của bạn.",
+            [
+                { text: "Kiểm tra lại", style: "cancel" },
+                {
+                    text: "Xác nhận", 
+                    onPress: () => {
+                        router.navigate({
+                            pathname: '/(root)/(booking)/services-and-seats',
+                            params: { ...params, passengers: JSON.stringify(passengers) }
+                        });
+                    },
+                }
+            ]
+        );
 
 
-        router.navigate({
-            pathname: '/(root)/(booking)/services-and-seats',
-            params: { ...params, passengers: JSON.stringify(passengers) }
-        });
-
+      // router.navigate({
+      //     pathname: '/(root)/(booking)/services-and-seats',
+      //     params: { ...params, passengers: JSON.stringify(passengers) }
+      // });
     };
 
     return (
         <>
-            <SafeAreaView className="flex-1 bg-blue-900" edges={["top", "left", "right"]}>
-                {/* Custom Header */}
-                <View className="bg-white rounded-[40px] ">
-                    <View className=" flex-row items-center   p-4 border-b border-gray-200 ">
-                        <TouchableOpacity onPress={() => router.back()} className="p-1">
-                            <Ionicons name="arrow-back" size={24} color="#1e3a8a" />
-                        </TouchableOpacity>
-                        <Text className="text-lg font-bold flex-1 text-center text-blue-900 mr-6">Thông tin hành khách</Text>
-                    </View>
-                    <BookingStepper currentStep={1} />
-                </View>
-
+            <SafeAreaView className="flex-1 bg-gray-100" edges={["top", "left", "right"]}>
                 <KeyboardAvoidingView
                     behavior={Platform.OS === "ios" ? "padding" : "height"}
                     style={{ flex: 1 }}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+                    keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
                 >
-                    <ScrollView className="bg-white">
-
+                    <ScrollView className="bg-gray-100" contentContainerStyle={{ paddingBottom: 80 }}>
+                        {/* Custom Header - Moved inside screen */}
+                        <View className="bg-white flex-row items-center p-4 border-b border-gray-200">
+                            <TouchableOpacity onPress={() => router.back()} className="p-1">
+                                <Ionicons name="arrow-back" size={24} color="#1e3a8a" />
+                            </TouchableOpacity>
+                            <Text className="text-lg font-bold flex-1 text-center text-blue-900 mr-6">Thông tin hành khách</Text>
+                        </View>
+                        <BookingStepper currentStep={1} />
 
                         <View className="p-4 ">
                             {/* Flight Info Summary */}
                             {departureFlight && (
-                                <View className="bg-white rounded-xl p-4 mb-2 border border-gray-200">
+                                <View className="bg-white rounded-xl p-4 mb-2 border border-gray-200 shadow-sm">
                                     <Text className="text-base font-semibold text-gray-700">Chuyến đi:</Text>
                                     <Text className="text-lg font-bold text-blue-900">
                                         {departureFlight.flight?.departure?.code} ({departureFlight.flight?.departure?.time}) → {departureFlight.flight?.arrival?.code} ({departureFlight.flight?.arrival?.time})
@@ -205,7 +201,7 @@ function UserBookingInfo() {
                                 </View>
                             )}
                             {returnFlight && (
-                                <View className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
+                                <View className="bg-white rounded-xl p-4 mb-4 border border-gray-200 shadow-sm">
                                     <Text className="text-base font-semibold text-gray-700">Chuyến về:</Text>
                                     <Text className="text-lg font-bold text-blue-900">
                                         {returnFlight.flight?.departure?.code} ({returnFlight.flight?.departure?.time}) → {returnFlight.flight?.arrival?.code} ({returnFlight.flight?.arrival?.time})
@@ -217,7 +213,7 @@ function UserBookingInfo() {
                             )}
 
                             {/* Booker Info */}
-                            <View className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
+                            <View className="bg-white rounded-xl p-4 mb-4 border border-gray-200 shadow-sm">
                                 <Text className="text-lg font-bold text-blue-900 mb-3">Thông tin người đặt vé</Text>
                                 <Text className="text-sx  text-gray-500 mb-3">Thông tin đặt vé sẽ được gửi đến email này</Text>
 
@@ -246,7 +242,7 @@ function UserBookingInfo() {
                                     index={index}
                                     onChange={handlePassengerChange}
                                     onRemove={handleRemovePassenger}
-                                    canRemove={p.type !== 'adult' || canRemoveAdult} // Only allow removing adult if more than 1 adult exists
+                                    canRemove={p.type !== 'adult' || canRemoveAdult}
                                 />
                             ))}
 
@@ -259,7 +255,7 @@ function UserBookingInfo() {
                     </ScrollView>
 
                     {/* Continue Button */}
-                    <View className="p-4 bg-white border-t border-gray-200">
+                    <View className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200">
                         <TouchableOpacity onPress={handleContinue} className="bg-blue-900 py-3 rounded-full shadow-md">
                             <Text className="text-white text-center font-bold text-lg">Tiếp tục</Text>
                         </TouchableOpacity>

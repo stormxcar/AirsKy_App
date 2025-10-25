@@ -1,12 +1,13 @@
-import { BaggagePackage, Passenger, SelectedFlight } from "@/app/types";
+import { BaggagePackage, Passenger, SelectedFlight } from "@/app/types/types";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import React, { useMemo } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const BookingInfo = () => {
+const BookingResult = () => {
     const params = useLocalSearchParams();
+    const router = useRouter();
 
     // --- Lấy dữ liệu từ các bước trước ---
     const status = params.status as 'success' | 'failure';
@@ -14,11 +15,10 @@ const BookingInfo = () => {
     const departureFlight: SelectedFlight | null = useMemo(() => params.departureFlight ? JSON.parse(params.departureFlight as string) : null, [params.departureFlight]);
     const returnFlight: SelectedFlight | null = useMemo(() => params.returnFlight ? JSON.parse(params.returnFlight as string) : null, [params.returnFlight]);
     const passengers: Passenger[] = useMemo(() => params.passengers ? JSON.parse(params.passengers as string) : [], [params.passengers]);
-    const selectedSeats: { [passengerId: number]: string } = useMemo(() => params.selectedSeats ? JSON.parse(params.selectedSeats as string) : {}, [params.selectedSeats]);
+    const selectedSeats: { [passengerId: number]: string } = useMemo(() => params.selectedSeats ? JSON.parse(params.selectedSeats as string) : {}, [params.selectedSeats]); // Now contains seat numbers
     const selectedMeal: boolean = useMemo(() => params.selectedMeal === 'true', [params.selectedMeal]);
     const selectedBaggage: BaggagePackage | null = useMemo(() => params.selectedBaggage ? JSON.parse(params.selectedBaggage as string) : null, [params.selectedBaggage]);
     const totalPrice = params.totalPrice as string;
-
     const isSuccess = status === 'success';
 
     return (
@@ -71,7 +71,15 @@ const BookingInfo = () => {
                                 </View>
                                 <View className="mb-2">
                                     <Text className="font-semibold text-gray-700">Ghế đã chọn:</Text>
-                                    <Text className="text-base text-gray-600">{Object.values(selectedSeats).join(', ')}</Text>
+                                    {Object.entries(selectedSeats).map(([passengerId, seatNumber]) => {
+                                        const passenger = passengers.find(p => p.id.toString() === passengerId);
+                                        return (
+                                            <Text key={passengerId} className="text-base text-gray-600">
+                                                - Ghế ({passenger?.lastName}): {seatNumber}
+                                            </Text>
+                                        );
+                                    })}
+                                    {Object.keys(selectedSeats).length === 0 && <Text className="text-base text-gray-600">Chưa chọn ghế nào</Text>}
                                 </View>
                                 <View className="mb-2">
                                     <Text className="font-semibold text-gray-700">Dịch vụ thêm:</Text>
@@ -110,5 +118,4 @@ const BookingInfo = () => {
     );
 };
 
-export default BookingInfo;
-
+export default BookingResult;

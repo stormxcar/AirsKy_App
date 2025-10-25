@@ -1,3 +1,4 @@
+import { SeatStatus } from "./booking"; // Import SeatStatus từ booking.ts
 /**
  * Represents an airport.
  */
@@ -20,6 +21,7 @@ export type Flight = {
   duration: string;
   price: number; // Giá cơ bản (basePrice)
   type: "Bay thẳng" | "1 điểm dừng" | string;
+  status: string;
   // Thêm các hạng vé cho chuyến bay này
   ticketClasses: TicketClass[];
 };
@@ -74,5 +76,5 @@ export const BAGGAGE_PACKAGES: BaggagePackage[] = [
 /**
  * Represents the status and details of a seat on a plane.
  */
-export type SeatStatus = 'available' | 'occupied' | 'selected' | 'exit';
-export type Seat = { id: string; status: SeatStatus; price?: number };
+// export type SeatStatus = 'available' | 'occupied' | 'selected' | 'exit';
+export type Seat = { id: string; status: SeatStatus; price?: number, seatNumber?: string }; // SeatStatus giờ đây được import
