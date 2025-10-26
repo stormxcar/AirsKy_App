@@ -3,6 +3,7 @@ import { SeatStatus } from "./booking"; // Import SeatStatus từ booking.ts
  * Represents an airport.
  */
 export type Airport = {
+  id: any;
   code: string;
   name:string;
   city: string;

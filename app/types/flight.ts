@@ -11,7 +11,6 @@ export interface AirlineResponse {
 
 /**
  * DTO phản hồi từ backend cho thông tin sân bay (đơn giản hóa).
- * (Sử dụng AirportResponse đầy đủ từ app/types/airport.ts nếu cần chi tiết hơn)
  */
 export interface SimpleAirportResponse {
   airportId: number;
@@ -72,6 +71,4 @@ export interface SeatResponse {
   price: number; // Additional price for this seat type
   flightId: number;
   travelClassId: number;
-  // bookedByUser?: number; // userId
-  // bookedByPassenger?: number; // passengerId
 }

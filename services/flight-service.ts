@@ -1,34 +1,38 @@
 import { Flight,Seat } from "@/app/types/types";
 import { FlightResponse, SeatResponse } from "@/app/types/flight";
 import { mapApiFlightToFlight, mapApiSeatToSeat } from "@/mappers/flight-mapper";
-import { ApiResponse, PageResponse } from "@/app/types/common";
+import { ApiResponse, PageResponse, UnifiedFlightSearchResponse } from "@/app/types/common";
 import api from "./api"; // Import axios instance
 
-type SearchParams = {
-    from: string;
-    to: string;
-    date: string;
-}
+/**
+ * Định nghĩa cấu trúc của request body cho API /search-unified.
+ */
+export interface UnifiedSearchParams {
+    tripType: 'one-way' | 'round-trip' | 'multi-city';
+    adultCount: number;
+    childCount: number;
+    infantCount: number;
+    travelClass?: string;
+    // Các trường mà backend thực sự mong đợi
+    departureAirportId: number;
+    arrivalAirportId: number;
+    outboundDepartureDate: string;
+    returnDate?: string;
+};
 
 /**
- * Fetches and searches for flights from the API.
- * @param params - The search parameters { from, to, date }.
- * @returns A promise that resolves to an array of Flight objects.
+ * Tìm kiếm chuyến bay thống nhất (one-way, round-trip, multi-city) bằng cách gọi API /search-unified.
+ * @param request - Đối tượng request chứa thông tin tìm kiếm.
+ * @returns Promise chứa dữ liệu trả về từ API, đã được map.
  */
-export const searchFlights = async (params: SearchParams): Promise<PageResponse<Flight>> => {
+export const searchUnifiedFlights = async (request: UnifiedSearchParams): Promise<UnifiedFlightSearchResponse> => {
     try {
-        console.log("Searching flights with params:", params);
-        const response = await api.get<ApiResponse<PageResponse<FlightResponse>>>('/flights/search', { params });
-
-        const apiFlights = response.data.data.content || [];
-        const mappedFlights = apiFlights.map(mapApiFlightToFlight);
-
-        return {
-            ...response.data.data, 
-            content: mappedFlights, 
-        };
+        console.log("Sending unified search request to API:", JSON.stringify(request, null, 2));
+        // Backend mong muốn một POST request với request body
+        const response = await api.post<ApiResponse<UnifiedFlightSearchResponse>>('/flights/search-unified', request);
+        return response.data.data;
     } catch (error: any) {
-        console.error("Error searching flights:", error.response ? error.response.data : error.message);
+        console.error("Error in unified flight search:", error.response ? error.response.data : error.message);
         throw new Error(error.response?.data?.message || "An unexpected error occurred while searching flights.");
     }
 };
@@ -43,38 +47,15 @@ export const fetchSeatsByFlightId = async (flightId: number): Promise<Seat[]> =>
         const response = await api.get<ApiResponse<SeatResponse[]>>(`/flights/${flightId}/seats`);
 
         const apiSeats = response.data.data || [];
-        const mappedSeats = apiSeats.map(mapApiSeatToSeat);
-        return mappedSeats;
+        return apiSeats.map(mapApiSeatToSeat);
     } catch (error: any) {
         console.error(`Error fetching seats for flight ${flightId}:`, error.response ? error.response.data : error.message);
         throw new Error(error.response?.data?.message || `An unexpected error occurred while fetching seats for flight ${flightId}.`);
     }
 };
 
-interface FetchAllFlightsParams {
-    page?: number;
-    size?: number;
-}
-
 /**
- * Lấy tất cả các chuyến bay từ backend (có phân trang).
- * @param params Các tham số phân trang (page, size).
- * @returns Promise chứa dữ liệu phân trang của các chuyến bay.
+ * @deprecated Use searchUnifiedFlights instead.
+ * This function is kept for backward compatibility but should be removed in the future.
  */
-export const fetchAllFlights = async (params?: FetchAllFlightsParams): Promise<PageResponse<Flight>> => {
-    try {
-        console.log("Fetching all flights with params:", params);
-        const response = await api.get<ApiResponse<PageResponse<FlightResponse>>>('/flights', { params });
-
-        const apiFlights = response.data.data.content || [];
-        const mappedFlights = apiFlights.map(mapApiFlightToFlight);
-
-        return {
-            ...response.data.data,
-            content: mappedFlights,
-        };
-    } catch (error: any) {
-        console.error("Error fetching all flights:", error.response ? error.response.data : error.message);
-        throw new Error(error.response?.data?.message || "An unexpected error occurred while fetching all flights.");
-    }
-};
+export const searchFlights = searchUnifiedFlights;

@@ -1,32 +1,25 @@
 import LoadingOverlay from "@/components/global/loading-overlay";
 import { AuthProvider } from "@/context/auth-context";
 import { LoadingProvider } from "@/context/loading-context";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { PaperProvider } from "react-native-paper";
 import "./global.css";
 import { AppTheme } from "./theme";
 
-function Root() {
-  return (
-    <>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(root)" />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <LoadingOverlay />
-    </>
-  );
-}
+const queryClient = new QueryClient();
 
 export default function AppLayout(){
   return (
-    <AuthProvider>
-      <LoadingProvider>
-        <PaperProvider theme={AppTheme}>
-          <Root />
-        </PaperProvider>
-      </LoadingProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <LoadingProvider>
+          <PaperProvider theme={AppTheme}>
+            <Stack screenOptions={{ headerShown: false }} />
+            <LoadingOverlay />
+          </PaperProvider>
+        </LoadingProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 };
