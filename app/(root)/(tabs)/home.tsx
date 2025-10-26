@@ -1,6 +1,9 @@
+import Menus from "@/components/screens/home/menus";
+import Notifications from "@/components/screens/home/notifications";
+import SideModal from "@/components/screens/home/side-modal";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import React from "react";
-import { Image, ImageBackground, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import React, { useState } from "react";
+import { ImageBackground, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   Extrapolate,
   interpolate,
@@ -15,6 +18,9 @@ const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons);
 
 const Home = () => {
   // --- Reanimated Setup ---
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [notificationsVisible, setNotificationsVisible] = useState(false);
+
   const scrollY = useSharedValue(0);
   const HEADER_BACKGROUND_IMAGE = "https://images.unsplash.com/photo-1753958509957-c18ef30ffbba?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTAxfHxmbGlnaHQlMjBhdHRlbmRhbnQlMjB0YWtlJTIwY2FyZSUyMGN1c3RvbWVyfGVufDB8fDB8fHww&auto=format&fit=crop&q=60&w=500";
   const MALAYSIA_AIRLINES_LOGO = "https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Malaysia_Airlines_logo.svg/1200px-Malaysia_Airlines_logo.svg.png";
@@ -62,7 +68,7 @@ const Home = () => {
     const color = interpolateColor(
       scrollY.value,
       [0, 50],
-      ['#FFFFFF', '#1e3a8a'] // white -> blue-900
+      ['#FFFFFF', '#172554'] // white -> blue-950
     );
     return { color };
   });
@@ -70,15 +76,15 @@ const Home = () => {
   return (
     <View className="flex-1 bg-white">
       {/* Nội dung Header - Đã được đưa ra ngoài ScrollView */}
-      <Animated.View style={animatedHeaderStyle} className="absolute top-0 left-0 right-0 z-10 pt-12 px-4 pb-2 shadow-lg">
+      <Animated.View style={animatedHeaderStyle} className="absolute top-0 left-0 right-0 z-10 pt-16 px-4 pb-2 shadow-lg">
         <View className="flex-row justify-between items-center">
-          <TouchableOpacity onPress={() => console.log("Menu pressed")}>
+          <TouchableOpacity onPress={() => setMenuVisible(true)}>
             <AnimatedIonicons name="menu-outline" size={28} style={animatedHeaderContentStyle} />
           </TouchableOpacity>
 
           <Animated.Text className="font-bold uppercase" style={animatedHeaderContentStyle}>AirSky</Animated.Text>
 
-          <TouchableOpacity onPress={() => console.log("Notification pressed")}>
+          <TouchableOpacity onPress={() => setNotificationsVisible(true)}>
             <AnimatedIonicons name="notifications-outline" size={28} style={animatedHeaderContentStyle} />
           </TouchableOpacity>
         </View>
@@ -102,25 +108,25 @@ const Home = () => {
         <View className="bg-white rounded-t-[40px] -mt-10  p-4 shadow-lg">
           <View className="flex-row justify-around items-start py-4">
             <TouchableOpacity className="items-center">
-              <View className="w-14 h-14 rounded-full bg-blue-900 justify-center items-center mb-1">
+              <View className="w-14 h-14 rounded-full bg-blue-950 justify-center items-center mb-1">
                 <MaterialCommunityIcons name="airplane-takeoff" size={20} color="white" />
               </View>
               <Text className="text-xs text-gray-700 font-medium text-center">MHflypass</Text>
             </TouchableOpacity>
             <TouchableOpacity className="items-center">
-              <View className="w-14 h-14 rounded-full bg-blue-900 justify-center items-center mb-1">
+              <View className="w-14 h-14 rounded-full bg-blue-950 justify-center items-center mb-1">
                 <Ionicons name="gift-outline" size={20} color="white" />
               </View>
               <Text className="text-xs text-gray-700 font-medium text-center">MHvoucher</Text>
             </TouchableOpacity>
             <TouchableOpacity className="items-center">
-              <View className="w-14 h-14 rounded-full bg-blue-900 justify-center items-center mb-1">
+              <View className="w-14 h-14 rounded-full bg-blue-950 justify-center items-center mb-1">
                 <Ionicons name="qr-code-outline" size={20} color="white" />
               </View>
               <Text className="text-xs text-gray-700 font-medium text-center">Boarding Passes</Text>
             </TouchableOpacity>
             <TouchableOpacity className="items-center">
-              <View className="w-14 h-14 rounded-full bg-blue-900 justify-center items-center mb-1">
+              <View className="w-14 h-14 rounded-full bg-blue-950 justify-center items-center mb-1">
                 <Ionicons name="ellipsis-horizontal-circle-outline" size={20} color="white" />
               </View>
               <Text className="text-xs text-gray-700 font-medium text-center">More</Text>
@@ -133,13 +139,13 @@ const Home = () => {
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-xl font-bold text-blue-900">Ưu đãi dành cho bạn</Text>
             <TouchableOpacity onPress={() => console.log("View All Promotions")}>
-              <Text className="text-blue-600 font-semibold">Xem tất cả</Text>
+              <Text className="text-blue-900 font-semibold">Xem tất cả</Text>
             </TouchableOpacity>
           </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <Animated.ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {PROMOTIONS.map((promo) => (
-              <TouchableOpacity key={promo.id} className="w-64 h-60 mr-4 rounded-xl overflow-hidden shadow-md bg-blue-900">
+              <TouchableOpacity key={promo.id} className="w-96 h-60 mr-4 rounded-xl overflow-hidden shadow-md bg-blue-950">
                 <ImageBackground
                   source={{ uri: promo.image }}
                   className="flex-1 justify-end p-3"
@@ -151,12 +157,31 @@ const Home = () => {
                 </ImageBackground>
               </TouchableOpacity>
             ))}
-          </ScrollView>
+          </Animated.ScrollView>
         </View>
 
         {/* Placeholder for more content */}
         <View className="h-20 bg-white"></View>
       </Animated.ScrollView>
+
+      {/* Modals */}
+      <SideModal
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        direction="left"
+        title="Menu"
+      >
+        <Menus />
+      </SideModal>
+
+      <SideModal
+        visible={notificationsVisible}
+        onClose={() => setNotificationsVisible(false)}
+        direction="right"
+        title="Thông báo"
+      >
+        <Notifications color="#1e3a8a" />
+      </SideModal>
     </View>
   );
 };

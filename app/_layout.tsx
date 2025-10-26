@@ -1,4 +1,5 @@
 import LoadingOverlay from "@/components/global/loading-overlay";
+import { AuthProvider } from "@/context/auth-context";
 import { LoadingProvider } from "@/context/loading-context";
 import { Stack } from "expo-router";
 import { PaperProvider } from "react-native-paper";
@@ -20,10 +21,12 @@ function Root() {
 
 export default function AppLayout(){
   return (
-    <LoadingProvider>
-      <PaperProvider theme={AppTheme}>
-        <Root />
-      </PaperProvider>
-    </LoadingProvider>
+    <AuthProvider>
+      <LoadingProvider>
+        <PaperProvider theme={AppTheme}>
+          <Root />
+        </PaperProvider>
+      </LoadingProvider>
+    </AuthProvider>
   );
 };

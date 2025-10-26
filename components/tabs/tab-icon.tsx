@@ -43,17 +43,17 @@ const TabIcon = ({ icon, name, focused }: TabIconProps) => {
 
   const animatedColor = colorAnimValue.interpolate({
     inputRange: [0, 1],
-    outputRange: ["#CDCDE0", "#1e3a8a"],
+    outputRange: ["#CDCDE0", "#172554"],
   });
 
   const animatedBookFlightBgColor = colorAnimValue.interpolate({
     inputRange: [0, 1],
-    outputRange: ["#FFFFFF", "#1e3a8a"], // White -> blue-900
+    outputRange: ["#FFFFFF", "#172554"], // White -> blue-950
   });
 
   const animatedBookFlightIconColor = colorAnimValue.interpolate({
     inputRange: [0, 1],
-    outputRange: ["#1e3a8a", "#FFFFFF"], // blue-900 -> White
+    outputRange: ["#172554", "#FFFFFF"], // blue-950 -> White
   });
 
   // Nút đặc biệt "Book Flight"

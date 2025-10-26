@@ -170,9 +170,9 @@ function FlightList() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-blue-900" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-blue-950" edges={["top"]}>
       {/* Header */}
-      <View className="bg-blue-900 pb-8 pt-4 px-4 ">
+      <View className="bg-blue-950 pb-8 pt-4 px-4 ">
         <TouchableOpacity onPress={() => {
           // Nếu đang chọn chuyến về, nút back sẽ quay lại chọn chuyến đi
           if (params.tripType === 'round-trip' && selectionPhase === 'return') {
@@ -184,7 +184,7 @@ function FlightList() {
             router.back();
           }
         }} className="absolute top-4 left-4 z-10">
-          <Ionicons name="arrow-back" size={24} color="white" />
+          <Ionicons name="chevron-back" size={24} color="white" />
         </TouchableOpacity>
         <View className="items-center">
           <Text className="text-white text-lg font-bold">{headerInfo.title}</Text>

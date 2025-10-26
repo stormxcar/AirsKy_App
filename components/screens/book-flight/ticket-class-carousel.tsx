@@ -1,4 +1,4 @@
-import { TicketClass } from '@/app/types';
+import { TicketClass } from '@/app/types/types';
 import { FontAwesome } from '@expo/vector-icons';
 import React, { useRef, useState } from 'react';
 import { Animated, Dimensions, FlatList, Text, TouchableOpacity, View, ViewToken } from 'react-native';

@@ -167,7 +167,7 @@ function FormSearchFlight() {
                                     }`}
                             >
                                 <Text
-                                    className={`text-center font-semibold ${tripType === tab.key ? "text-blue-900" : "text-gray-400"
+                                    className={`text-center font-semibold ${tripType === tab.key ? "text-blue-950" : "text-gray-400"
                                         }`}
                                 >
                                     {tab.label}
@@ -182,7 +182,7 @@ function FormSearchFlight() {
                         <View className="relative">
                             <TouchableOpacity onPress={() => openModal('origin')} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                                 <Text className="text-gray-400 text-xs font-semibold mb-1">ĐIỂM ĐI</Text>
-                                <Text className="text-blue-900 text-xl font-bold">{origin.code}</Text>
+                                <Text className="text-blue-950 text-xl font-bold">{origin.code}</Text>
                                 <Text className="text-gray-600">{origin.city}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
@@ -192,7 +192,7 @@ function FormSearchFlight() {
                                     setOrigin(destination);
                                     setDestination(temp);
                                 }}
-                                className="absolute right-4 top-1/2 -translate-y-6 bg-blue-900 text-white rounded-full p-4 z-30 border-4 border-white">
+                                className="absolute right-4 top-1/2 -translate-y-6 bg-blue-950 text-white rounded-full p-4 z-30 border-4 border-white">
                                 <FontAwesome name="exchange" size={14} color="white" style={{ transform: [{ rotate: "90deg" }] }} />
                             </TouchableOpacity>
                         </View>
@@ -201,7 +201,7 @@ function FormSearchFlight() {
                         <View>
                             <TouchableOpacity onPress={() => openModal('destination')} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                                 <Text className="text-gray-400 text-xs font-semibold mb-1">ĐIỂM ĐẾN</Text>
-                                <Text className="text-blue-900 text-xl font-bold">{destination.code}</Text>
+                                <Text className="text-blue-950 text-xl font-bold">{destination.code}</Text>
                                 <Text className="text-gray-600">{destination.city}</Text>
                             </TouchableOpacity>
                         </View>
@@ -216,7 +216,7 @@ function FormSearchFlight() {
                                 <View className="flex-1">
                                     <Text className="text-gray-400 font-semibold">NGÀY ĐI</Text>
                                     {departureDate && (
-                                        <Text className="text-blue-900 font-bold text-[13px] mt-1">{formatDateDisplay(departureDate)}</Text>
+                                        <Text className="text-blue-950 font-bold text-[13px] mt-1">{formatDateDisplay(departureDate)}</Text>
                                     )}
                                 </View>
 
@@ -230,7 +230,7 @@ function FormSearchFlight() {
                                         <View className="flex-1 items-end">
                                             <Text className="text-gray-400 font-semibold">NGÀY VỀ</Text>
                                             {returnDate && (
-                                                <Text className="text-blue-900 font-bold text-[13px] mt-1">{formatDateDisplay(returnDate)}</Text>
+                                                <Text className="text-blue-950 font-bold text-[13px] mt-1">{formatDateDisplay(returnDate)}</Text>
                                             )}
                                         </View>
                                     </>
@@ -243,7 +243,7 @@ function FormSearchFlight() {
                         <View>
 
                             <TouchableOpacity onPress={() => setPassengerModalVisible(true)} className="bg-gray-50 border border-gray-200 rounded-xl py-6 px-4 flex-row justify-between items-center">
-                                <Text className="text-blue-900 font-semibold">
+                                <Text className="text-blue-950 font-semibold">
                                     {adults} Người lớn
                                     {children > 0 ? `, ${children} Trẻ em` : ''}
                                     {infants > 0 ? `, ${infants} Em bé` : ''}
@@ -261,9 +261,9 @@ function FormSearchFlight() {
                         </View>
 
                         {/* Search Button */}
-                        <TouchableOpacity onPress={handleSearch} className="bg-blue-900 py-4 rounded-full mt-6 shadow-md">
-                            <Text className="text-white text-center font-bold text-lg">
-                                TÌM CHUYÉN BAY
+                        <TouchableOpacity onPress={handleSearch} className="bg-blue-950 py-4 rounded-full shadow-md">
+                            <Text className="uppercase text-white text-center font-bold text-lg">
+                                go
                             </Text>
                         </TouchableOpacity>
                     </View>
