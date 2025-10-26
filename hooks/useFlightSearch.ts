@@ -82,5 +82,5 @@ export function useFlightSearch(params: any, selectionPhase: 'depart' | 'return'
         infants
     ]);
 
-    return { flights, error, setFlights };
+    return { flights, error };
 }

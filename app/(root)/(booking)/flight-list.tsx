@@ -1,6 +1,7 @@
 import { Flight, TicketClass } from "@/app/types/types";
 import FlightItem from "@/components/screens/book-flight/flight-item";
 import SortFilterModal, { FilterOptions, SortOption } from "@/components/screens/book-flight/modals/sort-filter-modal";
+import { format } from "date-fns";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -8,6 +9,8 @@ import { FlatList, ScrollView, Text, TouchableOpacity, View } from 'react-native
 import { useFlightSearch } from "@/hooks/useFlightSearch";
 import { useFlightDisplay } from "@/hooks/useFlightDisplay";
 import { SafeAreaView } from "react-native-safe-area-context";
+import FlightSummaryModal from "@/components/screens/book-flight/modals/flight-summary-modal";
+
 type SelectionPhase = 'depart' | 'return';
 // Dữ liệu mẫu cho thanh chọn ngày
 const MOCK_DATES = [
@@ -33,6 +36,7 @@ function FlightList() {
 
   // State để quản lý giai đoạn chọn (đi hoặc về)
   const [selectionPhase, setSelectionPhase] = useState<SelectionPhase>('depart');
+  const [summaryVisible, setSummaryVisible] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState(params.departureDate); // State cho ngày đang được chọn trên thanh scroller
   // State cho sắp xếp và lọc
@@ -62,7 +66,7 @@ function FlightList() {
       : params.departureDate;
     setSelectedDate(dateToDisplay || '');
   }, [selectionPhase, params.departureDate, params.returnDate]);
-  
+
   // Hàm xử lý khi chọn một chuyến bay
   const handleSelectFlight = (flightId: string) => {
     const newSelectedId = selectedFlightId === flightId ? null : flightId;
@@ -195,7 +199,11 @@ function FlightList() {
           )}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
-          ListHeaderComponent={<Text className="text-lg font-bold text-blue-900 mb-4">{headerInfo.listTitle}</Text>}
+          ListHeaderComponent={
+            <>
+              <Text className="text-lg font-bold text-blue-900 mb-4">{headerInfo.listTitle}</Text>
+            </>
+          }
           ListEmptyComponent={
             <View className="items-center mt-10 p-4">
               {error ? (
@@ -207,9 +215,40 @@ function FlightList() {
           }
         />
       </View>
-      
+
+      {/* Hiển thị tóm tắt chuyến đi đã chọn */}
+      {selectionPhase === 'return' && selectedDepartureFlight && (
+        <TouchableOpacity
+          onPress={() => setSummaryVisible(true)}
+          className="absolute bottom-20  bg-white p-4 w-full flex-row justify-between items-center"
+        >
+          <View>
+            <Text className="text-blue-900 font-semibold">Xem tóm tắt chuyến bay</Text>
+            <Text className="text-gray-600 text-sm">
+              {selectedDepartureFlight && selectionPhase === "return"
+                ? "Đã chọn chuyến đi"
+                : "Đang chọn chuyến đi"}
+            </Text>
+          </View>
+          <Ionicons name="chevron-up" size={20} color="#1e3a8a" />
+        </TouchableOpacity>
+      )}
+      <FlightSummaryModal
+        visible={summaryVisible}
+        onClose={() => setSummaryVisible(false)}
+        departureFlight={selectedDepartureFlight}
+        returnFlight={
+          params.tripType === "round_trip" &&
+            selectionPhase === "return" &&
+            selectedFlight &&
+            selectedClass
+            ? { flight: selectedFlight, ticketClass: selectedClass }
+            : null
+        }
+       
+      />
       {/* Nút Sắp xếp & Lọc */}
-      <View className="absolute bottom-28 right-4 z-20">
+      <View className="absolute bottom-44 right-4 z-20">
         <TouchableOpacity onPress={() => setSortFilterModalVisible(true)} className="bg-blue-950 p-4 rounded-full shadow-lg">
           <Ionicons name="options" size={24} color="white" />
         </TouchableOpacity>
@@ -225,9 +264,9 @@ function FlightList() {
       />
       {/* Nút Tiếp tục chỉ hiển thị khi đã chọn chuyến bay và hạng vé */}
       {showContinueButton && (
-        <View className="absolute bottom-0 left-0 right-0 bg-white p-4 border-t border-gray-200">
+        <View className="absolute bottom-0 left-0 right-0 bg-white p-4">
           <TouchableOpacity onPress={handleContinue}
-            className="bg-blue-900 py-3 rounded-full shadow-md flex-row justify-between items-center px-6"
+            className="bg-blue-900 py-3 rounded-full flex-row justify-between items-center px-6"
           >
             <Text className="text-white font-bold text-lg">
               Tiếp tục

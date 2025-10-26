@@ -17,7 +17,9 @@ export type Flight = {
   airline: string;
   airlineLogo: string | null; // URL ảnh từ API
   flightNumber: string;
-  departure: { code: string; time: string };
+  departure: {
+    date: string | number | Date; code: string; time: string 
+};
   arrival: { code: string; time: string };
   duration: string;
   price: number; // Giá cơ bản (basePrice)
@@ -25,6 +27,7 @@ export type Flight = {
   status: string;
   // Thêm các hạng vé cho chuyến bay này
   ticketClasses: TicketClass[];
+  departureTime: string;
 };
 
 /**

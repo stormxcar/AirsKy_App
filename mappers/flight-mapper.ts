@@ -39,6 +39,8 @@ export const mapApiFlightToFlight = (apiFlight: FlightResponse): Flight => {
         airline: apiFlight.airline.airlineName,
         airlineLogo: apiFlight.airline.thumbnail ?? null,
         flightNumber: apiFlight.flightNumber,
+        // Giữ lại chuỗi thời gian gốc để sử dụng cho việc tạo Date object
+        departureTime: apiFlight.departureTime,
         departure: {
             code: apiFlight.departureAirport.airportCode,
             time: format(parseISO(apiFlight.departureTime), 'HH:mm'),
@@ -57,7 +59,9 @@ export const mapApiFlightToFlight = (apiFlight: FlightResponse): Flight => {
             priceModifier: tc.travelClass.priceMultiplier,
             description: tc.travelClass.benefits,
             finalPrice: tc.price,
+            departureTime: apiFlight.departureTime,
         })),
+        
     };
 };
 
