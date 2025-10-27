@@ -1,6 +1,7 @@
 import { Passenger, SelectedFlight } from "@/app/types/types";
 import BookingStepper from "@/components/screens/book-flight/booking-stepper";
 import PassengerForm from "@/components/screens/book-flight/passenger-form";
+import { useAuth } from "@/context/auth-context";
 import { Ionicons } from "@expo/vector-icons";
 import { differenceInYears, format, parseISO } from "date-fns";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -20,11 +21,13 @@ const getPassengerType = (dob: Date | null): 'adult' | 'child' | 'infant' => {
 function UserBookingInfo() {
     const params = useLocalSearchParams();
     const router = useRouter();
+    const { user } = useAuth(); // Lấy thông tin người dùng đã đăng nhập
     const [departureFlight, setDepartureFlight] = useState<SelectedFlight | null>(null);
     const [returnFlight, setReturnFlight] = useState<SelectedFlight | null>(null);
 
-    const [bookerName, setBookerName] = useState('');
-    const [bookerEmail, setBookerEmail] = useState('');
+    // Tự động điền thông tin nếu người dùng đã đăng nhập
+    const [bookerName, setBookerName] = useState(user ? `${user.lastName} ${user.firstName}` : '');
+    const [bookerEmail, setBookerEmail] = useState(user ? user.email : '');
 
     const [passengers, setPassengers] = useState<Passenger[]>([]);
     const [nextPassengerId, setNextPassengerId] = useState(0); // To generate unique IDs for new passengers
@@ -155,7 +158,12 @@ function UserBookingInfo() {
                     onPress: () => {
                         router.navigate({
                             pathname: '/(root)/(booking)/services-and-seats',
-                            params: { ...params, passengers: JSON.stringify(passengers) }
+                            params: { 
+                                ...params, 
+                                passengers: JSON.stringify(passengers),
+                                contactName: bookerName,
+                                contactEmail: bookerEmail,
+                            }
                         });
                     },
                 }

@@ -71,10 +71,11 @@ export interface BaggagePackage {
 
 // Danh sách các gói hành lý có thể chọn
 export const BAGGAGE_PACKAGES: BaggagePackage[] = [
-    { key: 'NONE', label: 'Không chọn', price: 0 },
-    { key: 'PKG_20KG', label: 'Gói 20kg', price: 250000 },
-    { key: 'PKG_30KG', label: 'Gói 30kg', price: 350000 },
-    { key: 'PKG_40KG', label: 'Gói 40kg', price: 450000 },
+    { key: 'NONE', label: 'Không chọn', price: 0 }, // Giữ lại để UI có thể bỏ chọn
+    { key: 'KG_15', label: 'Gói 15kg', price: 200000 },
+    { key: 'KG_20', label: 'Gói 20kg', price: 300000 },
+    { key: 'KG_25', label: 'Gói 25kg', price: 400000 },
+    { key: 'KG_30', label: 'Gói 30kg', price: 500000 },
 ];
 
 /**

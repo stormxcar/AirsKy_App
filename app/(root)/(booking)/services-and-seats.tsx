@@ -127,24 +127,22 @@ const ServiceAndSeatSelection = () => {
             return;
         }
 
-        // Chuyển đổi selectedSeats từ seatId sang seatNumber
-        const selectedSeatsWithNumbers: { [passengerId: number]: string } = {};
+        // Tạo một đối tượng mới chứa cả seatId và seatNumber để truyền đi
+        const selectedSeatsWithDetails: { [passengerId: number]: { id: string, number: string } } = {};
         for (const passengerId in selectedSeats) {
             const seatId = selectedSeats[passengerId];
             const seat = originalSeats.find(s => s.id === seatId);
             if (seat) {
-                selectedSeatsWithNumbers[passengerId] = seat.seatNumber;
-            } else {
-                console.warn(`Seat with ID ${seatId} not found for passenger ${passengerId}`);
+                selectedSeatsWithDetails[passengerId] = { id: seat.id, number: seat.seatNumber };
             }
         }
-        // Chuyển đổi selectedSeats từ seatId sang seatNumber
+
         // Điều hướng đến trang thanh toán (bước 3) và truyền dữ liệu
         router.navigate({
             pathname: '/(root)/(booking)/checkout',
             params: {
                 ...params,
-                selectedSeats: JSON.stringify(selectedSeatsWithNumbers), // Truyền seatNumber
+                selectedSeats: JSON.stringify(selectedSeatsWithDetails), // Truyền đối tượng có cả id và number
                 selectedBaggages: JSON.stringify(selectedBaggages),
                 selectedMeals: JSON.stringify(selectedMeals),
                 totalPrice: totalPrice.toString(), // Truyền tổng tiền
@@ -207,7 +205,7 @@ const ServiceAndSeatSelection = () => {
 
     return (
         <SafeAreaView className="flex-1 bg-gray-100" edges={["top", "left", "right"]}>
-            <ScrollView className="bg-gray-100" contentContainerStyle={{ paddingBottom: 180 }}> {/* Tăng paddingBottom */}
+            <ScrollView className="bg-gray-100" contentContainerStyle={{ paddingBottom: 180 }}>
                 {/* Custom Header - Moved inside screen */}
                 <View className="bg-white flex-row items-center p-4 border-b border-gray-200">
                     <TouchableOpacity onPress={() => router.back()} className="p-1">
