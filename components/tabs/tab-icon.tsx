@@ -71,7 +71,7 @@ const TabIcon = ({ icon, color, name, focused }: TabIconProps) => {
     >
       <FontAwesome name={icon} size={24} color={focused ? "#1e3a8a" : "#CDCDE0"} />
       <Animated.Text
-        className={`${focused ? "font-semibold" : "font-normal"} text-[8px] w-full text-center`}
+        className={`${focused ? "font-semibold " : "font-normal"} text-[8px] w-full text-center`}
         style={{ color: animatedColor }}
         numberOfLines={1}
       >
