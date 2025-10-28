@@ -1,22 +1,23 @@
-import { Airport } from '@/app/types';
+import { Airport } from '@/app/types/types';
 import AirportSelectionModal from '@/components/screens/book-flight/modals/airport-selection-modal';
 import DatePickerModal from '@/components/screens/book-flight/modals/date-picker-modal';
 import PassengerSelectionModal from '@/components/screens/book-flight/modals/passenger-selection-modal';
-import { AIRPORTS } from '@/constants/data';
+import { useQuery } from '@tanstack/react-query';
 import { useLoading } from "@/context/loading-context";
+import { fetchAllAirports } from '@/services/airport-service';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { router } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Animated, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { DateData } from 'react-native-calendars';
 
 type TripType = "round-trip" | "one-way" | "multi-city";
 
 function FormSearchFlight() {
     const [tripType, setTripType] = useState<TripType>("one-way");
-  const {showLoading} = useLoading();
+    const { showLoading, hideLoading } = useLoading();
 
     const [origin, setOrigin] = useState({ code: "SGN", city: "TP. Hồ Chí Minh" });
     const [destination, setDestination] = useState({ code: "HAN", city: "Hà Nội" });
@@ -34,9 +35,34 @@ function FormSearchFlight() {
 
     const [editingField, setEditingField] = useState<'origin' | 'destination' | null>(null);
 
+    // State cho animation hoán đổi
+    const spinValue = useRef(new Animated.Value(0)).current;
+
     useEffect(() => {
         if (infants > adults) setInfants(adults); // Đảm bảo số em bé không vượt quá số người lớn
     }, [adults, infants]);
+
+    // Sử dụng React Query để lấy và cache danh sách sân bay
+    const { data: airports = [], error: airportsError, isLoading: isLoadingAirports } = useQuery<Airport[], Error>({
+        queryKey: ['airports'], // Khóa cache duy nhất cho query này
+        queryFn: fetchAllAirports, // Hàm để lấy dữ liệu
+        staleTime: 1000 * 60 * 60, // Cache được xem là "tươi" trong 1 giờ, không gọi lại API trong khoảng thời gian này
+    });
+
+    // Hiển thị loading overlay trong khi useQuery đang fetch dữ liệu sân bay lần đầu
+    useEffect(() => {
+        if (isLoadingAirports) {
+            // Gọi showLoading mà không có task, nó sẽ chỉ hiển thị overlay
+            showLoading();
+        } else {
+            hideLoading();
+        }
+    }, [isLoadingAirports]);
+
+    // Hiển thị lỗi nếu không tải được sân bay
+    if (airportsError) {
+        Alert.alert("Lỗi", "Không thể tải danh sách sân bay. Vui lòng thử lại.");
+    }
 
     // Side effect để xử lý khi thay đổi loại chuyến đi
     useEffect(() => {
@@ -51,11 +77,21 @@ function FormSearchFlight() {
     };
 
     const handleSelectLocation = (airport: Airport) => {
+        // Logic chống trùng lặp và tự động hoán đổi
         if (editingField === 'origin') {
+            if (airport.code === destination.code) {
+                // Nếu chọn điểm đi mới trùng với điểm đến cũ -> hoán đổi
+                setDestination(origin);
+            }
             setOrigin(airport);
         } else if (editingField === 'destination') {
+            if (airport.code === origin.code) {
+                // Nếu chọn điểm đến mới trùng với điểm đi cũ -> hoán đổi
+                setOrigin(destination);
+            }
             setDestination(airport);
         }
+
         setAirportModalVisible(false);
     };
 
@@ -108,6 +144,24 @@ function FormSearchFlight() {
         return marked;
     }, [departureDate, returnDate, tripType]);
 
+    // --- Animation Logic ---
+    const handleSwap = () => {
+        // 1. Hoán đổi điểm đi và điểm đến
+        const temp = origin;
+        setOrigin(destination);
+        setDestination(temp);
+
+        // 2. Kích hoạt animation xoay
+        spinValue.setValue(0);
+        Animated.timing(spinValue, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+        }).start();
+    };
+
+    const spin = spinValue.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
+
     const formatDateDisplay = (dateString: string | null) => {
         if (!dateString) return null;
         return format(new Date(dateString), "EEE, dd 'thg' MM", { locale: vi });
@@ -135,11 +189,12 @@ function FormSearchFlight() {
         }
 
         const params = {
-            tripType,
+            // Chuyển đổi tripType sang định dạng snake_case mà backend mong đợi
+            tripType: tripType.replace('-', '_'),
             originCode: origin.code,
             destinationCode: destination.code,
             departureDate,
-            returnDate: returnDate ?? '', // Ensure it's a string
+            ...(returnDate && { returnDate }), // Chỉ thêm returnDate nếu nó tồn tại
             adults: adults.toString(),
             children: children.toString(),
             infants: infants.toString(),
@@ -167,7 +222,7 @@ function FormSearchFlight() {
                                     }`}
                             >
                                 <Text
-                                    className={`text-center font-semibold ${tripType === tab.key ? "text-blue-900" : "text-gray-400"
+                                    className={`text-center font-semibold ${tripType === tab.key ? "text-blue-950" : "text-gray-400"
                                         }`}
                                 >
                                     {tab.label}
@@ -182,26 +237,24 @@ function FormSearchFlight() {
                         <View className="relative">
                             <TouchableOpacity onPress={() => openModal('origin')} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                                 <Text className="text-gray-400 text-xs font-semibold mb-1">ĐIỂM ĐI</Text>
-                                <Text className="text-blue-900 text-xl font-bold">{origin.code}</Text>
+                                <Text className="text-blue-950 text-xl font-bold">{origin.code}</Text>
                                 <Text className="text-gray-600">{origin.city}</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={() => {
-                                    // Hoán đổi điểm đi và điểm đến
-                                    const temp = origin;
-                                    setOrigin(destination);
-                                    setDestination(temp);
-                                }}
-                                className="absolute right-4 top-1/2 -translate-y-6 bg-blue-900 text-white rounded-full p-4 z-30 border-4 border-white">
-                                <FontAwesome name="exchange" size={14} color="white" style={{ transform: [{ rotate: "90deg" }] }} />
-                            </TouchableOpacity>
+                            {/* Nút hoán đổi với animation */}
+                            <View className="absolute right-4 top-1/2 -translate-y-6 z-30">
+                                <TouchableOpacity onPress={handleSwap} className="bg-blue-950 text-white rounded-full p-4 border-4 border-white">
+                                    <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                                        <FontAwesome name="exchange" size={14} color="white" style={{ transform: [{ rotate: "90deg" }] }} />
+                                    </Animated.View>
+                                </TouchableOpacity>
+                            </View>
                         </View>
 
                         {/* Arrival */}
                         <View>
                             <TouchableOpacity onPress={() => openModal('destination')} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                                 <Text className="text-gray-400 text-xs font-semibold mb-1">ĐIỂM ĐẾN</Text>
-                                <Text className="text-blue-900 text-xl font-bold">{destination.code}</Text>
+                                <Text className="text-blue-950 text-xl font-bold">{destination.code}</Text>
                                 <Text className="text-gray-600">{destination.city}</Text>
                             </TouchableOpacity>
                         </View>
@@ -216,7 +269,7 @@ function FormSearchFlight() {
                                 <View className="flex-1">
                                     <Text className="text-gray-400 font-semibold">NGÀY ĐI</Text>
                                     {departureDate && (
-                                        <Text className="text-blue-900 font-bold text-[13px] mt-1">{formatDateDisplay(departureDate)}</Text>
+                                        <Text className="text-blue-950 font-bold text-[13px] mt-1">{formatDateDisplay(departureDate)}</Text>
                                     )}
                                 </View>
 
@@ -230,7 +283,7 @@ function FormSearchFlight() {
                                         <View className="flex-1 items-end">
                                             <Text className="text-gray-400 font-semibold">NGÀY VỀ</Text>
                                             {returnDate && (
-                                                <Text className="text-blue-900 font-bold text-[13px] mt-1">{formatDateDisplay(returnDate)}</Text>
+                                                <Text className="text-blue-950 font-bold text-[13px] mt-1">{formatDateDisplay(returnDate)}</Text>
                                             )}
                                         </View>
                                     </>
@@ -243,7 +296,7 @@ function FormSearchFlight() {
                         <View>
 
                             <TouchableOpacity onPress={() => setPassengerModalVisible(true)} className="bg-gray-50 border border-gray-200 rounded-xl py-6 px-4 flex-row justify-between items-center">
-                                <Text className="text-blue-900 font-semibold">
+                                <Text className="text-blue-950 font-semibold">
                                     {adults} Người lớn
                                     {children > 0 ? `, ${children} Trẻ em` : ''}
                                     {infants > 0 ? `, ${infants} Em bé` : ''}
@@ -261,9 +314,9 @@ function FormSearchFlight() {
                         </View>
 
                         {/* Search Button */}
-                        <TouchableOpacity onPress={handleSearch} className="bg-blue-900 py-4 rounded-full mt-6 shadow-md">
-                            <Text className="text-white text-center font-bold text-lg">
-                                TÌM CHUYÉN BAY
+                        <TouchableOpacity onPress={handleSearch} className="bg-blue-950 py-4 rounded-full shadow-md">
+                            <Text className="uppercase text-white text-center font-bold text-lg">
+                                go
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -274,7 +327,7 @@ function FormSearchFlight() {
                 visible={airportModalVisible}
                 onClose={() => setAirportModalVisible(false)}
                 onSelect={handleSelectLocation}
-                airports={AIRPORTS}
+                airports={airports}
                 editingField={editingField}
             />
 

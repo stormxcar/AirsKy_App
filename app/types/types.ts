@@ -1,7 +1,9 @@
+import { SeatStatus } from "./booking"; // Import SeatStatus từ booking.ts
 /**
  * Represents an airport.
  */
 export type Airport = {
+  id: any;
   code: string;
   name:string;
   city: string;
@@ -15,13 +17,17 @@ export type Flight = {
   airline: string;
   airlineLogo: string | null; // URL ảnh từ API
   flightNumber: string;
-  departure: { code: string; time: string };
+  departure: {
+    date: string | number | Date; code: string; time: string 
+};
   arrival: { code: string; time: string };
   duration: string;
   price: number; // Giá cơ bản (basePrice)
   type: "Bay thẳng" | "1 điểm dừng" | string;
+  status: string;
   // Thêm các hạng vé cho chuyến bay này
   ticketClasses: TicketClass[];
+  departureTime: string;
 };
 
 /**
@@ -65,14 +71,15 @@ export interface BaggagePackage {
 
 // Danh sách các gói hành lý có thể chọn
 export const BAGGAGE_PACKAGES: BaggagePackage[] = [
-    { key: 'NONE', label: 'Không chọn', price: 0 },
-    { key: 'PKG_20KG', label: 'Gói 20kg', price: 250000 },
-    { key: 'PKG_30KG', label: 'Gói 30kg', price: 350000 },
-    { key: 'PKG_40KG', label: 'Gói 40kg', price: 450000 },
+    { key: 'NONE', label: 'Không chọn', price: 0 }, // Giữ lại để UI có thể bỏ chọn
+    { key: 'KG_15', label: 'Gói 15kg', price: 200000 },
+    { key: 'KG_20', label: 'Gói 20kg', price: 300000 },
+    { key: 'KG_25', label: 'Gói 25kg', price: 400000 },
+    { key: 'KG_30', label: 'Gói 30kg', price: 500000 },
 ];
 
 /**
  * Represents the status and details of a seat on a plane.
  */
-export type SeatStatus = 'available' | 'occupied' | 'selected' | 'exit';
-export type Seat = { id: string; status: SeatStatus; price?: number };
+// export type SeatStatus = 'available' | 'occupied' | 'selected' | 'exit';
+export type Seat = { id: string; status: SeatStatus; price?: number, seatNumber?: string }; // SeatStatus giờ đây được import

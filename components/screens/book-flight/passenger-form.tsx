@@ -55,12 +55,12 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
 
     return (
         <>
-            <View className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
+            <View className="bg-white rounded-xl p-4 gap-2 mb-4 border border-gray-200">
                 <View className="flex-row justify-between items-center mb-3">
                     <Text className="text-lg font-bold text-blue-900">Hành khách {index + 1} ({passenger.type === 'adult' ? 'Người lớn' : passenger.type === 'child' ? 'Trẻ em' : 'Em bé'})</Text>
                     {canRemove && onRemove && (
                         <TouchableOpacity onPress={() => onRemove(passenger.id)} className="p-2">
-                            <Ionicons name="trash-outline" size={24} color="#ef4444" />
+                            <Ionicons name="trash-outline" size={24} color="#1e3a8a" />
                         </TouchableOpacity>
                     )}
                 </View>
@@ -92,7 +92,6 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
                         editable={false}
                         pointerEvents="none" // Prevent keyboard from opening
                         // right={<TextInput.Icon icon="calendar" />}
-                        className="mb-3"
                         style={{ backgroundColor: 'transparent' }}
                     />
                 </TouchableOpacity>
@@ -104,7 +103,7 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
                         onChange={handleDateChange}
                         maximumDate={new Date()}
                         textColor='gray'
-                    />
+                    /> 
                 )}
 
                 {/* Gender Picker */}
@@ -116,7 +115,6 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
                         editable={false}
                         pointerEvents="none"
                         // right={<TextInput.Icon icon="chevron-down" />}
-                        className="mb-3"
                         style={{ backgroundColor: 'transparent' }}
                     />
                 </TouchableOpacity>

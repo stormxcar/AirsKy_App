@@ -1,15 +1,18 @@
 import { FontAwesome } from "@expo/vector-icons";
+import React from "react";
 import { useEffect, useRef } from "react";
-import { Animated, Easing, StyleSheet } from "react-native";
+import { Animated, Easing, StyleSheet, View } from "react-native";
 
+// Tạo một phiên bản "động" của FontAwesome để có thể animate màu sắc
 type TabIconProps = {
   icon: React.ComponentProps<typeof FontAwesome>["name"];
   color: string;
+  // color prop không còn cần thiết khi chúng ta tự quản lý màu động
   name: string;
   focused: boolean;
 };
 
-const TabIcon = ({ icon, color, name, focused }: TabIconProps) => {
+const TabIcon = ({ icon, name, focused }: TabIconProps) => {
   const scaleValue = useRef(new Animated.Value(1)).current;
   const translateYValue = useRef(new Animated.Value(0)).current;
   const colorAnimValue = useRef(new Animated.Value(focused ? 1 : 0)).current;
@@ -40,22 +43,35 @@ const TabIcon = ({ icon, color, name, focused }: TabIconProps) => {
 
   const animatedColor = colorAnimValue.interpolate({
     inputRange: [0, 1],
-    outputRange: ["#CDCDE0", "#1e3a8a"],
+    outputRange: ["#CDCDE0", "#172554"],
+  });
+
+  const animatedBookFlightBgColor = colorAnimValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["#FFFFFF", "#172554"], // White -> blue-950
+  });
+
+  const animatedBookFlightIconColor = colorAnimValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["#172554", "#FFFFFF"], // blue-950 -> White
   });
 
   // Nút đặc biệt "Book Flight"
   if (name === "Book Flight") {
     return (
-      <Animated.View style={[styles.bookFlightContainer, focused && styles.bookFlightFocused]}>
+      <Animated.View style={[styles.bookFlightContainer, focused && styles.bookFlightFocused, { transform: [{ scale: scaleValue }] }]} className="flex-1 items-center">
+        {/* Gộp 2 View thành 1 và áp dụng tất cả animation */}
         <Animated.View
           style={{
-            transform: [{ scale: scaleValue }],
+            backgroundColor: animatedBookFlightBgColor,
           }}
-          className={`${focused ? "bg-blue-900" : "bg-white"} items-center justify-center rounded-full w-16 h-16 ml-2 -mt-4 border-4 border-white shadow-sm`}
+          className="items-center justify-center rounded-full w-16 h-16 -mt-6 border-4 border-white shadow-lg"
         >
-          <FontAwesome name={icon} size={24} color={focused ? "white" : "#1e3a8a"} />
+            <Animated.Text style={{ color: animatedBookFlightIconColor }}>
+              <FontAwesome name={icon} size={28} />
+            </Animated.Text>
+          </Animated.View>
         </Animated.View>
-      </Animated.View>
     );
   }
 
@@ -69,7 +85,9 @@ const TabIcon = ({ icon, color, name, focused }: TabIconProps) => {
       ]}
       className="items-center justify-center gap-1 flex-1 pt-2"
     >
-      <FontAwesome name={icon} size={24} color={focused ? "#1e3a8a" : "#CDCDE0"} />
+      <Animated.Text style={{ color: animatedColor }}>
+        <FontAwesome name={icon} size={24} />
+      </Animated.Text>
       <Animated.Text
         className={`${focused ? "font-semibold " : "font-normal"} text-[8px] w-full text-center`}
         style={{ color: animatedColor }}
@@ -83,8 +101,8 @@ const TabIcon = ({ icon, color, name, focused }: TabIconProps) => {
 
 const styles = StyleSheet.create({
   bookFlightContainer: {
-    width: 80,
-    height: 80,
+    // Đảm bảo container có không gian để không bị co lại thành 0
+    // flex: 1, // Thêm flex: 1 thông qua className
   },
   bookFlightFocused: {
     shadowColor: "#3b82f6",

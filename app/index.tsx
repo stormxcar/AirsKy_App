@@ -1,26 +1,27 @@
-import { useLoading } from "@/context/loading-context";
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
 import { Animated, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-
 const App = () => {
-  const { showLoading } = useLoading();
   const progress = useRef(new Animated.Value(0)).current;
+  const animationStarted = useRef(false); // Thêm ref để theo dõi trạng thái animation
   const router = useRouter();
 
   useEffect(() => {
-    // Chạy thanh tiến trình trong 5 giây
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: 5000,
-      useNativeDriver: false,
-    }).start(() => {
-      // Sau khi hoàn tất, điều hướng sang trang home
-      showLoading();
-      router.replace("/(root)/(tabs)/home");
-    });
+    // Chỉ chạy animation nếu nó chưa được bắt đầu
+    if (!animationStarted.current) {
+      animationStarted.current = true; // Đánh dấu là đã bắt đầu
+      // Chạy thanh tiến trình trong 5 giây
+      Animated.timing(progress, {
+        toValue: 1,
+        duration: 5000,
+        useNativeDriver: false,
+      }).start(() => {
+        // Sau khi hoàn tất, điều hướng thẳng sang trang home
+        router.replace("/(root)/(tabs)/home");
+      });
+    }
   }, []);
 
   const width = progress.interpolate({
@@ -41,7 +42,7 @@ const App = () => {
             style={{
               width,
               height: "100%",
-              backgroundColor: "#3b82f6", // blue-500
+              backgroundColor: "#1e3a8a", // blue-500
             }}
           />
         </View>

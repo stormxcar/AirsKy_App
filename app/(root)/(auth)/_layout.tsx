@@ -5,17 +5,17 @@ const AuthLayout = () => {
   return (
     <Stack
       screenOptions={{
-        // Hiển thị header
+        // Hiển thị header 
         headerShown: true,
-        // Header trong suốt để nền của màn hình được hiển thị
+        // Header trong suốt để nền của màn hình được hiển thị 
         headerTransparent: true,
-        // Không hiển thị tiêu đề mặc định của header
+        // Không hiển thị tiêu đề mặc định của header 
         headerTitle: "",
-        // Màu của nút quay lại (mũi tên)
+        // Màu của nút quay lại (mũi tên) 
         headerTintColor: "#1e3a8a", // blue-900
-        // Ẩn chữ "Back" trên iOS
+        // Ẩn chữ "Back" trên iOS 
         headerBackTitleVisible: false,
-        // Đặt màu nền chung cho tất cả các màn hình trong Stack này
+        // Đặt màu nền chung cho tất cả các màn hình trong Stack này 
         contentStyle: { backgroundColor: "#1e3a8a" }, // bg-blue-50
       }}
     >
