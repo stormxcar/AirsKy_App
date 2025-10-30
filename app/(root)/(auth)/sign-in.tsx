@@ -40,10 +40,10 @@ const SignIn = () => {
 
       // Giải mã token để kiểm tra vai trò
       const decodedToken: DecodedToken = jwtDecode(authData.accessToken);
-      if (decodedToken.role !== 'CUSTOMER') {
-        Alert.alert("Truy cập bị từ chối", "Tài khoản của bạn không có quyền truy cập ứng dụng di động. Vui lòng truy cập trang web để sử dụng các chức năng dành cho quản trị viên.");
-        return; // Dừng quá trình đăng nhập
-      }
+      // if (decodedToken.role !== 'CUSTOMER') {
+      //   Alert.alert("Truy cập bị từ chối", "Tài khoản của bạn không có quyền truy cập ứng dụng di động. Vui lòng truy cập trang web để sử dụng các chức năng dành cho quản trị viên.");
+      //   return; // Dừng quá trình đăng nhập
+      // }
 
       // Lưu thông tin xác thực vào context
       await setAuthData(authData);
@@ -95,6 +95,7 @@ const SignIn = () => {
     <>
       <SafeAreaView className="mt-32 flex-1 bg-white px-6 justify-start rounded-t-3xl"> 
         {/* Tiêu đề */}
+        
         <View className="mb-8 items-center">
           <Text className="text-3xl font-bold text-blue-900">Đăng nhập</Text>
           <Text className="text-gray-500 mt-2">Chào mừng bạn trở lại!</Text>

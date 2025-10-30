@@ -1,6 +1,7 @@
 import { Flight, TicketClass } from "@/app/types/types";
 import FlightItem from "@/components/screens/book-flight/flight-item";
 import SortFilterModal, { FilterOptions, SortOption } from "@/components/screens/book-flight/modals/sort-filter-modal";
+import { useBooking } from "@/context/booking-context";
 import { format } from "date-fns";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -33,6 +34,7 @@ function FlightList() {
     children: string;
     infants: string;
   }>();
+  const { bookingState, dispatch } = useBooking();
 
   // State để quản lý giai đoạn chọn (đi hoặc về)
   const [selectionPhase, setSelectionPhase] = useState<SelectionPhase>('depart');
@@ -59,6 +61,24 @@ function FlightList() {
   const { flights, error } = useFlightSearch(params, selectionPhase);
   const displayedFlights = useFlightDisplay(flights, sortOption, filterOptions);
 
+  // Khởi tạo booking state khi component được mount lần đầu
+  useEffect(() => {
+    dispatch({
+      type: 'UPDATE_STATE',
+      payload: {
+        tripType: params.tripType,
+        originCode: params.originCode,
+        destinationCode: params.destinationCode,
+        departureDate: params.departureDate,
+        returnDate: params.returnDate,
+        passengerCounts: {
+          adults: parseInt(params.adults || '0'),
+          children: parseInt(params.children || '0'),
+          infants: parseInt(params.infants || '0'),
+        }
+      }
+    });
+  }, []); // Chạy 1 lần duy nhất
   useEffect(() => {
     // Cập nhật ngày hiển thị trên thanh scroller khi phase thay đổi
     const dateToDisplay = (params.tripType === 'round_trip' && selectionPhase === 'return')
@@ -90,27 +110,27 @@ function FlightList() {
     // Sửa lại điều kiện để khớp với giá trị từ params
     if (params.tripType === 'round_trip' && selectionPhase === 'depart') {
       // 1. Lưu chuyến bay đi đã chọn
-      setSelectedDepartureFlight({ flight: selectedFlight, ticketClass: selectedClass });
+      dispatch({ type: 'UPDATE_STATE', payload: { departureFlight: { flight: selectedFlight, ticketClass: selectedClass } } });
       // 2. Chuyển sang giai đoạn chọn chuyến về
       setSelectionPhase('return');
       // 3. Reset lựa chọn cho chuyến về
       setSelectedFlightId(null);
       setSelectedClass(null);
     } else {
-      // Điều hướng đến trang tiếp theo (thanh toán, thông tin hành khách,...)
-      const departureFlightData = params.tripType === 'round_trip' ? selectedDepartureFlight : { flight: currentSelectedFlight, ticketClass: selectedClass };
+      // Cập nhật state và điều hướng
+      const departureFlightData = params.tripType === 'round_trip' ? bookingState.departureFlight : { flight: currentSelectedFlight, ticketClass: selectedClass };
       const returnFlightData = params.tripType === 'round_trip' ? { flight: currentSelectedFlight, ticketClass: selectedClass } : null;
 
-      const navigationParams = {
-        ...params, // Pass along original search params like passenger counts
-        departureFlight: JSON.stringify(departureFlightData),
-        ...(returnFlightData && { returnFlight: JSON.stringify(returnFlightData) }),
-      };
-
+      dispatch({
+        type: 'UPDATE_STATE',
+        payload: {
+          departureFlight: departureFlightData,
+          returnFlight: returnFlightData,
+        }
+      });
       // Điều hướng trực tiếp, không dùng showLoading để bọc
       router.navigate({
-        pathname: '/(root)/(booking)/user-booking-info',
-        params: navigationParams
+        pathname: '/(root)/(booking)/user-booking-info'
       });
     }
   };
@@ -151,10 +171,10 @@ function FlightList() {
         <TouchableOpacity onPress={() => {
           // Nếu đang chọn chuyến về, nút back sẽ quay lại chọn chuyến đi
           if (params.tripType === 'round_trip' && selectionPhase === 'return') {
+            const departureFlight = bookingState.departureFlight;
             setSelectionPhase('depart');
-            setSelectedFlightId(selectedDepartureFlight?.flight.id || null);
-            setSelectedClass(selectedDepartureFlight?.ticketClass || null);
-            setSelectedDepartureFlight(null);
+            setSelectedFlightId(departureFlight?.flight.id || null);
+            setSelectedClass(departureFlight?.ticketClass || null);
           } else {
             router.back();
           }
@@ -217,18 +237,13 @@ function FlightList() {
       </View>
 
       {/* Hiển thị tóm tắt chuyến đi đã chọn */}
-      {selectionPhase === 'return' && selectedDepartureFlight && (
+      {selectionPhase === 'return' && bookingState.departureFlight && (
         <TouchableOpacity
           onPress={() => setSummaryVisible(true)}
           className="absolute bottom-20  bg-white p-4 w-full flex-row justify-between items-center"
         >
           <View>
             <Text className="text-blue-900 font-semibold">Xem tóm tắt chuyến bay</Text>
-            <Text className="text-gray-600 text-sm">
-              {selectedDepartureFlight && selectionPhase === "return"
-                ? "Đã chọn chuyến đi"
-                : "Đang chọn chuyến đi"}
-            </Text>
           </View>
           <Ionicons name="chevron-up" size={20} color="#1e3a8a" />
         </TouchableOpacity>
@@ -236,7 +251,7 @@ function FlightList() {
       <FlightSummaryModal
         visible={summaryVisible}
         onClose={() => setSummaryVisible(false)}
-        departureFlight={selectedDepartureFlight}
+        departureFlight={bookingState.departureFlight}
         returnFlight={
           params.tripType === "round_trip" &&
             selectionPhase === "return" &&

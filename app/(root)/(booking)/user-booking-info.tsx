@@ -1,10 +1,11 @@
-import { Passenger, SelectedFlight } from "@/app/types/types";
+import { Passenger } from "@/app/types/types";
 import BookingStepper from "@/components/screens/book-flight/booking-stepper";
+import { useBooking } from "@/context/booking-context";
 import PassengerForm from "@/components/screens/book-flight/passenger-form";
 import { useAuth } from "@/context/auth-context";
 import { Ionicons } from "@expo/vector-icons";
 import { differenceInYears, format, parseISO } from "date-fns";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { TextInput } from "react-native-paper";
@@ -19,13 +20,13 @@ const getPassengerType = (dob: Date | null): 'adult' | 'child' | 'infant' => {
 };
 
 function UserBookingInfo() {
-    const params = useLocalSearchParams();
     const router = useRouter();
     const { user } = useAuth(); // Lấy thông tin người dùng đã đăng nhập
-    const [departureFlight, setDepartureFlight] = useState<SelectedFlight | null>(null);
-    const [returnFlight, setReturnFlight] = useState<SelectedFlight | null>(null);
+    const { bookingState, dispatch } = useBooking();
+    const { departureFlight, returnFlight, passengerCounts } = bookingState;
 
     // Tự động điền thông tin nếu người dùng đã đăng nhập
+    // Sử dụng state cục bộ cho form inputs
     const [bookerName, setBookerName] = useState(user ? `${user.lastName} ${user.firstName}` : '');
     const [bookerEmail, setBookerEmail] = useState(user ? user.email : '');
 
@@ -33,18 +34,10 @@ function UserBookingInfo() {
     const [nextPassengerId, setNextPassengerId] = useState(0); // To generate unique IDs for new passengers
 
     useEffect(() => {
-        // Parse dữ liệu chuyến bay từ params
-        if (params.departureFlight && typeof params.departureFlight === 'string') {
-            setDepartureFlight(JSON.parse(params.departureFlight));
-        }
-        if (params.returnFlight && typeof params.returnFlight === 'string') {
-            setReturnFlight(JSON.parse(params.returnFlight));
-        }
-
         // Khởi tạo danh sách hành khách dựa trên params
-        const adults = parseInt(params.adults as string || '1');
-        const children = parseInt(params.children as string || '0');
-        const infants = parseInt(params.infants as string || '0');
+        const adults = passengerCounts?.adults || 1;
+        const children = passengerCounts?.children || 0;
+        const infants = passengerCounts?.infants || 0;
         const initialPassengers: Passenger[] = [];
         let currentId = 0;
 
@@ -60,14 +53,7 @@ function UserBookingInfo() {
         setPassengers(initialPassengers);
         setNextPassengerId(currentId); // Set the next available ID
 
-    }, [
-        // Dependency array for useEffect
-        params.departureFlight,
-        params.returnFlight,
-        params.adults,
-        params.children,
-        params.infants,
-    ]);
+    }, [passengerCounts]);
 
 
     const handlePassengerChange = (id: number, field: keyof Passenger, value: any) => {
@@ -156,15 +142,15 @@ function UserBookingInfo() {
                 {
                     text: "Xác nhận", 
                     onPress: () => {
-                        router.navigate({
-                            pathname: '/(root)/(booking)/services-and-seats',
-                            params: { 
-                                ...params, 
-                                passengers: JSON.stringify(passengers),
+                        dispatch({
+                            type: 'UPDATE_STATE',
+                            payload: {
+                                passengers: passengers,
                                 contactName: bookerName,
                                 contactEmail: bookerEmail,
                             }
                         });
+                        router.navigate('/(root)/(booking)/services-and-seats');
                     },
                 }
             ]
@@ -172,9 +158,6 @@ function UserBookingInfo() {
 
 
       // router.navigate({
-      //     pathname: '/(root)/(booking)/services-and-seats',
-      //     params: { ...params, passengers: JSON.stringify(passengers) }
-      // });
     };
 
     return (
@@ -203,7 +186,7 @@ function UserBookingInfo() {
                                     <Text className="text-lg font-bold text-blue-900">
                                         {departureFlight.flight?.departure?.code} ({departureFlight.flight?.departure?.time}) → {departureFlight.flight?.arrival?.code} ({departureFlight.flight?.arrival?.time})
                                     </Text>
-                                    <Text className="text-sm text-gray-500">Ngày: {format(parseISO(params.departureDate as string), 'dd/MM/yyyy')}</Text>
+                                    <Text className="text-sm text-gray-500">Ngày: {bookingState.departureDate ? format(parseISO(bookingState.departureDate), 'dd/MM/yyyy') : ''}</Text>
                                     <Text className="text-sm text-gray-500">Hãng: {departureFlight.flight?.airline} - {departureFlight.flight?.flightNumber}</Text>
                                     <Text className="text-sm text-gray-500">Hạng vé: {departureFlight.ticketClass?.name}</Text>
                                 </View>
@@ -214,7 +197,7 @@ function UserBookingInfo() {
                                     <Text className="text-lg font-bold text-blue-900">
                                         {returnFlight.flight?.departure?.code} ({returnFlight.flight?.departure?.time}) → {returnFlight.flight?.arrival?.code} ({returnFlight.flight?.arrival?.time})
                                     </Text>
-                                    <Text className="text-sm text-gray-500">Ngày: {format(parseISO(params.returnDate as string), 'dd/MM/yyyy')}</Text>
+                                    <Text className="text-sm text-gray-500">Ngày: {bookingState.returnDate ? format(parseISO(bookingState.returnDate), 'dd/MM/yyyy') : ''}</Text>
                                     <Text className="text-sm text-gray-500">Hãng: {returnFlight.flight?.airline} - {returnFlight.flight?.flightNumber}</Text>
                                     <Text className="text-sm text-gray-500">Hạng vé: {returnFlight.ticketClass?.name}</Text>
                                 </View>
@@ -231,6 +214,7 @@ function UserBookingInfo() {
                                     value={bookerName}
                                     onChangeText={setBookerName}
                                     autoCapitalize="words"
+                                    style={{ fontSize: 14 }}
                                 />
                                 <TextInput
                                     label="Email"
@@ -239,6 +223,7 @@ function UserBookingInfo() {
                                     onChangeText={setBookerEmail}
                                     autoCapitalize="none"
                                     keyboardType="email-address"
+                                    style={{ fontSize: 14 }}
                                 />
                             </View>
 

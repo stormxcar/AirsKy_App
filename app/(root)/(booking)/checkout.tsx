@@ -1,6 +1,7 @@
 import { BaggagePackageEnum, BookingRequest, PassengerSeatRequest, PaymentMethod } from "@/app/types/booking";
 import { BaggagePackage, Passenger, SelectedFlight } from "@/app/types/types";
 import BookingStepper from "@/components/screens/book-flight/booking-stepper";
+import { useBooking } from "@/context/booking-context";
 import { useAuth } from "@/context/auth-context";
 import { useLoading } from "@/context/loading-context";
 import { createBooking } from "@/services/booking-service";
@@ -11,30 +12,26 @@ import { Alert, Image, ScrollView, Text, TouchableOpacity, View, Linking } from 
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const Checkout = () => {
-    const params = useLocalSearchParams();
     const router = useRouter();
     const { user } = useAuth();
     const { showLoading, hideLoading } = useLoading();
+    const { bookingState, dispatch } = useBooking();
 
     // --- Lấy dữ liệu từ các bước trước ---
-    const departureFlight: SelectedFlight | null = useMemo(() => params.departureFlight ? JSON.parse(params.departureFlight as string) : null, [params.departureFlight]);
-    const returnFlight: SelectedFlight | null = useMemo(() => params.returnFlight ? JSON.parse(params.returnFlight as string) : null, [params.returnFlight]);
-    const passengers: Passenger[] = useMemo(() => params.passengers ? JSON.parse(params.passengers as string) : [], [params.passengers]);
-    const selectedSeats: { depart: { [key: string]: any }, return: { [key: string]: any } } = useMemo(() => params.selectedSeats ? JSON.parse(params.selectedSeats as string) : { depart: {}, return: {} }, [params.selectedSeats]);
-    const selectedMeals: { depart: { [key: string]: any }, return: { [key: string]: any } } = useMemo(() => params.selectedMeals ? JSON.parse(params.selectedMeals as string) : { depart: {}, return: {} }, [params.selectedMeals]);
-    const selectedBaggages: { depart: { [key: string]: any }, return: { [key: string]: any } } = useMemo(() => params.selectedBaggages ? JSON.parse(params.selectedBaggages as string) : { depart: {}, return: {} }, [params.selectedBaggages]);
-    const totalPriceFromParams = useMemo(() => parseFloat(params.totalPrice as string || '0'), [params.totalPrice]);
-    const contactName = params.contactName as string;
-    const contactEmail = params.contactEmail as string;
+    const {
+        departureFlight,
+        returnFlight,
+        passengers = [],
+        selectedSeats = { depart: {}, return: {} },
+        selectedMeals = { depart: {}, return: {} },
+        selectedBaggages = { depart: {}, return: {} },
+        totalPrice = 0,
+        contactName,
+        contactEmail
+    } = bookingState;
 
     // --- State cho trang thanh toán ---
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
-    const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
-
-    // --- Tính toán tổng chi phí ---
-    const totalPrice = useMemo(() => {
-        return totalPriceFromParams; // Sử dụng tổng tiền đã được tính và truyền từ màn hình trước.
-    });
 
     const handleProcessPayment = async () => {
         if (!paymentMethod) {
@@ -115,11 +112,14 @@ const Checkout = () => {
                 // 4. Điều hướng đến màn hình phù hợp dựa trên phương thức thanh toán
                 if (paymentMethod === PaymentMethod.BANK_TRANSFER) {
                     // Điều hướng đến màn hình QR code
+                    dispatch({ type: 'RESET_STATE' }); // Reset state trước khi điều hướng
                     router.replace({
                         pathname: '/(root)/(booking)/payment-qr',
                         params: { url: checkoutUrl, bookingCode: createdBooking.bookingCode }
                     });
                 } else {
+                    // Reset state trước khi mở URL ngoài
+                    dispatch({ type: 'RESET_STATE' });
                     // Điều hướng đến WebView cho PayPal
                     await Linking.openURL(checkoutUrl);
                     // Sau khi mở trình duyệt, điều hướng người dùng đến trang kết quả tạm thời hoặc hướng dẫn kiểm tra email

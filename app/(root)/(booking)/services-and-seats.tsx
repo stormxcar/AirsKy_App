@@ -3,6 +3,7 @@ import { BaggagePackage, Seat, SelectedFlight } from "@/app/types/types";
 import AdditionalServices from "@/components/screens/book-flight/additional-services";
 import BookingStepper from "@/components/screens/book-flight/booking-stepper";
 import BookingSummaryModal from "@/components/screens/book-flight/modals/booking-summary-modal";
+import { useBooking } from "@/context/booking-context";
 import SeatMap from "@/components/screens/book-flight/seat-map";
 import { useLoading } from "@/context/loading-context";
 import { fetchSeatsByFlightId } from "@/services/flight-service";
@@ -26,24 +27,14 @@ const getSeatAdditionalPrice = (seatType: string | undefined): number => {
     return SEAT_TYPE_PRICES[seatType] || SEAT_TYPE_PRICES['DEFAULT'];
 };
 const ServiceAndSeatSelection = () => {
-    const params = useLocalSearchParams();
     const { showLoading, hideLoading } = useLoading();
     const router = useRouter();
-    const passengers = useMemo(() => params.passengers ? JSON.parse(params.passengers as string) : [], [params.passengers]);
-
-    // Trích xuất flightId từ chuyến bay đi đã chọn
-    const departureFlightData = useMemo(() => {
-        if (params.departureFlight && typeof params.departureFlight === 'string') {
-            return JSON.parse(params.departureFlight) as SelectedFlight;
-        }
-        return null;
-    }, [params.departureFlight]);
-    const returnFlightData = useMemo(() => {
-        if (params.returnFlight && typeof params.returnFlight === 'string') {
-            return JSON.parse(params.returnFlight) as SelectedFlight;
-        }
-        return null;
-    }, [params.returnFlight]);
+    const { bookingState, dispatch } = useBooking();
+    const {
+        passengers = [],
+        departureFlight: departureFlightData,
+        returnFlight: returnFlightData
+    } = bookingState;
 
     const isRoundTrip = !!returnFlightData;
     const [selectionPhase, setSelectionPhase] = useState<'depart' | 'return'>('depart');
@@ -181,17 +172,18 @@ const ServiceAndSeatSelection = () => {
             }
         });
 
-        // Điều hướng đến trang thanh toán (bước 3) và truyền dữ liệu
-        router.navigate({
-            pathname: '/(root)/(booking)/checkout',
-            params: {
-                ...params,
-                selectedSeats: JSON.stringify(selectedSeatsWithDetails), // Truyền đối tượng có cả id và number
-                selectedBaggages: JSON.stringify(selectedBaggages),
-                selectedMeals: JSON.stringify(selectedMeals),
-                totalPrice: totalPrice.toString(), // Truyền tổng tiền
+        // Cập nhật state trong context
+        dispatch({
+            type: 'UPDATE_STATE',
+            payload: {
+                selectedSeats: selectedSeatsWithDetails,
+                selectedBaggages: selectedBaggages,
+                selectedMeals: selectedMeals,
+                totalPrice: totalPrice,
             }
         });
+        // Điều hướng đến trang thanh toán (bước 3) và truyền dữ liệu
+        router.navigate('/(root)/(booking)/checkout');
     };
 
     // Tính toán lại trạng thái của danh sách ghế để hiển thị trên UI

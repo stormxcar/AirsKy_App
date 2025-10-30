@@ -70,8 +70,9 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
                     value={passenger.lastName}
                     onChangeText={(text) => onChange(passenger.id, 'lastName', processNameInput(text))}
                     className="flex-1 "
-                    style={{ backgroundColor: 'transparent' }}
+                    style={{ backgroundColor: 'transparent',fontSize:14 }}
                     autoCapitalize="characters"
+                    
                 />
                 <TextInput
                     label="Tên"
@@ -79,7 +80,7 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
                     value={passenger.firstName}
                     onChangeText={(text) => onChange(passenger.id, 'firstName', processNameInput(text))}
                     className="flex-1"
-                    style={{ backgroundColor: 'transparent' }}
+                    style={{ backgroundColor: 'transparent',fontSize:14 }}
                     autoCapitalize="characters"
                 />
 
@@ -92,7 +93,7 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
                         editable={false}
                         pointerEvents="none" // Prevent keyboard from opening
                         // right={<TextInput.Icon icon="calendar" />}
-                        style={{ backgroundColor: 'transparent' }}
+                        style={{ backgroundColor: 'transparent',fontSize:14 }}
                     />
                 </TouchableOpacity>
                 {showDatePicker && (
@@ -115,7 +116,7 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
                         editable={false}
                         pointerEvents="none"
                         // right={<TextInput.Icon icon="chevron-down" />}
-                        style={{ backgroundColor: 'transparent' }}
+                        style={{ backgroundColor: 'transparent',fontSize:14 }}
                     />
                 </TouchableOpacity>
 
