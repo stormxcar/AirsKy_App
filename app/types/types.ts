@@ -82,4 +82,11 @@ export const BAGGAGE_PACKAGES: BaggagePackage[] = [
  * Represents the status and details of a seat on a plane.
  */
 // export type SeatStatus = 'available' | 'occupied' | 'selected' | 'exit';
-export type Seat = { id: string; status: SeatStatus; price?: number, seatNumber?: string }; // SeatStatus giờ đây được import
+export type Seat = {
+  id: string;
+  status: SeatStatus;
+  price: number; // Phụ phí cho loại ghế này
+  seatNumber: string;
+  seatType: string; // e.g., 'STANDARD', 'EXIT_ROW', 'FRONT_ROW'
+  className: string; // e.g., 'Economy', 'Business', 'First'
+};

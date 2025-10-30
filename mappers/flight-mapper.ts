@@ -74,7 +74,9 @@ export const mapApiSeatToSeat = (apiSeat: SeatResponse): Seat => {
     return {
         id: apiSeat.seatId.toString(),
         status: apiSeat.status,
-        price: apiSeat.price,
         seatNumber: apiSeat.seatNumber,
+        seatType: apiSeat.seatType,
+        className:apiSeat.className
+        
     };
 };

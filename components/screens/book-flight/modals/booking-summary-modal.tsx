@@ -7,15 +7,18 @@ const { height: screenHeight } = Dimensions.get('window');
 
 type BookingSummaryModalProps = {
     passengers: Passenger[];
-    selectedSeats: { [passengerId: number]: string }; // passengerId -> seatId
-    selectedBaggages: { [passengerId: number]: BaggagePackage | null };
-    selectedMeals: { [passengerId: number]: boolean };
-    allSeats: Seat[]; // To get seatNumber from seatId
+    selectedSeats: { depart: { [passengerId: number]: string }, return: { [passengerId: number]: string } };
+    selectedBaggages: { depart: { [passengerId: number]: BaggagePackage | null }, return: { [passengerId: number]: BaggagePackage | null } };
+    selectedMeals: { depart: { [passengerId: number]: boolean }, return: { [passengerId: number]: boolean } };
+    departSeats: Seat[]; // Ghế chuyến đi
+    returnSeats: Seat[]; // Ghế chuyến về
     currentPassengerIndex: number;
     onPassengerSelect: (index: number) => void;
     totalPrice: number;
     onContinue: () => void;
     showContinueButton: boolean;
+    isRoundTrip: boolean;
+    selectionPhase: 'depart' | 'return';
 };
 
 const BookingSummaryModal = ({
@@ -23,12 +26,15 @@ const BookingSummaryModal = ({
     selectedSeats,
     selectedBaggages,
     selectedMeals,
-    allSeats,
+    departSeats,
+    returnSeats,
     currentPassengerIndex,
     onPassengerSelect,
     totalPrice,
     onContinue,
     showContinueButton,
+    isRoundTrip,
+    selectionPhase,
 }: BookingSummaryModalProps) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const animatedHeight = React.useRef(new Animated.Value(0)).current;
@@ -49,9 +55,10 @@ const BookingSummaryModal = ({
         height: animatedHeight,
     };
 
-    const getSeatNumber = (seatId: string | undefined) => {
+    const getSeatNumber = (seatId: string | undefined, phase: 'depart' | 'return') => {
         if (!seatId) return 'Chưa chọn';
-        const seat = allSeats.find(s => s.id === seatId);
+        const seatList = phase === 'depart' ? departSeats : returnSeats;
+        const seat = seatList.find(s => s.id === seatId);
         return seat ? seat.seatNumber : 'N/A';
     };
 
@@ -65,11 +72,11 @@ const BookingSummaryModal = ({
 
     return (
         <View style={styles.container} className="bg-white border-t border-gray-200 shadow-lg">
-            {/* Header / Toggle Bar */}
+            {/* Header / Toggle Bar - Hiển thị khi thu gọn */}
             <TouchableOpacity onPress={toggleExpand} style={styles.toggleBar} className="flex-row justify-between items-center p-4">
                 <View className="flex-row items-center">
                     <Ionicons name={isExpanded ? "chevron-down" : "chevron-up"} size={24} color="#1e3a8a" />
-                    <Text className="text-lg font-bold text-blue-900 ml-2">Tổng số tiền:</Text>
+                    <Text className="text-lg font-bold text-blue-900 ml-2">{isExpanded ? 'Thu gọn' : 'Tóm tắt & tổng tiền'}</Text>
                 </View>
                 <Text className="text-xl font-bold text-red-600">{totalPrice.toLocaleString('vi-VN')} ₫</Text>
             </TouchableOpacity>
@@ -86,15 +93,34 @@ const BookingSummaryModal = ({
                             <Text className={`font-bold ${currentPassengerIndex === index ? 'text-blue-900' : 'text-gray-800'}`}>
                                 {p.lastName} {p.firstName}
                             </Text>
-                            <Text className="text-sm text-gray-600">
-                                Ghế: {getSeatNumber(selectedSeats[p.id])}
-                            </Text>
-                            <Text className="text-sm text-gray-600">
-                                Hành lý: {getBaggageLabel(selectedBaggages[p.id])}
-                            </Text>
-                            <Text className="text-sm text-gray-600">
-                                Suất ăn: {getMealLabel(selectedMeals[p.id])}
-                            </Text>
+                            {/* Chuyến đi */}
+                            <View className="mt-1 pl-2 border-l-2 border-gray-200">
+                                <Text className="text-xs font-semibold text-gray-500">Chuyến đi</Text>
+                                <Text className="text-sm text-gray-600">
+                                    Ghế: {getSeatNumber(selectedSeats.depart[p.id], 'depart')}
+                                </Text>
+                                <Text className="text-sm text-gray-600">
+                                    Hành lý: {getBaggageLabel(selectedBaggages.depart[p.id])}
+                                </Text>
+                                <Text className="text-sm text-gray-600">
+                                    Suất ăn: {getMealLabel(selectedMeals.depart[p.id])}
+                                </Text>
+                            </View>
+                            {/* Chuyến về (nếu có) */}
+                            {isRoundTrip && (
+                                <View className="mt-2 pl-2 border-l-2 border-gray-200">
+                                    <Text className="text-xs font-semibold text-gray-500">Chuyến về</Text>
+                                    <Text className="text-sm text-gray-600">
+                                        Ghế: {getSeatNumber(selectedSeats.return[p.id], 'return')}
+                                    </Text>
+                                    <Text className="text-sm text-gray-600">
+                                        Hành lý: {getBaggageLabel(selectedBaggages.return[p.id])}
+                                    </Text>
+                                    <Text className="text-sm text-gray-600">
+                                        Suất ăn: {getMealLabel(selectedMeals.return[p.id])}
+                                    </Text>
+                                </View>
+                            )}
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
@@ -104,7 +130,11 @@ const BookingSummaryModal = ({
             {showContinueButton && (
                 <View className="p-4 bg-white border-t border-gray-200">
                     <TouchableOpacity onPress={onContinue} className="bg-blue-900 py-3 rounded-full shadow-md">
-                        <Text className="text-white text-center font-bold text-lg">Tiếp tục</Text>
+                        <Text className="text-white text-center font-bold text-lg">
+                            {isRoundTrip && selectionPhase === 'depart'
+                                ? 'Chọn cho chuyến về'
+                                : 'Tiếp tục'}
+                        </Text>
                     </TouchableOpacity>
                 </View>
             )}
