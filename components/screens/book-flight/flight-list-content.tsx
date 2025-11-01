@@ -10,7 +10,7 @@ import {
     NativeSyntheticEvent,
     NativeScrollEvent,
 } from 'react-native';
-import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Flight, TicketClass } from '@/app/types/types';
@@ -73,6 +73,26 @@ const FlightListContent: React.FC<FlightListContentProps> = ({
     // Hợp nhất trạng thái loading. Giao diện sẽ ở trạng thái tải nếu một trong hai (ngày hoặc chuyến bay) đang tải.
     const isContentLoading = (isLoadingDates || isLoadingFlights) && !isInitialLoading;
 
+    // Animation cho hiệu ứng trượt khi tải lại danh sách
+    const listAnimatedStyle = useAnimatedStyle(() => {
+        return {
+            opacity: withTiming(isContentLoading ? 0 : 1, { duration: 250 }),
+            transform: [
+                { translateY: withTiming(isContentLoading ? 20 : 0, { duration: 300, easing: Easing.out(Easing.ease) }) },
+            ],
+        };
+    });
+
+    const skeletonAnimatedStyle = useAnimatedStyle(() => {
+        return {
+            opacity: withTiming(isContentLoading ? 1 : 0, { duration: 250 }),
+            transform: [
+                { translateY: withTiming(isContentLoading ? 0 : -20, { duration: 300, easing: Easing.out(Easing.ease) }) },
+            ],
+            // Dùng position absolute để skeleton và list có thể chồng lên nhau trong lúc chuyển đổi
+            position: 'absolute',
+        };
+    });
     return (
         <View className="bg-white flex-1 rounded-t-[40px] -mt-4 overflow-hidden">
             {/* Date Scroller with Prev/Next buttons */}
@@ -157,45 +177,51 @@ const FlightListContent: React.FC<FlightListContentProps> = ({
                     </View>
 
                     {/* Skeleton hoặc danh sách thực tế */}
-                    {isContentLoading ? (
-                        <View>
-                            <FlightItemSkeleton />
-                            <FlightItemSkeleton />
-                            <FlightItemSkeleton />
-                        </View>
-                    ) : (
-                        <FlatList
-                            extraData={{ selectedFlightId, selectedClass }}
-                            data={displayedFlights}
-                            refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} colors={['#1e3a8a']} />}
-                            renderItem={({ item }) => (
-                                <FlightItem
-                                    flight={item}
-                                    isSelected={selectedFlightId === item.id}
-                                    selectedClassId={selectedFlightId === item.id ? selectedClass?.id ?? null : null}
-                                    onSelect={() => handleSelectFlight(item.id)}
-                                    onSelectClass={handleSelectClass}
-                                />
-                            )}
-                            keyExtractor={(item) => item.id}
-                            contentContainerStyle={{ paddingBottom: 120 }}
-                            ListEmptyComponent={
-                                <View className="items-center mt-10 p-4">
-                                    {!isLoadingFlights && !isRefreshing && (
-                                        <>
-                                            <Ionicons name="airplane-outline" size={100} color="#cbd5e1" />
-                                            <Text className="text-lg font-bold text-gray-600 mt-4">Không tìm thấy chuyến bay</Text>
-                                            {error ? (
-                                                <Text className="text-red-500 text-center mt-2">{error}</Text>
-                                            ) : (
-                                                <Text className="text-gray-500 text-center mt-2">Vui lòng thử tìm kiếm với ngày hoặc chặng bay khác.</Text>
-                                            )}
-                                        </>
-                                    )}
-                                </View>
-                            }
-                        />
-                    )}
+                    <View className="flex-1">
+                        {/* Skeleton View */}
+                        <Animated.View style={skeletonAnimatedStyle} className="w-full">
+                            <View>
+                                <FlightItemSkeleton />
+                                <FlightItemSkeleton />
+                                <FlightItemSkeleton />
+                            </View>
+                        </Animated.View>
+
+                        {/* Actual List View */}
+                        <Animated.View style={listAnimatedStyle} className="flex-1">
+                            <FlatList
+                                extraData={{ selectedFlightId, selectedClass }}
+                                data={displayedFlights}
+                                refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} colors={['#1e3a8a']} />}
+                                renderItem={({ item }) => (
+                                    <FlightItem
+                                        flight={item}
+                                        isSelected={selectedFlightId === item.id}
+                                        selectedClassId={selectedFlightId === item.id ? selectedClass?.id ?? null : null}
+                                        onSelect={() => handleSelectFlight(item.id)}
+                                        onSelectClass={handleSelectClass}
+                                    />
+                                )}
+                                keyExtractor={(item) => item.id}
+                                contentContainerStyle={{ paddingBottom: 120 }}
+                                ListEmptyComponent={
+                                    <View className="items-center mt-10 p-4">
+                                        {!isLoadingFlights && !isRefreshing && (
+                                            <>
+                                                <Ionicons name="airplane-outline" size={100} color="#cbd5e1" />
+                                                <Text className="text-lg font-bold text-gray-600 mt-4">Không tìm thấy chuyến bay</Text>
+                                                {error ? (
+                                                    <Text className="text-red-500 text-center mt-2">{error}</Text>
+                                                ) : (
+                                                    <Text className="text-gray-500 text-center mt-2">Vui lòng thử tìm kiếm với ngày hoặc chặng bay khác.</Text>
+                                                )}
+                                            </>
+                                        )}
+                                    </View>
+                                }
+                            />
+                        </Animated.View>
+                    </View>
                 </View>
             )}
         </View>

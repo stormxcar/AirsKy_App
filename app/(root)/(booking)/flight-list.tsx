@@ -9,7 +9,7 @@ import { useFlightSearch } from "@/hooks/use-flight-search";
 import { useFlightDisplay } from "@/hooks/use-flight-display";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FlightSummaryModal from "@/components/screens/book-flight/modals/flight-summary-modal";
-import Animated from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useDateScroller } from "@/hooks/use-date-scroller";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAllAirports } from "@/services/airport-service";
@@ -249,6 +249,26 @@ function FlightList() {
   }, [searchParams, selectionPhase]
   );
 
+  // Animated style cho nút tóm tắt chuyến bay
+  const summaryButtonAnimatedStyle = useAnimatedStyle(() => {
+    // Chiều cao của khu vực nút "Tiếp tục" là khoảng 92px.
+    // Khi nút "Tiếp tục" hiện, nút tóm tắt sẽ cách đáy 92px.
+    // Khi nút "Tiếp tục" ẩn, nút tóm tắt sẽ cách đáy 0.
+    return {
+      bottom: withTiming(showContinueButton ? 92 : 10, { duration: 300 }),
+    };
+  });
+
+  // Animated style cho nút "Tiếp tục"
+  const continueButtonAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      // Khi nút hiển thị, trượt lên (translateY: 0).
+      // Khi nút ẩn, trượt xuống dưới màn hình (translateY: 100).
+      transform: [
+        { translateY: withTiming(showContinueButton ? 0 : 100, { duration: 300 }) },
+      ],
+    };
+  });
   return (
     <SafeAreaView className="flex-1 bg-blue-950" edges={["top"]}>
       {/* Header */}
@@ -298,15 +318,15 @@ function FlightList() {
 
       {/* Hiển thị tóm tắt chuyến đi đã chọn */}
       {selectionPhase === 'return' && bookingState.departureFlight && (
-        <TouchableOpacity
-          onPress={() => setSummaryVisible(true)}
-          className="absolute bottom-20  bg-white p-4 w-full flex-row justify-between items-center"
-        >
-          <View>
+        <Animated.View style={summaryButtonAnimatedStyle} className="absolute w-full">
+          <TouchableOpacity
+            onPress={() => setSummaryVisible(true)}
+            className="bg-white p-4 flex-row justify-between items-center border-t border-gray-200"
+          >
             <Text className="text-blue-900 font-semibold">Xem tóm tắt chuyến bay</Text>
-          </View>
-          <Ionicons name="chevron-up" size={20} color="#1e3a8a" />
-        </TouchableOpacity>
+            <Ionicons name="chevron-up" size={20} color="#1e3a8a" />
+          </TouchableOpacity>
+        </Animated.View>
       )}
       <FlightSummaryModal
         visible={summaryVisible}
@@ -337,9 +357,9 @@ function FlightList() {
         initialFilters={filterOptions}
         allFlights={flights} // Truyền danh sách gốc để lấy các hãng bay
       />
-      {/* Nút Tiếp tục chỉ hiển thị khi đã chọn chuyến bay và hạng vé */}
-      {showContinueButton && (
-        <View className="absolute bottom-0 left-0 right-0 bg-white p-4">
+      {/* Nút Tiếp tục với hiệu ứng trượt */}
+      <Animated.View style={continueButtonAnimatedStyle} className="absolute bottom-0 left-0 right-0">
+        <View className="bg-white p-4 border-t border-gray-200 h-[92px]">
           <TouchableOpacity onPress={handleContinue}
             className="bg-blue-900 py-3 rounded-full flex-row justify-between items-center px-6"
           >
@@ -348,9 +368,8 @@ function FlightList() {
             </Text>
             <Text className="text-white font-bold text-xl">{totalPrice.toLocaleString('vi-VN')} ₫</Text>
           </TouchableOpacity>
-
         </View>
-      )}
+      </Animated.View>
     </SafeAreaView>
   );
 }
