@@ -269,6 +269,20 @@ function FlightList() {
       ],
     };
   });
+
+  // Animated style cho nút "Sắp xếp & Lọc"
+  const filterButtonAnimatedStyle = useAnimatedStyle(() => {
+    let bottomValue = 16; // Vị trí cơ bản (cách đáy 16px)
+    if (showContinueButton) {
+      // Nếu nút "Tiếp tục" hiện, đẩy nút lọc lên trên nó (92px là chiều cao nút Tiếp tục)
+      bottomValue += 92;
+    }
+    if (selectionPhase === 'return' && bookingState.departureFlight) {
+      // Nếu nút "Tóm tắt" hiện, đẩy nút lọc lên trên nó nữa (khoảng 60px)
+      bottomValue += 60;
+    }
+    return { bottom: withTiming(bottomValue, { duration: 300 }) };
+  });
   return (
     <SafeAreaView className="flex-1 bg-blue-950" edges={["top"]}>
       {/* Header */}
@@ -343,11 +357,11 @@ function FlightList() {
        
       />
       {/* Nút Sắp xếp & Lọc */}
-      <View className="absolute bottom-44 right-4 z-20">
-        <TouchableOpacity onPress={() => setSortFilterModalVisible(true)} className="bg-blue-900 p-4 rounded-full shadow-lg">
-          <Ionicons name="options" size={24} color="white" />
-        </TouchableOpacity>
-      </View>
+      <Animated.View style={filterButtonAnimatedStyle} className="absolute right-4 z-20">
+          <TouchableOpacity onPress={() => setSortFilterModalVisible(true)} className="bg-blue-900 p-4 rounded-full shadow-lg">
+              <Ionicons name="options" size={24} color="white" />
+          </TouchableOpacity>
+      </Animated.View>
 
       <SortFilterModal
         visible={sortFilterModalVisible}
