@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/context/auth-context";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 
 import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useLoading } from "@/context/loading-context";
 import { getMyBookings } from "@/services/user-service";
 import { BookingResponse } from "@/app/types/booking";
@@ -19,6 +20,7 @@ const MyTrips = () => {
   const [activeTab, setActiveTab] = useState<Tab>('upcoming');
   const [isFindBookingModalVisible, setFindBookingModalVisible] = useState(false);
   const { user } = useAuth(); // Kiểm tra trạng thái đăng nhập
+  const router = useRouter();
   const { showLoading } = useLoading();
 
   const handleFindBooking = () => {
@@ -28,6 +30,16 @@ const MyTrips = () => {
     }
     Alert.alert("Tìm kiếm", `Đang tìm kiếm mã đặt chỗ: ${bookingCode}`);
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      // Khi màn hình được focus, kiểm tra xem người dùng đã đăng nhập chưa
+      // Nếu chưa, chuyển hướng đến trang đăng nhập
+      if (!user) {
+        router.replace('/(root)/(auth)/sign-in');
+      }
+    }, [user, router])
+  );
 
   // Lấy danh sách booking khi người dùng đã đăng nhập
   useEffect(() => {
@@ -84,6 +96,13 @@ const MyTrips = () => {
   }, [bookings]);
 
   const tripsToDisplay = categorizedTrips[activeTab];
+
+  // Nếu chưa có user, hiển thị màn hình trống để tránh flicker trước khi chuyển hướng
+  if (!user) {
+    return (
+      <SafeAreaView className="flex-1 bg-blue-950" edges={["top", "left", "right"]} />
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-blue-950" edges={["top", "left", "right"]}>

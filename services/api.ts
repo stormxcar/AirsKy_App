@@ -1,5 +1,6 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+import { router } from 'expo-router';
 import env from '@/config/env';
 
 // Tạo một instance của axios với cấu hình cơ bản
@@ -9,12 +10,16 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
-
+console.log(env.API_BASE_URL)
 // Interceptor để thêm token vào header của mỗi yêu cầu
 api.interceptors.request.use(
   async (config) => {
-    // Lấy token từ AsyncStorage (hoặc bất kỳ nơi nào bạn lưu trữ nó)
-    const token = await AsyncStorage.getItem('userToken');
+    // Lấy authData từ SecureStore
+    const authDataString = await SecureStore.getItemAsync('auth-data');
+    let token = null;
+    if (authDataString) {
+      token = JSON.parse(authDataString).accessToken;
+    }
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -28,12 +33,14 @@ api.interceptors.request.use(
 // Interceptor để xử lý lỗi chung (ví dụ: lỗi 401 - Unauthorized)
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response && error.response.status === 401) {
       // Xử lý khi token hết hạn hoặc không hợp lệ
-      // Ví dụ: Đăng xuất người dùng và điều hướng về trang đăng nhập
+      // Xóa token cũ và điều hướng về trang đăng nhập
       console.log('Unauthorized, logging out...');
-      // router.replace('/(root)/(auth)/sign-in');
+      await SecureStore.deleteItemAsync('auth-data');
+      // Dùng replace để người dùng không thể back lại trang cũ
+      router.replace('/(root)/(auth)/sign-in');
     }
     return Promise.reject(error);
   }
