@@ -1,31 +1,29 @@
-import { Flight, TicketClass } from "@/app/types/types";
-import FlightItem from "@/components/screens/book-flight/flight-item";
+import { Airport, Flight, TicketClass } from "@/app/types/types";
 import SortFilterModal, { FilterOptions, SortOption } from "@/components/screens/book-flight/modals/sort-filter-modal";
 import { useBooking } from "@/context/booking-context";
-import { format } from "date-fns";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { FlatList, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { useFlightSearch } from "@/hooks/useFlightSearch";
-import { useFlightDisplay } from "@/hooks/useFlightDisplay";
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import {  ScrollView, Text, TouchableOpacity, View, Dimensions, RefreshControl } from 'react-native';
+import { useFlightSearch } from "@/hooks/use-flight-search";
+import { useFlightDisplay } from "@/hooks/use-flight-display";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FlightSummaryModal from "@/components/screens/book-flight/modals/flight-summary-modal";
+import Animated from 'react-native-reanimated';
+import { useDateScroller } from "@/hooks/use-date-scroller";
+import { useQuery } from "@tanstack/react-query";
+import { fetchAllAirports } from "@/services/airport-service";
+import FlightListContent from '@/components/screens/book-flight/flight-list-content';
+import { useLoading } from "@/context/loading-context";
 
 type SelectionPhase = 'depart' | 'return';
-// Dữ liệu mẫu cho thanh chọn ngày
-const MOCK_DATES = [
-  { date: "T5, 15/08", price: "1.52tr" },
-  { date: "T2, 27/10", price: "1.78tr", active: true },
-  { date: "T7, 17/08", price: "2.1tr" },
-  { date: "CN, 18/08", price: "2.5tr" },
-  { date: "T2, 19/08", price: "1.6tr" },
-];
+
+const { width: screenWidth } = Dimensions.get('window');
 
 function FlightList() {
   const router = useRouter();
   const params = useLocalSearchParams<{
-    tripType: 'one_way' | 'round_trip'; // Sửa lại định dạng snake_case
+    tripType: 'one_way' | 'round_trip'; 
     originCode: string;
     destinationCode: string;
     departureDate: string;
@@ -35,12 +33,16 @@ function FlightList() {
     infants: string;
   }>();
   const { bookingState, dispatch } = useBooking();
+  const { showLoading, hideLoading } = useLoading();
+
+  // Sử dụng state cục bộ để quản lý params, vì params từ useLocalSearchParams là read-only
+  // và không thể thay đổi trực tiếp để trigger re-render.
+  const [searchParams, setSearchParams] = useState(params);
 
   // State để quản lý giai đoạn chọn (đi hoặc về)
   const [selectionPhase, setSelectionPhase] = useState<SelectionPhase>('depart');
   const [summaryVisible, setSummaryVisible] = useState(false);
 
-  const [selectedDate, setSelectedDate] = useState(params.departureDate); // State cho ngày đang được chọn trên thanh scroller
   // State cho sắp xếp và lọc
   const [sortFilterModalVisible, setSortFilterModalVisible] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('time_asc'); // Mặc định sắp xếp theo giờ bay sớm nhất
@@ -58,8 +60,61 @@ function FlightList() {
   const [selectedClass, setSelectedClass] = useState<TicketClass | null>(null);
 
   // --- Custom Hooks ---
-  const { flights, error } = useFlightSearch(params, selectionPhase);
+  const { flights, error, isLoading: isLoadingFlights, refetch: refetchFlights } = useFlightSearch(searchParams, selectionPhase);
   const displayedFlights = useFlightDisplay(flights, sortOption, filterOptions);
+
+  // Lấy dữ liệu sân bay để tạo map (code -> id)
+  const { data: airports = [] } = useQuery<Airport[], Error>({
+    queryKey: ['airports'],
+    queryFn: fetchAllAirports,
+    staleTime: Infinity, // Dữ liệu sân bay ít thay đổi, cache vô hạn
+  });
+  const airportIdMap = useMemo(() => new Map(airports.map(a => [a.code, a.id])), [airports]);
+
+  const { dates: dateScrollerData, isLoading: isLoadingDates, refetch: refetchDates } = useDateScroller(searchParams, airportIdMap, selectionPhase);
+
+  // Refs và States cho Date Scroller
+  const dateScrollViewRef = useRef<ScrollView>(null);
+  const dateItemLayouts = useRef(new Map<string, { x: number, width: number }>());
+  const [scrollPosition, setScrollPosition] = useState({ x: 0, contentWidth: 0, layoutWidth: 0 });
+
+  const SCROLL_AMOUNT = screenWidth * 0.7; // Lượng cuộn khi nhấn nút
+
+
+  // Quản lý trạng thái loading tổng thể
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      // Gọi lại API cho cả date scroller và flight list
+      await Promise.all([refetchDates(), refetchFlights()]);
+    } catch (err) {
+      console.error("Failed to refresh:", err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refetchDates, refetchFlights]);
+
+  useEffect(() => {
+    // Khi vào trang lần đầu, tải dữ liệu ban đầu
+    if (isInitialLoading) {
+      showLoading(async () => {
+        await refetchDates();
+      }).finally(() => {
+        setIsInitialLoading(false); // Đánh dấu đã tải xong lần đầu
+      });
+    }
+  }, []); // Chỉ chạy 1 lần khi mount
+
+  // Tải lại dữ liệu ngày và chuyến bay mỗi khi chặng bay thay đổi
+  useEffect(() => {
+    if (!isInitialLoading) { // Chỉ chạy khi không phải lần tải đầu
+      refetchDates();
+      refetchFlights();
+    }
+  }, [selectionPhase]);
 
   // Khởi tạo booking state khi component được mount lần đầu
   useEffect(() => {
@@ -79,13 +134,22 @@ function FlightList() {
       }
     });
   }, []); // Chạy 1 lần duy nhất
+  // console.log(flights)
+  // Tự động cuộn đến ngày được chọn
   useEffect(() => {
-    // Cập nhật ngày hiển thị trên thanh scroller khi phase thay đổi
-    const dateToDisplay = (params.tripType === 'round_trip' && selectionPhase === 'return')
-      ? params.returnDate
-      : params.departureDate;
-    setSelectedDate(dateToDisplay || '');
-  }, [selectionPhase, params.departureDate, params.returnDate]);
+    const selectedDate = selectionPhase === 'depart' ? searchParams.departureDate : searchParams.returnDate;
+    if (selectedDate && dateScrollViewRef.current && dateItemLayouts.current.has(selectedDate)) {
+      // Dùng setTimeout để đảm bảo layout đã được tính toán xong
+      setTimeout(() => {
+        const layout = dateItemLayouts.current.get(selectedDate);
+        if (layout) {
+          const scrollX = layout.x - (screenWidth / 2) + (layout.width / 1.3);
+          dateScrollViewRef.current?.scrollTo({ x: scrollX, animated: true });
+        }
+      }, 150);
+    }
+  }, [dateScrollerData, selectionPhase, searchParams.departureDate, searchParams.returnDate]); // Đã bao gồm selectionPhase
+
 
   // Hàm xử lý khi chọn một chuyến bay
   const handleSelectFlight = (flightId: string) => {
@@ -100,8 +164,29 @@ function FlightList() {
     setSelectedClass(ticketClass);
   };
 
+  const handleSelectDateFromScroller = (date: string) => {
+    // Reset lựa chọn khi đổi ngày
+    setSelectedFlightId(null);
+    setSelectedClass(null);
+
+    // Thay vì điều hướng lại toàn bộ trang (gây reset state),
+    // chúng ta sẽ cập nhật state trong context và trigger refetch.
+    // Điều này giữ lại được thông tin chuyến đi đã chọn.
+    if (selectionPhase === 'depart') {
+      setSearchParams(prev => ({ ...prev, departureDate: date }));
+    } else {
+      setSearchParams(prev => ({ ...prev, returnDate: date }));
+    }
+
+    // Các hook useFlightSearch và useDateScroller sẽ tự động chạy lại
+    // vì chúng phụ thuộc vào searchParams, không cần gọi refetch thủ công.
+  };
+
   const handleContinue = () => {
-    if (!selectedFlight || !selectedClass) return;
+    const selectedFlight = displayedFlights.find(flight => flight.id === selectedFlightId);
+    if (!selectedFlight || !selectedClass) {
+      return;
+    }
 
     // Tìm lại selectedFlight để đảm bảo nó không undefined trước khi tiếp tục
     const currentSelectedFlight = displayedFlights.find(f => f.id === selectedFlightId);
@@ -145,23 +230,23 @@ function FlightList() {
 
   // Tùy chỉnh header dựa trên giai đoạn chọn
   const headerInfo = useMemo(() => {
-    const totalPassengers = parseInt(params.adults || '1') + parseInt(params.children || '0');
+    const totalPassengers = parseInt(searchParams.adults || '1') + parseInt(searchParams.children || '0');
     const passengerText = `${totalPassengers} hành khách`;
 
-    if (params.tripType === 'round_trip' && selectionPhase === 'return') {
+    if (searchParams.tripType === 'round_trip' && selectionPhase === 'return') {
       return {
-        title: `${params.destinationCode} → ${params.originCode}`,
+        title: `${searchParams.destinationCode} → ${searchParams.originCode}`,
         subtitle: passengerText,
         listTitle: "Chọn chuyến bay về"
       };
     }
     // Mặc định là 'depart'
     return {
-      title: `${params.originCode} → ${params.destinationCode}`,
+      title: `${searchParams.originCode} → ${searchParams.destinationCode}`,
       subtitle: passengerText,
-      listTitle: "Chọn chuyến bay đi"
+      listTitle: "Chọn chuyến bay đi",
     };
-  }, [params.adults, params.children, params.tripType, params.originCode, params.destinationCode, selectionPhase]
+  }, [searchParams, selectionPhase]
   );
 
   return (
@@ -170,7 +255,7 @@ function FlightList() {
       <View className="bg-blue-950 pb-8 pt-4 px-4 ">
         <TouchableOpacity onPress={() => {
           // Nếu đang chọn chuyến về, nút back sẽ quay lại chọn chuyến đi
-          if (params.tripType === 'round_trip' && selectionPhase === 'return') {
+          if (searchParams.tripType === 'round_trip' && selectionPhase === 'return') {
             const departureFlight = bookingState.departureFlight;
             setSelectionPhase('depart');
             setSelectedFlightId(departureFlight?.flight.id || null);
@@ -187,54 +272,29 @@ function FlightList() {
         </View>
       </View>
 
-      {/* Content Area: Date Scroller + Flight List */}
-      <View className="bg-white flex-1 rounded-t-[40px] -mt-4 overflow-hidden">
-        {/* Date Scroller */}
-        {/* Date Scroller */}<View className="py-6 ">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
-            {MOCK_DATES.map((item) => (
-              <TouchableOpacity
-                key={item.date}
-                onPress={() => { console.log('date click noop'); /* no-op */ }}
-                className={`items-center justify-center px-4 py-2 rounded-lg mr-2 ${selectedDate === item.date ? "bg-blue-50 border-blue-900 border-2" : "bg-white shadow-sm"}`}
-              >
-                <Text className={`text-sm font-semibold ${selectedDate === item.date ? "text-blue-900" : "text-gray-500"}`}>{item.date}</Text>
-                <Text className={`text-xs font-bold ${selectedDate === item.date ? "text-blue-900" : "text-gray-500"}`}>{item.price}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* FlatList sẽ được render, nhưng bị che bởi loading overlay */}
-        <FlatList
-          data={displayedFlights}
-          renderItem={({ item }) => (
-            <FlightItem
-              flight={item}
-              isSelected={selectedFlightId === item.id}
-              selectedClassId={selectedFlightId === item.id ? selectedClass?.id ?? null : null}
-              onSelect={() => handleSelectFlight(item.id)}
-              onSelectClass={handleSelectClass}
-            />
-          )}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
-          ListHeaderComponent={
-            <>
-              <Text className="text-lg font-bold text-blue-900 mb-4">{headerInfo.listTitle}</Text>
-            </>
-          }
-          ListEmptyComponent={
-            <View className="items-center mt-10 p-4">
-              {error ? (
-                <Text className="text-red-500 text-center">{error}</Text>
-              ) : (
-                <Text>Không tìm thấy chuyến bay nào.</Text>
-              )}
-            </View>
-          }
-        />
-      </View>
+      <FlightListContent
+        isInitialLoading={isInitialLoading}
+        selectionPhase={selectionPhase}
+        params={searchParams}
+        dateScrollerData={dateScrollerData}
+        handleSelectDateFromScroller={handleSelectDateFromScroller}
+        dateScrollViewRef={dateScrollViewRef}
+        scrollPosition={scrollPosition}
+        setScrollPosition={setScrollPosition}
+        SCROLL_AMOUNT={SCROLL_AMOUNT}
+        dateItemLayouts={dateItemLayouts}
+        isLoadingDates={isLoadingDates}
+        isLoadingFlights={isLoadingFlights}
+        isRefreshing={isRefreshing}
+        onRefresh={onRefresh}
+        displayedFlights={displayedFlights}
+        selectedFlightId={selectedFlightId}
+        selectedClass={selectedClass}
+        handleSelectFlight={handleSelectFlight}
+        handleSelectClass={handleSelectClass}
+        headerInfo={headerInfo}
+        error={error}
+      />
 
       {/* Hiển thị tóm tắt chuyến đi đã chọn */}
       {selectionPhase === 'return' && bookingState.departureFlight && (
@@ -253,7 +313,7 @@ function FlightList() {
         onClose={() => setSummaryVisible(false)}
         departureFlight={bookingState.departureFlight}
         returnFlight={
-          params.tripType === "round_trip" &&
+          searchParams.tripType === "round_trip" &&
             selectionPhase === "return" &&
             selectedFlight &&
             selectedClass
@@ -264,7 +324,7 @@ function FlightList() {
       />
       {/* Nút Sắp xếp & Lọc */}
       <View className="absolute bottom-44 right-4 z-20">
-        <TouchableOpacity onPress={() => setSortFilterModalVisible(true)} className="bg-blue-950 p-4 rounded-full shadow-lg">
+        <TouchableOpacity onPress={() => setSortFilterModalVisible(true)} className="bg-blue-900 p-4 rounded-full shadow-lg">
           <Ionicons name="options" size={24} color="white" />
         </TouchableOpacity>
       </View>

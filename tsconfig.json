@@ -14,5 +14,5 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "nativewind-env.d.ts"
-, "app/types/types.ts", "hooks/useFlightSearch.ts", "hooks/useFlightDisplay.ts"  ]
+, "app/types/types.ts", "hooks/use-flight-search.ts", "hooks/use-flight-display.ts"  ]
 }
