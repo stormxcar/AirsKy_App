@@ -1,5 +1,5 @@
-import { SeatStatus } from "@/app/types/booking";
-import { BaggagePackage, Seat, SelectedFlight } from "@/app/types/types";
+import { AncillaryServiceType, SeatStatus } from "@/app/types/booking";
+import { BaggagePackage, Seat, MOCK_ANCILLARY_SERVICES } from "@/app/types/types";
 import AdditionalServices from "@/components/screens/book-flight/additional-services";
 import BookingStepper from "@/components/screens/book-flight/booking-stepper";
 import BookingSummaryModal from "@/components/screens/book-flight/modals/booking-summary-modal";
@@ -86,10 +86,16 @@ const ServiceAndSeatSelection = () => {
         depart: { [passengerId: number]: BaggagePackage | null },
         return: { [passengerId: number]: BaggagePackage | null }
     }>({ depart: {}, return: {} });
-    const [selectedMeals, setSelectedMeals] = useState<{
-        depart: { [passengerId: number]: boolean },
-        return: { [passengerId: number]: boolean }
+
+    // State mới để quản lý nhiều dịch vụ cộng thêm
+    const [selectedAncillaryServices, setSelectedAncillaryServices] = useState<{
+        depart: { [passengerId: number]: { [serviceId: number]: boolean } },
+        return: { [passengerId: number]: { [serviceId: number]: boolean } }
     }>({ depart: {}, return: {} });
+
+    // Lọc ra các dịch vụ không phải là hành lý (vì hành lý đã được xử lý riêng)
+    const displayableAncillaryServices = MOCK_ANCILLARY_SERVICES.filter(
+        (service) => service.serviceType !== AncillaryServiceType.SEAT); // Giả sử SEAT là loại dịch vụ hành lý
 
     const currentPassenger = passengers[currentPassengerIndex];
 
@@ -178,7 +184,7 @@ const ServiceAndSeatSelection = () => {
             payload: {
                 selectedSeats: selectedSeatsWithDetails,
                 selectedBaggages: selectedBaggages,
-                selectedMeals: selectedMeals,
+                selectedAncillaryServices: selectedAncillaryServices,
                 totalPrice: totalPrice,
             }
         });
@@ -223,14 +229,20 @@ const ServiceAndSeatSelection = () => {
                 // Baggage price
                 const baggage = selectedBaggages[phase][p.id];
                 if (baggage) total += baggage.price;
-                // Meal price
-                const hasMeal = selectedMeals[phase][p.id];
-                if (hasMeal) total += 50000; // Giả sử 50,000 VND/suất
+
+                // Ancillary services price
+                const passengerServices = selectedAncillaryServices[phase][p.id] || {};
+                for (const serviceId in passengerServices) {
+                    if (passengerServices[serviceId]) {
+                        const service = MOCK_ANCILLARY_SERVICES.find(s => s.serviceId === parseInt(serviceId));
+                        if (service) total += service.price;
+                    }
+                }
             });
         });
 
         return total;
-    }, [passengers, selectedSeats, selectedBaggages, selectedMeals, seats, departSeats, departureFlightData, returnFlightData]);
+    }, [passengers, selectedSeats, selectedBaggages, selectedAncillaryServices, seats, departSeats, departureFlightData, returnFlightData]);
 
     const showContinueButton = true; // Luôn cho phép tiếp tục, bạn có thể thêm logic nếu cần
 
@@ -246,16 +258,20 @@ const ServiceAndSeatSelection = () => {
         }));
     };
 
-    const handleMealChange = (value: boolean) => {
+    const handleServiceChange = (serviceId: number, isSelected: boolean) => {
         if (!currentPassenger) return;
-        setSelectedMeals(prev => ({
+        setSelectedAncillaryServices(prev => ({
             ...prev,
             [selectionPhase]: {
                 ...prev[selectionPhase],
-                [currentPassenger.id]: value
+                [currentPassenger.id]: {
+                    ...(prev[selectionPhase][currentPassenger.id] || {}),
+                    [serviceId]: isSelected,
+                },
             }
         }));
     };
+
 
 
     return (
@@ -325,8 +341,9 @@ const ServiceAndSeatSelection = () => {
                     <AdditionalServices
                         selectedBaggage={currentPassenger ? selectedBaggages[selectionPhase][currentPassenger.id] : null}
                         onBaggageChange={handleBaggageChange}
-                        selectedMeal={currentPassenger ? !!selectedMeals[selectionPhase][currentPassenger.id] : false}
-                        onMealChange={handleMealChange}
+                        ancillaryServices={displayableAncillaryServices}
+                        selectedServices={currentPassenger ? selectedAncillaryServices[selectionPhase][currentPassenger.id] || {} : {}}
+                        onServiceChange={handleServiceChange}
                     />
                 )}
             </ScrollView>
@@ -335,8 +352,8 @@ const ServiceAndSeatSelection = () => {
             <BookingSummaryModal
                 passengers={passengers}
                 selectedSeats={selectedSeats}
-                selectedBaggages={selectedBaggages}
-                selectedMeals={selectedMeals}
+                selectedBaggages={selectedBaggages} // Giữ lại hành lý
+                selectedAncillaryServices={selectedAncillaryServices}
                 departSeats={departSeats} // Truyền danh sách ghế chuyến đi
                 returnSeats={seats} // Ghế hiện tại là của chuyến về
                 currentPassengerIndex={currentPassengerIndex}

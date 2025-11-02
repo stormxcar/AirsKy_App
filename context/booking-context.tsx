@@ -25,8 +25,10 @@ interface BookingState {
 
     // Services and seats
     selectedSeats?: { depart: { [key: string]: any }, return: { [key: string]: any } };
-    selectedBaggages?: { depart: { [key:string]: BaggagePackage | null }, return: { [key: string]: BaggagePackage | null } };
-    selectedMeals?: { depart: { [key: string]: any }, return: { [key: string]: any } };
+    selectedBaggages?: { depart: { [passengerId: number]: BaggagePackage | null }, return: { [passengerId: number]: BaggagePackage | null } };
+    selectedAncillaryServices?: {
+        depart: { [passengerId: number]: { [serviceId: number]: boolean } }, return: { [passengerId: number]: { [serviceId: number]: boolean } }
+    };
 
     // Pricing
     totalPrice?: number;
@@ -50,7 +52,7 @@ const initialBookingState: BookingState = {
     passengers: [],
     selectedSeats: { depart: {}, return: {} },
     selectedBaggages: { depart: {}, return: {} },
-    selectedMeals: { depart: {}, return: {} },
+    selectedAncillaryServices: { depart: {}, return: {} },
     totalPrice: 0,
 };
 

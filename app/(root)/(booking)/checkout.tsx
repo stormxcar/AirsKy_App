@@ -1,5 +1,5 @@
-import { BaggagePackageEnum, BookingRequest, PassengerSeatRequest, PaymentMethod } from "@/app/types/booking";
-import { BaggagePackage, Passenger, SelectedFlight } from "@/app/types/types";
+import { BaggagePackageEnum, BookingAncillaryServiceRequest, BookingRequest, PassengerSeatRequest, PaymentMethod } from "@/app/types/booking";
+import { BaggagePackage, MOCK_ANCILLARY_SERVICES, Passenger, SelectedFlight } from "@/app/types/types";
 import BookingStepper from "@/components/screens/book-flight/booking-stepper";
 import { useBooking } from "@/context/booking-context";
 import { useAuth } from "@/context/auth-context";
@@ -23,8 +23,8 @@ const Checkout = () => {
         returnFlight,
         passengers = [],
         selectedSeats = { depart: {}, return: {} },
-        selectedMeals = { depart: {}, return: {} },
         selectedBaggages = { depart: {}, return: {} },
+        selectedAncillaryServices = { depart: {}, return: {} },
         totalPrice = 0,
         contactName,
         contactEmail
@@ -76,6 +76,27 @@ const Checkout = () => {
                     };
                 });
 
+                const ancillaryServicesForRequest: BookingAncillaryServiceRequest[] = [];
+                (['depart', 'return'] as const).forEach(phase => {
+                    if (selectedAncillaryServices[phase]) {
+                        Object.entries(selectedAncillaryServices[phase]).forEach(([passengerId, services]) => {
+                            Object.entries(services).forEach(([serviceId, isSelected]) => {
+                                if (isSelected) {
+                                    const passenger = passengers.find(p => p.id.toString() === passengerId);
+                                    if (passenger) {
+                                        ancillaryServicesForRequest.push({
+                                            serviceId: parseInt(serviceId),
+                                            passengerId: passenger.id, // Gửi ID của passenger
+                                            quantity: 1, // Giả sử mỗi dịch vụ chỉ chọn 1
+                                        });
+                                    }
+                                }
+                            });
+                        });
+                    }
+                });
+
+
                 const bookingData: BookingRequest = {
                     userId: user?.id,
                     contactName: contactName,
@@ -84,6 +105,7 @@ const Checkout = () => {
                     clientType: "MOBILE",
                     paymentMethod: paymentMethod,
                     passengers: passengersForRequest,
+                    ancillaryServices: ancillaryServicesForRequest,
                     flightSegments: [
                         {
                             flightId: departureFlight!.flight.id,
@@ -178,24 +200,28 @@ const Checkout = () => {
                         <View className="mb-2">
                             <Text className="font-semibold text-gray-700">Dịch vụ thêm:</Text>
                             {Object.keys(selectedBaggages.depart).length > 0 && <Text className="text-sm font-semibold text-gray-500 mt-1">Chuyến đi:</Text>}
-                            {Object.entries(selectedBaggages.depart).map(([passengerId, baggage]) => (
-                                baggage && <Text key={`bag-dep-${passengerId}`} className="text-base text-gray-600 ml-2">- Hành lý ({passengers.find(p => p.id.toString() === passengerId)?.lastName}): {baggage.label}</Text>
-                            ))}
-                            {Object.values(selectedMeals.depart).filter(v => v).length > 0 && (
-                                <Text className="text-base text-gray-600">
-                                    - Suất ăn: {Object.values(selectedMeals.depart).filter(v => v).length} suất
-                                </Text>
-                            )}
+                            {passengers.map(p => {
+                                const baggage = selectedBaggages.depart[p.id];
+                                const services = selectedAncillaryServices.depart[p.id];
+                                const serviceNames = services ? Object.keys(services).filter(id => services[parseInt(id)]).map(id => MOCK_ANCILLARY_SERVICES.find(s => s.serviceId === parseInt(id))?.serviceName).join(', ') : '';
+                                if (!baggage && !serviceNames) return null;
+                                return (
+                                    <View key={`dep-srv-${p.id}`} className="ml-2">
+                                        <Text className="text-base text-gray-600 font-medium">{p.lastName} {p.firstName}:</Text>
+                                        {baggage && <Text className="text-base text-gray-600 ml-2">- Hành lý: {baggage.label}</Text>}
+                                        {serviceNames && <Text className="text-base text-gray-600 ml-2">- Dịch vụ khác: {serviceNames}</Text>}
+                                    </View>
+                                );
+                            })}
+
                             {returnFlight && Object.keys(selectedBaggages.return).length > 0 && <Text className="text-sm font-semibold text-gray-500 mt-1">Chuyến về:</Text>}
-                            {returnFlight && Object.entries(selectedBaggages.return).map(([passengerId, baggage]) => (
-                                baggage && <Text key={`bag-ret-${passengerId}`} className="text-base text-gray-600 ml-2">- Hành lý ({passengers.find(p => p.id.toString() === passengerId)?.lastName}): {baggage.label}</Text>
-                            ))}
-                            {returnFlight && Object.values(selectedMeals.return).filter(v => v).length > 0 && (
-                                <Text className="text-base text-gray-600">
-                                    - Suất ăn: {Object.values(selectedMeals.return).filter(v => v).length} suất
-                                </Text>
-                            )}
-                            {Object.keys(selectedBaggages.depart).length === 0 && Object.keys(selectedMeals.depart).length === 0 && Object.keys(selectedBaggages.return).length === 0 && Object.keys(selectedMeals.return).length === 0 && <Text className="text-base text-gray-600">Không có</Text>}
+                            {returnFlight && passengers.map(p => {
+                                const baggage = selectedBaggages.return[p.id];
+                                // Tương tự có thể thêm các dịch vụ khác cho chuyến về
+                                if (!baggage) return null;
+                                return <Text key={`bag-ret-${p.id}`} className="text-base text-gray-600 ml-2">- Hành lý ({p.lastName}): {baggage.label}</Text>;
+                            })}
+                            {Object.keys(selectedBaggages.depart).length === 0 && Object.keys(selectedAncillaryServices.depart).length === 0 && Object.keys(selectedBaggages.return).length === 0 && Object.keys(selectedAncillaryServices.return).length === 0 && <Text className="text-base text-gray-600">Không có</Text>}
                         </View>
                         <View className="mb-2">
                             <Text className="font-semibold text-gray-700">Ghế đã chọn:</Text>
