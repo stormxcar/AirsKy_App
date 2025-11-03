@@ -41,8 +41,18 @@ const PaymentResultHandler = () => {
                     });
                 } catch (error: any) {
                     console.error("Error executing PayPal payment:", error);
-                    Alert.alert("Lỗi thanh toán", error.message || "Không thể hoàn tất thanh toán PayPal.");
-                    // Thanh toán thất bại
+
+                    // Xử lý trường hợp thanh toán đã được hoàn tất trước đó
+                    if (error.message && error.message.includes("COMPLETED")) {
+                        console.log("Payment was already completed. Redirecting to success page.");
+                        router.replace({
+                            pathname: '/(root)/(booking)/booking-result',
+                            params: { status: 'success', bookingCode: bookingId }
+                        });
+                        return; // Dừng xử lý thêm
+                    }
+
+                    Alert.alert("Lỗi thanh toán", error.message || "Không thể hoàn tất thanh toán PayPal. Vui lòng thử lại hoặc liên hệ hỗ trợ.");
                     router.replace({
                         pathname: '/(root)/(booking)/booking-result',
                         params: { status: 'failure', bookingCode: bookingId }
@@ -62,12 +72,7 @@ const PaymentResultHandler = () => {
 
     }, [params]);
 
-    return (
-        <SafeAreaView className="flex-1 items-center justify-center bg-white">
-            <ActivityIndicator size="large" color="#1e3a8a" />
-            <Text className="mt-4 text-lg text-gray-600">Đang xử lý thanh toán...</Text>
-        </SafeAreaView>
-    );
+    return null;
 };
 
 export default PaymentResultHandler;
