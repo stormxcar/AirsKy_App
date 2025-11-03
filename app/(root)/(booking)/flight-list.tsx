@@ -222,9 +222,17 @@ function FlightList() {
 
   const selectedFlight = displayedFlights.find(flight => flight.id === selectedFlightId);
 
-  const totalPrice = selectedFlight && selectedClass
-    ? selectedClass.finalPrice // Sử dụng giá cuối cùng đã có từ API
-    : 0;
+  const totalPrice = useMemo(() => {
+    const currentSelectionPrice = selectedClass ? selectedClass.finalPrice : 0;
+
+    // Nếu đang chọn chuyến về cho hành trình khứ hồi, cộng giá chuyến đi đã chọn
+    if (selectionPhase === 'return' && params.tripType === 'round_trip' && bookingState.departureFlight) {
+        const departurePrice = bookingState.departureFlight.ticketClass.finalPrice;
+        return departurePrice + currentSelectionPrice;
+    }
+
+    return currentSelectionPrice;
+}, [selectedClass, selectionPhase, params.tripType, bookingState.departureFlight]);
 
   const showContinueButton = !!(selectedFlightId && selectedClass && totalPrice > 0);
 
@@ -354,6 +362,7 @@ function FlightList() {
             ? { flight: selectedFlight, ticketClass: selectedClass }
             : null
         }
+        passengerCount={parseInt(params.adults || '1') + parseInt(params.children || '0')}
        
       />
       {/* Nút Sắp xếp & Lọc */}

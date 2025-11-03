@@ -9,6 +9,7 @@ interface FlightSummaryModalProps {
   onClose: () => void;
   departureFlight?: { flight: Flight; ticketClass: TicketClass } | null;
   returnFlight?: { flight: Flight; ticketClass: TicketClass } | null;
+  passengerCount: number;
 }
 
 export default function FlightSummaryModal({
@@ -16,7 +17,12 @@ export default function FlightSummaryModal({
   onClose,
   departureFlight,
   returnFlight,
+  passengerCount,
 }: FlightSummaryModalProps) {
+  const totalDeparturePrice = (departureFlight?.ticketClass.finalPrice || 0) * passengerCount;
+  const totalReturnPrice = (returnFlight?.ticketClass.finalPrice || 0) * passengerCount;
+  const grandTotal = totalDeparturePrice + totalReturnPrice;
+
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View className="flex-1 bg-black/40 justify-end">
@@ -44,7 +50,7 @@ export default function FlightSummaryModal({
                   Hạng vé: {departureFlight.ticketClass.name}
                 </Text>
                 <Text className="text-blue-900 font-bold mt-1">
-                  {departureFlight.ticketClass.finalPrice.toLocaleString("vi-VN")} ₫
+                  {totalDeparturePrice.toLocaleString("vi-VN")} ₫
                 </Text>
               </View>
             )}
@@ -63,12 +69,21 @@ export default function FlightSummaryModal({
                   Hạng vé: {returnFlight.ticketClass.name}
                 </Text>
                 <Text className="text-blue-900 font-bold mt-1">
-                  {returnFlight.ticketClass.finalPrice.toLocaleString("vi-VN")} ₫
+                  {totalReturnPrice.toLocaleString("vi-VN")} ₫
                 </Text>
               </View>
             )}
 
           </ScrollView>
+          {/* Total Price */}
+          <View className="border-t border-gray-200 mt-4 pt-4">
+            <View className="flex-row justify-between items-center">
+              <Text className="text-lg font-bold text-gray-800">Tổng cộng ({passengerCount} khách):</Text>
+              <Text className="text-xl font-bold text-red-600">
+                {grandTotal.toLocaleString("vi-VN")} ₫
+              </Text>
+            </View>
+          </View>
         </View>
       </View>
     </Modal>
