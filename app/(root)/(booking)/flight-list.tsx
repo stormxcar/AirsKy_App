@@ -222,17 +222,9 @@ function FlightList() {
 
   const selectedFlight = displayedFlights.find(flight => flight.id === selectedFlightId);
 
-  const totalPrice = useMemo(() => {
-    const currentSelectionPrice = selectedClass ? selectedClass.finalPrice : 0;
-
-    // Nếu đang chọn chuyến về cho hành trình khứ hồi, cộng giá chuyến đi đã chọn
-    if (selectionPhase === 'return' && params.tripType === 'round_trip' && bookingState.departureFlight) {
-        const departurePrice = bookingState.departureFlight.ticketClass.finalPrice;
-        return departurePrice + currentSelectionPrice;
-    }
-
-    return currentSelectionPrice;
-}, [selectedClass, selectionPhase, params.tripType, bookingState.departureFlight]);
+  const totalPrice = selectedFlight && selectedClass
+    ? selectedClass.finalPrice // Sử dụng giá cuối cùng đã có từ API
+    : 0;
 
   const showContinueButton = !!(selectedFlightId && selectedClass && totalPrice > 0);
 
@@ -362,7 +354,6 @@ function FlightList() {
             ? { flight: selectedFlight, ticketClass: selectedClass }
             : null
         }
-        passengerCount={parseInt(params.adults || '1') + parseInt(params.children || '0')}
        
       />
       {/* Nút Sắp xếp & Lọc */}
@@ -384,12 +375,12 @@ function FlightList() {
       <Animated.View style={continueButtonAnimatedStyle} className="absolute bottom-0 left-0 right-0">
         <View className="bg-white p-4 border-t border-gray-200 h-[92px]">
           <TouchableOpacity onPress={handleContinue}
-            className="bg-blue-900 py-3 rounded-full flex-row justify-between items-center px-6"
+            className="bg-blue-900 py-3 rounded-full flex-row justify-center items-center px-6"
           >
             <Text className="text-white font-bold text-lg">
               Tiếp tục
             </Text>
-            <Text className="text-white font-bold text-xl">{totalPrice.toLocaleString('vi-VN')} ₫</Text>
+            {/* <Text className="text-white font-bold text-xl">{totalPrice.toLocaleString('vi-VN')} ₫</Text> */}
           </TouchableOpacity>
         </View>
       </Animated.View>

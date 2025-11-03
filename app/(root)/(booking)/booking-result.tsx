@@ -50,6 +50,7 @@ const BookingResult = () => {
                 try {
                     setError(null);
                     const details = await getBookingDetailsById(bookingCode);
+                    console.log("Payment price:", details.totalAmount);
                     setBookingDetails(details);
                 } catch (err: any) {
                     setError(err.message || "Không thể tải chi tiết đơn đặt vé.");

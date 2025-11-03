@@ -6,7 +6,7 @@ import { useAuth } from "@/context/auth-context";
 import { Ionicons } from "@expo/vector-icons";
 import { differenceInYears, format, parseISO } from "date-fns";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -54,6 +54,26 @@ function UserBookingInfo() {
         setNextPassengerId(currentId); // Set the next available ID
 
     }, [passengerCounts]);
+
+    // Bắt đầu tính tổng tiền vé ở đây
+    const baseTicketPrice = useMemo(() => {
+        let total = 0;
+        const depPrice = departureFlight?.ticketClass.finalPrice || 0;
+        const retPrice = returnFlight?.ticketClass.finalPrice || 0;
+
+        passengers.forEach(p => {
+            let multiplier = 1.0; // Adult
+            if (p.type === 'child') multiplier = 0.75;
+            if (p.type === 'infant') multiplier = 0.10;
+
+            total += (depPrice * multiplier);
+            if (returnFlight) {
+                total += (retPrice * multiplier);
+            }
+        });
+
+        return total;
+    }, [passengers, departureFlight, returnFlight]);
 
 
     const handlePassengerChange = (id: number, field: keyof Passenger, value: any) => {
@@ -133,14 +153,34 @@ function UserBookingInfo() {
             }
         }
 
-        // 3. Show Confirmation Dialog
+        // 3️⃣ Kiểm tra ràng buộc hàng không
+        const adultsOver18 = passengers.filter(p => {
+            if (!p.dob) return false;
+            const age = differenceInYears(new Date(), p.dob);
+            return age >= 18;
+        }).length;
+
+        const infants = passengers.filter(p => p.type === 'infant').length;
+        const children = passengers.filter(p => p.type === 'child').length;
+
+        if (adultsOver18 === 0) {
+            Alert.alert("Không hợp lệ", "Phải có ít nhất một hành khách từ 18 tuổi trở lên.");
+            return;
+        }
+
+        if (infants > adultsOver18) {
+            Alert.alert("Không hợp lệ", "Số lượng em bé (dưới 2 tuổi) không được vượt quá số người lớn (≥18 tuổi).");
+            return;
+        }
+
+        // 4️⃣ Xác nhận trước khi tiếp tục
         Alert.alert(
             "Xác nhận thông tin",
             "Vui lòng đảm bảo tất cả thông tin đã được điền chính xác. Thông tin sai có thể ảnh hưởng đến việc làm thủ tục bay của bạn.",
             [
                 { text: "Kiểm tra lại", style: "cancel" },
                 {
-                    text: "Xác nhận", 
+                    text: "Xác nhận",
                     onPress: () => {
                         dispatch({
                             type: 'UPDATE_STATE',
@@ -148,17 +188,16 @@ function UserBookingInfo() {
                                 passengers: passengers,
                                 contactName: bookerName,
                                 contactEmail: bookerEmail,
-                            }
+                                totalPrice: baseTicketPrice,
+                            },
                         });
                         router.navigate('/(root)/(booking)/services-and-seats');
                     },
-                }
+                },
             ]
         );
-
-
-      // router.navigate({
     };
+
 
     return (
         <>
@@ -182,7 +221,15 @@ function UserBookingInfo() {
                             {/* Flight Info Summary */}
                             {departureFlight && (
                                 <View className="bg-white rounded-xl p-4 mb-2 border border-gray-200 shadow-sm">
-                                    <Text className="text-base font-semibold text-gray-700">Chuyến đi:</Text>
+                                    <View className="flex-row items-center gap-x-1">
+                                        <Text className="text-base font-semibold text-gray-700">Chuyến đi</Text>
+                                        <TouchableOpacity onPress={() => Alert.alert(
+                                            "Cách tính giá vé",
+                                            "Giá vé được tính dựa trên loại hành khách:\n\n• Người lớn (≥ 12 tuổi): 100% giá vé\n• Trẻ em (2 - 11 tuổi): ~75% giá vé\n• Em bé (< 2 tuổi): ~10% giá vé"
+                                        )}>
+                                            <Ionicons name="help-circle-outline" size={16} color="gray" />
+                                        </TouchableOpacity>
+                                    </View>
                                     <Text className="text-lg font-bold text-blue-900">
                                         {departureFlight.flight?.departure?.code} ({departureFlight.flight?.departure?.time}) → {departureFlight.flight?.arrival?.code} ({departureFlight.flight?.arrival?.time})
                                     </Text>

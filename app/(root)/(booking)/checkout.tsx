@@ -1,22 +1,43 @@
 import { BaggagePackageEnum, BookingAncillaryServiceRequest, BookingRequest, PassengerSeatRequest, PaymentMethod } from "@/app/types/booking";
-import { BaggagePackage, MOCK_ANCILLARY_SERVICES, Passenger, SelectedFlight } from "@/app/types/types";
+import { BaggagePackage, MOCK_ANCILLARY_SERVICES, Passenger } from "@/app/types/types";
 import BookingStepper from "@/components/screens/book-flight/booking-stepper";
 import { useBooking } from "@/context/booking-context";
 import { useAuth } from "@/context/auth-context";
 import { useLoading } from "@/context/loading-context";
-import { createBooking } from "@/services/booking-service"; 
-import { Ionicons, MaterialIcons } from "@expo/vector-icons"; 
-import { useRouter, useLocalSearchParams } from "expo-router";
-import React, { useMemo, useState } from "react";
-import { Alert, Image, ScrollView, Text, TouchableOpacity, View, Linking } from "react-native";
+import { createBooking } from "@/services/booking-service";
+import { getEligibleDeals } from "@/services/deal-service";
+import { DealResponse } from "@/app/types/deal";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React, { useMemo, useState, useEffect, useCallback, useLayoutEffect, useRef } from "react";
+import { Alert, Image, ScrollView, Text, TouchableOpacity, View, Linking, Modal, ActivityIndicator } from "react-native";
+import { TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const POINTS_TO_VND_RATE = 1; // 1 điểm = 1 VND
+
+// Tỷ lệ giảm giá theo hạng thành viên (đồng bộ với backend)
+const LOYALTY_TIER_DISCOUNTS: { [key: string]: number } = {
+    STANDARD: 0,
+    SILVER: 0.02,   // 2%
+    GOLD: 0.05,     // 5%
+    PLATINUM: 0.10, // 10%
+};
+
+const getPassengerTypeLabel = (type: 'adult' | 'child' | 'infant') => {
+        switch (type) {
+            case 'adult': return 'Người lớn';
+            case 'child': return 'Trẻ em';
+            case 'infant': return 'Em bé';
+            default: return type;
+        }
+    };
 const Checkout = () => {
     const router = useRouter();
     const { user } = useAuth();
     const { showLoading, hideLoading } = useLoading();
     const { bookingState, dispatch } = useBooking();
-
+    console.log(user)
     // --- Lấy dữ liệu từ các bước trước ---
     const {
         departureFlight,
@@ -25,20 +46,81 @@ const Checkout = () => {
         selectedSeats = { depart: {}, return: {} },
         selectedBaggages = { depart: {}, return: {} },
         selectedAncillaryServices = { depart: {}, return: {} },
-        totalPrice = 0,
         contactName,
         contactEmail
     } = bookingState;
 
     // --- State cho trang thanh toán ---
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
+    const [eligibleDeals, setEligibleDeals] = useState<DealResponse[]>([]);
+    const [isLoadingDeals, setIsLoadingDeals] = useState(true);
+    const [selectedDeal, setSelectedDeal] = useState<DealResponse | null>(null);
+    const [dealModalVisible, setDealModalVisible] = useState(false);
+    const [pointsToRedeem, setPointsToRedeem] = useState('');
+    const [appliedPoints, setAppliedPoints] = useState(0);
+    const [isRecalculating, setIsRecalculating] = useState(false);
+
+    const updateTimeout = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+        const fetchDeals = async () => {
+            try {
+                setIsLoadingDeals(true);
+                // Giả sử getEligibleDeals sẽ trả về các deal có thể sử dụng
+                const deals = await getEligibleDeals();
+                const usableDeals = deals.filter(deal => deal.status === 'ĐANG HOẠT ĐỘNG' && deal.remainingUsage > 0);
+                setEligibleDeals(usableDeals);
+            } catch (error) {
+                console.error("Failed to fetch deals:", error);
+                // Không hiển thị lỗi cho người dùng, chỉ log lỗi
+            } finally {
+                setIsLoadingDeals(false);
+            }
+        };
+        fetchDeals();
+    }, []);
+
+    // basePrice là giá gốc từ các bước trước, không thay đổi trong màn hình này.
+    // Giá trị này đã được tính toán đầy đủ ở màn hình trước.
+    const basePrice = useMemo(() => bookingState.totalPrice || 0, [bookingState.totalPrice]);
+
+    const { finalPrice, dealDiscount, tierDiscount, pointsDiscount } = useMemo(() => {
+        let priceAfterDeal = basePrice;
+        let dealDiscount = 0;
+        if (selectedDeal) {
+            const discountValue = selectedDeal.discountPercentage ? (basePrice * selectedDeal.discountPercentage) / 100 : (selectedDeal.fixedDiscountAmount || 0);
+            // Áp dụng mức giảm giá tối đa nếu có
+            dealDiscount = selectedDeal.maxDiscountAmount ? Math.min(discountValue, selectedDeal.maxDiscountAmount) : discountValue;
+            priceAfterDeal = Math.max(0, basePrice - dealDiscount);
+        }
+
+        // Áp dụng giảm giá hạng thành viên (nếu có)
+        let tierDiscount = 0;
+        if (user?.loyaltyTier && LOYALTY_TIER_DISCOUNTS[user.loyaltyTier]) {
+            // SỬA LỖI: Giảm giá hạng thành viên phải được tính trên giá SAU KHI đã áp dụng deal, để khớp với backend.
+            tierDiscount = priceAfterDeal * LOYALTY_TIER_DISCOUNTS[user.loyaltyTier];
+        }
+
+        // Tính giá sau khi trừ deal và tier
+        const priceAfterAllDiscounts = Math.max(0, priceAfterDeal - tierDiscount);
+        const pointsDiscount = Math.min(priceAfterAllDiscounts, appliedPoints * POINTS_TO_VND_RATE);
+        const finalPrice = Math.max(0, priceAfterAllDiscounts - pointsDiscount);
+
+        return { finalPrice, dealDiscount, tierDiscount, pointsDiscount };
+    }, [basePrice, selectedDeal, appliedPoints, user]);
+
+    // Sử dụng useLayoutEffect để đảm bảo UI được cập nhật đồng bộ
+    useLayoutEffect(() => {
+        setIsRecalculating(true);
+        const timer = setTimeout(() => setIsRecalculating(false), 300); // Hiệu ứng skeleton
+        return () => clearTimeout(timer);
+    }, [selectedDeal, appliedPoints]);
 
     const handleProcessPayment = async () => {
         if (!paymentMethod) {
             Alert.alert("Vui lòng chọn phương thức thanh toán.");
             return;
         }
-
         showLoading(async () => {
             try {
                 // 1. Build BookingRequest object
@@ -47,7 +129,7 @@ const Checkout = () => {
                     const baggageReturn = selectedBaggages.return[p.id];
                     const seatDepart = selectedSeats.depart[p.id];
                     const seatReturn = selectedSeats.return[p.id];
-            
+
                     const seatAssignments = [];
                     if (seatDepart?.id) {
                         seatAssignments.push({ seatId: seatDepart.id, segmentOrder: 1 });
@@ -55,7 +137,7 @@ const Checkout = () => {
                     if (seatReturn?.id) {
                         seatAssignments.push({ seatId: seatReturn.id, segmentOrder: 2 });
                     }
-            
+
                     return {
                         firstName: p.firstName,
                         lastName: p.lastName,
@@ -69,13 +151,11 @@ const Checkout = () => {
                             const finalBaggage = baggageReturn && (!baggageDepart || baggageReturn.key > baggageDepart.key)
                                 ? baggageReturn
                                 : baggageDepart;
-
                             return finalBaggage && finalBaggage.key !== 'NONE' ? (finalBaggage.key as BaggagePackageEnum) : undefined;
                         })(),
                         seatAssignments: seatAssignments,
                     };
                 });
-
                 const ancillaryServicesForRequest: BookingAncillaryServiceRequest[] = [];
                 (['depart', 'return'] as const).forEach(phase => {
                     if (selectedAncillaryServices[phase]) {
@@ -95,15 +175,15 @@ const Checkout = () => {
                         });
                     }
                 });
-
-
                 const bookingData: BookingRequest = {
                     userId: user?.id,
                     contactName: contactName,
                     contactEmail: contactEmail,
-                    totalAmount: totalPrice,
+                    totalAmount: finalPrice, // Gửi giá cuối cùng
                     clientType: "MOBILE",
                     paymentMethod: paymentMethod,
+                    dealCode: selectedDeal ? selectedDeal.dealCode : undefined,
+                    pointsToRedeem: appliedPoints > 0 ? appliedPoints : undefined,
                     passengers: passengersForRequest,
                     ancillaryServices: ancillaryServicesForRequest,
                     flightSegments: [
@@ -119,40 +199,58 @@ const Checkout = () => {
                         }] : [])
                     ],
                 };
-
                 // 2. Gọi API để tạo booking
                 const createdBooking = await createBooking(bookingData);
-                console.log("Booking created successfully:", createdBooking.bookingCode);
-
+                console.log("=== DEBUG PRICE ===");
+                console.log("basePrice:", basePrice.toLocaleString('vi-VN'));
+                console.log("selectedDeal:", selectedDeal?.dealCode, "discount:", dealDiscount.toLocaleString('vi-VN'));
+                console.log("appliedPoints:", appliedPoints, "pointsDiscount:", pointsDiscount.toLocaleString('vi-VN'));
+                console.log("finalPrice gửi backend:", finalPrice.toLocaleString('vi-VN'));
+                console.log("Booking created successfully:", createdBooking.bookingCode, ",Total price:", finalPrice.toLocaleString('vi-VN'));
                 // 3. Lấy checkoutUrl từ response của createBooking
                 const checkoutUrl = createdBooking.payment?.checkoutUrl;
-
                 if (!checkoutUrl) {
                     throw new Error("Không nhận được đường dẫn thanh toán từ máy chủ.");
                 }
+                // 4. Điều hướng NỮA, reset SAU
+                let navParams = { status: 'pending', bookingCode: createdBooking.bookingCode };
 
-                // 4. Điều hướng đến màn hình phù hợp dựa trên phương thức thanh toán
                 if (paymentMethod === PaymentMethod.BANK_TRANSFER) {
                     // Điều hướng đến màn hình QR code
-                    dispatch({ type: 'RESET_STATE' }); // Reset state trước khi điều hướng
                     router.replace({
                         pathname: '/(root)/(booking)/payment-qr',
-                        params: { url: checkoutUrl, bookingCode: createdBooking.bookingCode }
+                        params: { ...navParams, url: checkoutUrl }  // Merge params
                     });
-                } else {
-                    // Reset state trước khi mở URL ngoài
+                    // Reset SAU navigation cho BANK_TRANSFER
                     dispatch({ type: 'RESET_STATE' });
+                } else {
+                    // Reset TRƯỚC khi mở URL ngoài (nhưng giữ context cho router)
+                    dispatch({ type: 'RESET_STATE' });  // Di chuyển lên đây cho PayPal
                     // Điều hướng đến WebView cho PayPal
                     await Linking.openURL(checkoutUrl);
-                    // Sau khi mở trình duyệt, điều hướng người dùng đến trang kết quả tạm thời hoặc hướng dẫn kiểm tra email
-                    router.replace({ pathname: '/(root)/(booking)/booking-result', params: { status: 'pending', bookingCode: createdBooking.bookingCode } });
+                    // Sau đó replace (context vẫn an toàn vì Linking là async)
+                    router.replace({ pathname: '/(root)/(booking)/booking-result', params: navParams });
+                    return;  // Exit sớm để tránh conflict
                 }
-
             } catch (error: any) {
                 console.error("Error processing payment:", error);
                 Alert.alert("Lỗi", error.message || "Đã có lỗi xảy ra trong quá trình xử lý. Vui lòng thử lại.");
             }
         });
+    };
+
+    const handleApplyPoints = () => {
+        const points = parseInt(pointsToRedeem);
+        if (isNaN(points) || points < 0) {
+            Alert.alert("Lỗi", "Vui lòng nhập một số điểm hợp lệ.");
+            return;
+        }
+        if (user && points > (user.points || 0)) {
+            Alert.alert("Không đủ điểm", `Bạn chỉ có ${user.points || 0} điểm khả dụng.`);
+            return;
+        }
+        setAppliedPoints(points);
+        Alert.alert("Thành công", `Đã áp dụng ${points} điểm.`);
     };
 
     return (
@@ -165,7 +263,6 @@ const Checkout = () => {
                     </TouchableOpacity>
                     <Text className="text-lg flex-1 text-center mr-12 font-bold text-blue-900 ml-4">Thanh toán</Text>
                 </View>
-
                 <BookingStepper currentStep={3} />
                 <View className="p-4">
                     {/* --- Tóm tắt đơn hàng --- */}
@@ -179,7 +276,7 @@ const Checkout = () => {
                                         <Text className="font-semibold text-gray-700">Chuyến đi</Text>
                                     </View>
                                     <Text className="text-base text-gray-600 ml-7">
-                                    {departureFlight.flight?.departure.code} → {departureFlight.flight?.arrival.code}
+                                        {departureFlight.flight?.departure.code} → {departureFlight.flight?.arrival.code}
                                     </Text>
                                 </View>
                             )}
@@ -190,7 +287,7 @@ const Checkout = () => {
                                         <Text className="font-semibold text-gray-700">Chuyến về</Text>
                                     </View>
                                     <Text className="text-base text-gray-600 ml-7">
-                                    {returnFlight.flight?.departure.code} → {returnFlight.flight?.arrival.code}
+                                        {returnFlight.flight?.departure.code} → {returnFlight.flight?.arrival.code}
                                     </Text>
                                 </View>
                             )}
@@ -219,28 +316,31 @@ const Checkout = () => {
                                         const serviceNamesDepart = servicesDepart ? Object.keys(servicesDepart).filter(id => servicesDepart[parseInt(id)]).map(id => MOCK_ANCILLARY_SERVICES.find(s => s.serviceId === parseInt(id))?.serviceName).join(', ') : '';
                                         const servicesReturn = selectedAncillaryServices.return?.[p.id];
                                         const serviceNamesReturn = servicesReturn ? Object.keys(servicesReturn).filter(id => servicesReturn[parseInt(id)]).map(id => MOCK_ANCILLARY_SERVICES.find(s => s.serviceId === parseInt(id))?.serviceName).join(', ') : '';
-
+                                        console.log(p)
                                         return (
                                             <View key={p.id} className={index > 0 ? "border-t border-gray-100 pt-3" : ""}>
-                                                <Text className="text-base text-gray-800 font-semibold">{p.lastName} {p.firstName}</Text>
+                                                <Text className="text-base text-gray-800 font-semibold">{p.lastName} {p.firstName} ({getPassengerTypeLabel(p.type)})</Text>
                                                 <View className="ml-2 mt-1 space-y-1">
                                                     {/* Ghế */}
                                                     {(seatDepart || seatReturn) && (
-                                                        <Text className="text-sm text-gray-600">
-                                                            <MaterialIcons name="airline-seat-recline-normal" size={14} color="black" /> Ghế: {seatDepart?.number || 'N/A'} {returnFlight && `/ ${seatReturn?.number || 'N/A'}`}
-                                                        </Text>
+                                                        <View className="flex-row items-center">
+                                                            <MaterialIcons name="event-seat" size={14} color="black" className="mr-2" />
+                                                            <Text className="text-sm text-gray-600">Ghế: {seatDepart?.number || 'N/A'} {returnFlight && `/ ${seatReturn?.number || 'N/A'}`}</Text>
+                                                        </View>
                                                     )}
                                                     {/* Hành lý */}
                                                     {(baggageDepart || baggageReturn) && (
-                                                        <Text className="text-sm text-gray-600">
-                                                            <Ionicons name="briefcase-outline" size={14} /> Hành lý: {baggageDepart?.label || 'Không'} {returnFlight && `/ ${baggageReturn?.label || 'Không'}`}
-                                                        </Text>
+                                                        <View className="flex-row items-center">
+                                                            <Ionicons name="briefcase-outline" size={14} className="mr-2" />
+                                                            <Text className="text-sm text-gray-600">Hành lý: {baggageDepart?.label || 'Không'} {returnFlight && `/ ${baggageReturn?.label || 'Không'}`}</Text>
+                                                        </View>
                                                     )}
                                                     {/* Dịch vụ khác */}
                                                     {(serviceNamesDepart || serviceNamesReturn) && (
-                                                        <Text className="text-sm text-gray-600">
-                                                            <Ionicons name="add-circle-outline" size={14} /> Dịch vụ khác: {serviceNamesDepart || 'Không'} {returnFlight && `/ ${serviceNamesReturn || 'Không'}`}
-                                                        </Text>
+                                                        <View className="flex-row items-center">
+                                                            <Ionicons name="add-circle-outline" size={14} className="mr-2" />
+                                                            <Text className="text-sm text-gray-600">Dịch vụ khác: {serviceNamesDepart || 'Không'} {returnFlight && `/ ${serviceNamesReturn || 'Không'}`}</Text>
+                                                        </View>
                                                     )}
                                                 </View>
                                             </View>
@@ -249,14 +349,96 @@ const Checkout = () => {
                                 </View>
                             </View>
                         </View>
-                        <View className="border-t border-gray-200 mt-3 pt-3 flex-row justify-between items-center">
-                            <Text className="text-lg font-bold text-gray-800">Tổng cộng:</Text>
-                            <Text className="text-xl font-bold text-blue-900">
-                                {totalPrice.toLocaleString('vi-VN')} ₫
-                            </Text>
+                        {/* --- Chi tiết giá --- */}
+                        <View className="border-t border-gray-200 mt-3 pt-3 space-y-2" key={`price-section-${isRecalculating ? 'loading' : 'loaded'}`}>
+                            {isRecalculating ? (
+                                // Thêm key để force remount, và style inline cho animation safe
+                                <View className="space-y-2">
+                                    <View className="h-5 bg-gray-200 rounded w-3/4" style={{ animation: 'none' }} />  {/* Tắt animation mặc định */}
+                                    <View className="h-5 bg-gray-200 rounded w-1/2" style={{ animation: 'none' }} />
+                                    <View className="h-8 bg-gray-300 rounded w-full mt-2" style={{ animation: 'pulse 1.5s ease-in-out infinite' }} />  {/* Chỉ pulse cái cuối */}
+                                </View>
+                            ) : (
+                                <View className="space-y-2">
+                                    <View className="flex-row justify-between items-center">
+                                        <Text className="text-base text-gray-600">Giá vé & dịch vụ:</Text>
+                                        <Text className="text-base text-gray-700">{basePrice.toLocaleString('vi-VN')} ₫</Text>
+                                    </View>
+                                    {dealDiscount > 0 && (
+                                        <View className="flex-row justify-between items-center">
+                                            <Text className="text-base text-green-600">Giảm giá ({selectedDeal?.dealCode}):</Text>
+                                            <Text className="text-base text-green-600">- {dealDiscount.toLocaleString('vi-VN')} ₫</Text>
+                                        </View>
+                                    )}
+                                    {tierDiscount > 0 && (
+                                        <View className="flex-row justify-between items-center">
+                                            <Text className="text-base text-green-600">Ưu đãi hạng {user?.loyaltyTier}:</Text>
+                                            <Text className="text-base text-green-600">- {tierDiscount.toLocaleString('vi-VN')} ₫</Text>
+                                        </View>
+                                    )}
+                                    {pointsDiscount > 0 && (
+                                        <View className="flex-row justify-between items-center">
+                                            <Text className="text-base text-green-600">Giảm từ điểm:</Text>
+                                            <Text className="text-base text-green-600">- {pointsDiscount.toLocaleString('vi-VN')} ₫</Text>
+                                        </View>
+                                    )}
+                                    <View className="border-t border-dashed border-gray-200 mt-2 pt-2 flex-row justify-between items-center">
+                                        {/* <Text className="text-lg font-bold text-gray-800">Tạm tính:</Text> */}
+                                        {/* <Text className="text-xl font-bold text-red-600">
+                                            {finalPrice.toLocaleString('vi-VN')} ₫
+                                        </Text> */}
+                                    </View>
+                                </View>
+                            )}
                         </View>
                     </View>
-
+                    {/* --- Mã giảm giá & Đổi điểm --- */}
+                    <View className="bg-white p-4 rounded-xl mb-4 border border-gray-200 shadow-sm">
+                        <Text className="text-lg font-bold text-blue-900 mb-3">Ưu đãi & Giảm giá</Text>
+                        {/* Chọn mã giảm giá */}
+                        <TouchableOpacity
+                            onPress={() => setDealModalVisible(true)}
+                            className="flex-row items-center justify-between p-3 border border-dashed border-gray-400 rounded-lg"
+                        >
+                            <View className="flex-row items-center">
+                                <Ionicons name="pricetag-outline" size={20} color="#f59e0b" />
+                                <Text className="text-base text-gray-700 ml-2">{selectedDeal ? `Đã chọn: ${selectedDeal.dealCode}` : 'Chọn mã giảm giá'}</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="#6b7280" />
+                        </TouchableOpacity>
+                        {/* Đổi điểm */}
+                        {user && (
+                            <View className="mt-4 pt-4 border-t border-gray-100">
+                                <View className="flex-row justify-between items-center mb-2">
+                                    <Text className="text-base font-semibold text-gray-700">Đổi điểm tích lũy</Text>
+                                    <Text className="text-sm text-blue-900 font-bold">Điểm khả dụng: {(user.loyaltyPoints || 0).toLocaleString()}</Text>
+                                </View>
+                                <View className="flex-row items-center gap-x-2">
+                                    <View className="flex-1">
+                                        <TextInput
+                                            label="Nhập số điểm"
+                                            mode="outlined"
+                                            value={pointsToRedeem}
+                                            onChangeText={setPointsToRedeem}
+                                            keyboardType="number-pad"
+                                            style={{ backgroundColor: 'transparent', fontSize: 14 }}
+                                        />
+                                    </View>
+                                    <TouchableOpacity
+                                        onPress={handleApplyPoints}
+                                        className="bg-blue-100 p-3 rounded-lg border border-blue-200"
+                                    >
+                                        <Text className="text-blue-900 font-bold">Áp dụng</Text>
+                                    </TouchableOpacity>
+                                </View>
+                                {appliedPoints > 0 && (
+                                    <Text className="text-green-600 text-sm mt-1">
+                                        Đang áp dụng {appliedPoints.toLocaleString()} điểm, tương đương giảm {pointsDiscount.toLocaleString('vi-VN')} ₫.
+                                    </Text>
+                                )}
+                            </View>
+                        )}
+                    </View>
                     {/* --- Hiển thị QR Code hoặc lựa chọn thanh toán --- */}
                     <View className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                         <Text className="text-lg font-bold text-blue-900 mb-3 border-b border-gray-200 pb-2">Chọn phương thức thanh toán</Text>
@@ -273,7 +455,6 @@ const Checkout = () => {
                             <Text className="text-base font-semibold text-gray-800 ml-4">Thanh toán bằng PayPal</Text>
                             {paymentMethod === PaymentMethod.PAYPAL && <Ionicons name="checkmark-circle" size={24} color="#1e3a8a" style={{ marginLeft: 'auto' }} />}
                         </TouchableOpacity>
-
                         {/* SEpay QR */}
                         <TouchableOpacity
                             onPress={() => setPaymentMethod(PaymentMethod.BANK_TRANSFER)}
@@ -290,12 +471,11 @@ const Checkout = () => {
                     </View>
                 </View>
             </ScrollView>
-
             {/* --- Nút Thanh toán --- */}
             <View className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200">
                 <View className="flex-row justify-between items-center mb-2">
                     <Text className="text-lg font-bold text-gray-800">Tổng cộng:</Text>
-                    <Text className="text-xl font-bold text-red-600">{totalPrice.toLocaleString('vi-VN')} ₫</Text>
+                    <Text className="text-xl font-bold text-red-600">{finalPrice.toLocaleString('vi-VN')} ₫</Text>
                 </View>
                 <TouchableOpacity
                     onPress={handleProcessPayment}
@@ -305,6 +485,37 @@ const Checkout = () => {
                     <Text className="text-white text-center font-bold text-lg">Tiến hành thanh toán</Text>
                 </TouchableOpacity>
             </View>
+            {/* Deal Selection Modal */}
+            <Modal
+                visible={dealModalVisible}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setDealModalVisible(false)}
+            >
+                <View className="flex-1 justify-end bg-black/40">
+                    <View className="bg-white rounded-t-2xl p-4 max-h-[60%]">
+                        <Text className="text-lg font-bold text-center mb-4">Chọn mã giảm giá</Text>
+                        {isLoadingDeals ? (
+                            <ActivityIndicator size="large" color="#1e3a8a" />
+                        ) : (
+                            <ScrollView>
+                                {eligibleDeals.map(deal => (
+                                    <TouchableOpacity
+                                        key={deal.dealId}
+                                        onPress={() => { setSelectedDeal(deal); setDealModalVisible(false); }}
+                                        className="p-4 border-b border-gray-100"
+                                    >
+                                        <Text className="text-base font-bold text-blue-900">{deal.dealCode}</Text>
+                                        <Text className="text-sm text-gray-600">{deal.description}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        )}
+                        <TouchableOpacity onPress={() => { setSelectedDeal(null); setDealModalVisible(false); }} className="mt-2 p-3 bg-red-100 rounded-lg"><Text className="text-center text-red-700 font-semibold">Không dùng mã</Text></TouchableOpacity>
+                        <TouchableOpacity onPress={() => setDealModalVisible(false)} className="mt-4 p-3"><Text className="text-center text-gray-600">Đóng</Text></TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };

@@ -97,7 +97,10 @@ const ServiceAndSeatSelection = () => {
     const displayableAncillaryServices = MOCK_ANCILLARY_SERVICES.filter(
         (service) => service.serviceType !== AncillaryServiceType.SEAT); // Giả sử SEAT là loại dịch vụ hành lý
 
-    const currentPassenger = passengers[currentPassengerIndex];
+    // Lọc bỏ em bé ra khỏi danh sách chọn ghế và dịch vụ
+    const seatSelectablePassengers = useMemo(() => passengers.filter(p => p.type !== 'infant'), [passengers]);
+
+    const currentPassenger = seatSelectablePassengers[currentPassengerIndex];
 
     const handleSelectSeat = (seatId: string) => {
         if (!currentPassenger) {
@@ -147,7 +150,7 @@ const ServiceAndSeatSelection = () => {
 
         // Tự động chuyển sang hành khách tiếp theo nếu còn
         // Chỉ tự động chuyển nếu chưa chọn ghế cho hành khách tiếp theo
-        if (currentPassengerIndex < passengers.length - 1 && !selectedSeats[selectionPhase][passengers[currentPassengerIndex + 1].id]) {
+        if (currentPassengerIndex < seatSelectablePassengers.length - 1 && !selectedSeats[selectionPhase][seatSelectablePassengers[currentPassengerIndex + 1].id]) {
             setCurrentPassengerIndex(currentPassengerIndex + 1);
         }
     };
@@ -178,19 +181,58 @@ const ServiceAndSeatSelection = () => {
             }
         });
 
-        // Cập nhật state trong context
-        dispatch({
-            type: 'UPDATE_STATE',
-            payload: {
-                selectedSeats: selectedSeatsWithDetails,
-                selectedBaggages: selectedBaggages,
-                selectedAncillaryServices: selectedAncillaryServices,
-                totalPrice: totalPrice,
-            }
-        });
         // Điều hướng đến trang thanh toán (bước 3) và truyền dữ liệu
         router.navigate('/(root)/(booking)/checkout');
     };
+
+    // Tính toán tổng tiền cho summary modal
+    const totalPrice = useMemo(() => {
+        // Lấy giá vé gốc từ context (đã được tính ở màn hình user-info)
+        const ticketTotal = bookingState.totalPrice || 0;
+
+        let servicesTotal = 0;
+        const segmentCount = isRoundTrip ? 2 : 1;
+
+        // Chỉ tính phí dịch vụ cho những hành khách có thể chọn dịch vụ (không phải em bé)
+        seatSelectablePassengers.forEach(p => {
+            // Seat prices (ghế được tính riêng cho từng chặng, không nhân)
+            const departSeatId = selectedSeats.depart[p.id];
+            if (departSeatId) {
+                const seat = departSeats.find(s => s.id === departSeatId);
+                if (seat) servicesTotal += seat.price;
+            }
+            if (isRoundTrip) {
+                const returnSeatId = selectedSeats.return[p.id];
+                if (returnSeatId) {
+                    const seat = seats.find(s => s.id === returnSeatId);
+                    if (seat) servicesTotal += seat.price;
+                }
+            }
+
+            // Baggage prices (hành lý được tính cho cả 2 chặng nếu là khứ hồi)
+            const baggage = selectedBaggages.depart[p.id]; // Giả sử gói hành lý áp dụng cho cả 2 chiều
+            if (baggage) {
+                servicesTotal += baggage.price * segmentCount;
+            }
+
+            // Ancillary services prices
+            const passengerServices = selectedAncillaryServices.depart[p.id] || {};
+            for (const serviceId in passengerServices) {
+                if (passengerServices[serviceId]) {
+                    const service = MOCK_ANCILLARY_SERVICES.find(s => s.serviceId === parseInt(serviceId));
+                    if (service) {
+                        // Nhân với số chặng bay nếu dịch vụ đó tính theo từng chặng
+                        const segmentMultiplier = service.isPerSegment ? segmentCount : 1;
+                        // SỬA LỖI: Nhân với số lượng hành khách nếu dịch vụ áp dụng cho từng người
+                        const passengerMultiplier = service.isPerPassenger ? passengers.length : 1;
+                        servicesTotal += service.price * segmentMultiplier * passengerMultiplier;
+                    }
+                }
+            }
+        });
+
+        return ticketTotal + servicesTotal;
+    }, [bookingState.totalPrice, seatSelectablePassengers, selectedSeats, selectedBaggages, selectedAncillaryServices, seats, departSeats, isRoundTrip]);
 
     // Tính toán lại trạng thái của danh sách ghế để hiển thị trên UI
     const displayedSeats = useMemo(() => {
@@ -206,43 +248,7 @@ const ServiceAndSeatSelection = () => {
         });
     }, [originalSeats, selectedSeats, selectionPhase, selectedClassName]);
 
-    // Tính toán tổng tiền cho summary modal
-    const totalPrice = useMemo(() => {
-        let total = 0;
-        if (departureFlightData?.ticketClass) {
-            total += departureFlightData.ticketClass.finalPrice * passengers.length;
-        }
-        if (returnFlightData?.ticketClass) {
-            total += returnFlightData.ticketClass.finalPrice * passengers.length;
-        }
 
-        (['depart', 'return'] as const).forEach(phase => {
-            passengers.forEach(p => {
-                // Seat price
-                const seatId = selectedSeats[phase][p.id];
-                if (seatId) {
-                    // Lấy đúng danh sách ghế cho từng chặng
-                    const seatList = phase === 'depart' ? departSeats : seats;
-                    const seat = seatList.find(s => s.id === seatId);
-                    if (seat) total += seat.price;
-                }
-                // Baggage price
-                const baggage = selectedBaggages[phase][p.id];
-                if (baggage) total += baggage.price;
-
-                // Ancillary services price
-                const passengerServices = selectedAncillaryServices[phase][p.id] || {};
-                for (const serviceId in passengerServices) {
-                    if (passengerServices[serviceId]) {
-                        const service = MOCK_ANCILLARY_SERVICES.find(s => s.serviceId === parseInt(serviceId));
-                        if (service) total += service.price;
-                    }
-                }
-            });
-        });
-
-        return total;
-    }, [passengers, selectedSeats, selectedBaggages, selectedAncillaryServices, seats, departSeats, departureFlightData, returnFlightData]);
 
     const showContinueButton = true; // Luôn cho phép tiếp tục, bạn có thể thêm logic nếu cần
 
@@ -272,6 +278,30 @@ const ServiceAndSeatSelection = () => {
         }));
     };
 
+    // Cập nhật state vào context trước khi rời khỏi màn hình
+    useEffect(() => {
+        // Tạo một đối tượng mới chứa cả seatId và seatNumber để truyền đi
+        const selectedSeatsWithDetails = {
+            depart: {},
+            return: {}
+        };
+
+        (['depart', 'return'] as const).forEach(phase => {
+            for (const passengerId in selectedSeats[phase]) {
+                const seatId = selectedSeats[phase][passengerId];
+                const seatList = (phase === 'depart' ? departSeats : seats);
+                const seat = seatList.find(s => s.id === seatId);
+                if (seat) {
+                    selectedSeatsWithDetails[phase][passengerId] = { id: seat.id, number: seat.seatNumber, price: seat.price };
+                }
+            }
+        });
+
+        dispatch({
+            type: 'UPDATE_STATE',
+            payload: { selectedSeats: selectedSeatsWithDetails, selectedBaggages, selectedAncillaryServices }
+        });
+    }, [selectedSeats, selectedBaggages, selectedAncillaryServices, dispatch, departSeats, seats]);
 
 
     return (
@@ -296,8 +326,8 @@ const ServiceAndSeatSelection = () => {
                     {/* Passenger Selector */}
                     <View className="mb-4">
                         <Text className="text-base font-bold text-blue-900 mb-2">Chọn dịch vụ & ghế cho:</Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                            {passengers.map((p: any, index: number) => {
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="py-2">
+                            {seatSelectablePassengers.map((p, index) => {
                                 const selectedSeatId = selectedSeats[selectionPhase][p.id];
                                 const seatInfo = selectedSeatId ? seats.find(s => s.id === selectedSeatId) : null;
                                 const seatLabel = seatInfo ? `(${seatInfo.seatNumber})` : '';
@@ -350,6 +380,8 @@ const ServiceAndSeatSelection = () => {
 
             {/* Booking Summary Modal */}
             <BookingSummaryModal
+                departureFlight={departureFlightData}
+                returnFlight={returnFlightData}
                 passengers={passengers}
                 selectedSeats={selectedSeats}
                 selectedBaggages={selectedBaggages} // Giữ lại hành lý
