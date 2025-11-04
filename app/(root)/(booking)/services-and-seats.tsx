@@ -187,8 +187,8 @@ const ServiceAndSeatSelection = () => {
 
     // Tính toán tổng tiền cho summary modal
     const totalPrice = useMemo(() => {
-        // Lấy giá vé gốc từ context (đã được tính ở màn hình user-info)
-        const ticketTotal = bookingState.totalPrice || 0;
+        // Lấy giá vé gốc từ context (chỉ bao gồm giá vé, không có dịch vụ)
+        const baseTicketPrice = bookingState.baseTicketPrice || 0;
 
         let servicesTotal = 0;
         const segmentCount = isRoundTrip ? 2 : 1;
@@ -231,8 +231,8 @@ const ServiceAndSeatSelection = () => {
             }
         });
 
-        return ticketTotal + servicesTotal;
-    }, [bookingState.totalPrice, seatSelectablePassengers, selectedSeats, selectedBaggages, selectedAncillaryServices, seats, departSeats, isRoundTrip]);
+        return baseTicketPrice + servicesTotal;
+    }, [bookingState.baseTicketPrice, seatSelectablePassengers, selectedSeats, selectedBaggages, selectedAncillaryServices, seats, departSeats, isRoundTrip]);
 
     // Tính toán lại trạng thái của danh sách ghế để hiển thị trên UI
     const displayedSeats = useMemo(() => {

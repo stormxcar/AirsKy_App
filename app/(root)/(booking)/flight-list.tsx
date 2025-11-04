@@ -134,7 +134,6 @@ function FlightList() {
       }
     });
   }, []); // Chạy 1 lần duy nhất
-  // console.log(flights)
   // Tự động cuộn đến ngày được chọn
   useEffect(() => {
     const selectedDate = selectionPhase === 'depart' ? searchParams.departureDate : searchParams.returnDate;

@@ -36,7 +36,7 @@ export const executePayPalPayment = async (paymentId: string, payerId: string, b
         });
         return response.data.data;
     } catch (error: any) {
-        console.error(`Error executing PayPal payment:`, error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
+        // console.error(`Error executing PayPal payment:`, error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
         throw new Error(error.response?.data?.message || "Không thể xác thực thanh toán PayPal.");
     }
 };

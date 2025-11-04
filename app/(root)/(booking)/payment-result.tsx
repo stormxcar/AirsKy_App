@@ -28,7 +28,6 @@ const PaymentResultHandler = () => {
             if (paymentId && payerId && bookingId) {
                 isProcessing.current = true; // Đánh dấu là bắt đầu xử lý
 
-                console.log(`Handling PayPal redirect: paymentId=${paymentId}, payerId=${payerId}, bookingId=${bookingId}`);
                 
                 try {
                     // Gọi API backend để thực thi thanh toán
@@ -37,24 +36,23 @@ const PaymentResultHandler = () => {
                     // Thanh toán thành công, điều hướng đến trang kết quả cuối cùng
                     router.replace({
                         pathname: '/(root)/(booking)/booking-result',
-                        params: { status: 'success', bookingCode: bookingId }
+                        params: { status: 'success', bookingId: bookingId }
                     });
                 } catch (error: any) {
                     console.error("Error executing PayPal payment:", error);
 
                     // Xử lý trường hợp thanh toán đã được hoàn tất trước đó
                     if (error.message && error.message.includes("COMPLETED")) {
-                        console.log("Payment was already completed. Redirecting to success page.");
                         router.replace({
                             pathname: '/(root)/(booking)/booking-result',
-                            params: { status: 'success', bookingCode: bookingId }
+                            params: { status: 'success', bookingId: bookingId }
                         });
                         return; // Dừng xử lý thêm
                     }
 
                     Alert.alert("Lỗi thanh toán", error.message || "Không thể hoàn tất thanh toán PayPal. Vui lòng thử lại hoặc liên hệ hỗ trợ.");
                     router.replace({
-                        pathname: '/(root)/(booking)/booking-result',
+                        pathname: '/(root)/(booking)/booking-result', // Vẫn truyền bookingId để người dùng biết đơn nào lỗi
                         params: { status: 'failure', bookingCode: bookingId }
                     });
                 }

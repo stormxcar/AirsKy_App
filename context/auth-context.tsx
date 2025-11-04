@@ -4,6 +4,7 @@ import api from "@/services/api";
 import * as SecureStore from 'expo-secure-store';
 import { useRouter, useSegments } from "expo-router";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { Alert } from "react-native";
 
 const AUTH_KEY = 'auth-data';
 

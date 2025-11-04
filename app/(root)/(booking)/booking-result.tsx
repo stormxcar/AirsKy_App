@@ -36,28 +36,27 @@ const BookingResult = () => {
     const router = useRouter();
     const { showLoading, hideLoading } = useLoading();
 
-    const status = params.status as 'success' | 'failure' | 'pending';
-    const bookingCode = params.bookingCode as string;
-
+    const status = params.status as 'success' | 'failure' | 'pending' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'PENDING';
+    const bookingId = params.bookingId as string; // ID dạng số để gọi API
+    const bookingCode = params.bookingCode as string; // Mã code để hiển thị
     const [bookingDetails, setBookingDetails] = useState<BookingResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    const isSuccess = status === 'success';
+    const shouldFetchDetails = bookingId && status !== 'failure';
 
     useEffect(() => {
-        if (isSuccess && bookingCode) {
+        if (shouldFetchDetails) {
             showLoading(async () => {
                 try {
                     setError(null);
-                    const details = await getBookingDetailsById(bookingCode);
-                    console.log("Payment price:", details.totalAmount);
+                    const details = await getBookingDetailsById(bookingId);
                     setBookingDetails(details);
                 } catch (err: any) {
                     setError(err.message || "Không thể tải chi tiết đơn đặt vé.");
                 }
             });
         }
-    }, [isSuccess, bookingCode]); // Không cần thêm showLoading vào dependencies
+    }, [shouldFetchDetails, bookingId]);
 
     const handleShare = async () => {
         if (!bookingDetails) {
@@ -153,31 +152,54 @@ const BookingResult = () => {
         return servicesByPassenger;
     }, [bookingDetails]);
 
+    // Helper để lấy thông tin hiển thị dựa trên trạng thái
+    const getStatusInfo = () => {
+        switch (status) {
+            case 'success':
+            case 'CONFIRMED':
+                return { icon: 'checkmark-circle', color: '#16a34a', bgColor: 'bg-green-100', title: 'Đặt vé thành công!', message: 'Cảm ơn bạn đã sử dụng dịch vụ của AirsKy.' };
+            case 'failure':
+                return { icon: 'close-circle', color: '#dc2626', bgColor: 'bg-red-100', title: 'Đặt vé thất bại', message: 'Đã có lỗi xảy ra. Vui lòng thử lại.' };
+            case 'pending':
+            case 'PENDING':
+                return { icon: 'hourglass', color: '#f59e0b', bgColor: 'bg-yellow-100', title: 'Chờ thanh toán', message: 'Vui lòng hoàn tất thanh toán và quay lại ứng dụng.' };
+            case 'COMPLETED':
+                return { icon: 'checkmark-done-circle', color: '#1e3a8a', bgColor: 'bg-blue-100', title: 'Chuyến đi đã hoàn thành', message: 'Cảm ơn bạn đã đồng hành cùng AirsKy.' };
+            case 'CANCELLED':
+                return { icon: 'remove-circle', color: '#6b7280', bgColor: 'bg-gray-200', title: 'Vé đã bị hủy', message: 'Rất tiếc, vé này đã được hủy.' };
+            default:
+                return { icon: 'help-circle', color: '#6b7280', bgColor: 'bg-gray-200', title: 'Không rõ trạng thái', message: 'Vui lòng liên hệ hỗ trợ để biết thêm chi tiết.' };
+        }
+    };
+
+    const statusInfo = getStatusInfo();
+    const isSuccessState = status === 'success' || status === 'CONFIRMED';
+    const isViewableState = isSuccessState || status === 'COMPLETED' || status === 'CANCELLED';
+
+
     return (
         <SafeAreaView className="flex-1 bg-gray-100" edges={["top"]}>
             <ScrollView className="flex-1">
                 <View className="p-4 items-center">
                     {/* --- Trạng thái đặt vé --- */}
                     <View className="items-center my-6">
-                        <View className={`w-24 h-24 rounded-full items-center justify-center ${status === 'success' ? 'bg-green-100' : status === 'failure' ? 'bg-red-100' : 'bg-yellow-100'}`}>
+                        <View className={`w-24 h-24 rounded-full items-center justify-center ${statusInfo.bgColor}`}>
                             <Ionicons
-                                name={status === 'success' ? "checkmark-circle" : status === 'failure' ? "close-circle" : "hourglass"}
+                                name={statusInfo.icon as any}
                                 size={80}
-                                color={status === 'success' ? "#16a34a" : status === 'failure' ? "#dc2626" : "#f59e0b"}
+                                color={statusInfo.color}
                             />
                         </View>
-                        <Text className={`text-2xl font-bold mt-4 ${status === 'success' ? 'text-green-700' : status === 'failure' ? 'text-red-700' : 'text-yellow-600'}`}>
-                            {status === 'success' ? "Đặt vé thành công!" : status === 'failure' ? "Đặt vé thất bại" : "Chờ thanh toán"}
+                        <Text className="text-2xl font-bold mt-4" style={{ color: statusInfo.color }}>
+                            {statusInfo.title}
                         </Text>
                         <Text className="text-gray-600 mt-1 text-center">
-                            {status === 'success' ? "Cảm ơn bạn đã sử dụng dịch vụ của AirsKy."
-                                : status === 'failure' ? "Đã có lỗi xảy ra. Vui lòng thử lại."
-                                    : "Vui lòng hoàn tất thanh toán trong trình duyệt và quay lại ứng dụng."}
+                            {statusInfo.message}
                         </Text>
                     </View>
 
                     {/* Chỉ hiển thị thông tin chi tiết nếu có bookingCode */}
-                    {bookingCode && (
+                    {bookingId && (
                         <>
                             {/* --- Thông tin đặt vé --- */}
                             <View className="bg-white p-4 rounded-xl w-full border border-gray-200">
@@ -185,18 +207,18 @@ const BookingResult = () => {
 
                                 <View className="flex-row justify-between items-center mb-3">
                                     <Text className="text-base text-gray-600">Mã đặt chỗ:</Text>
-                                    <Text className="text-base font-bold text-blue-900 bg-blue-100 px-3 py-1 rounded-full">{bookingDetails?.bookingCode}</Text>
+                                    <Text className="text-base font-bold text-blue-900 bg-blue-100 px-3 py-1 rounded-full">{bookingCode || bookingDetails?.bookingCode}</Text>
                                 </View>
 
-                                {isSuccess && !bookingDetails && (
+                                {isSuccessState && !bookingDetails && (
                                     <Text className="text-gray-600 mt-2 text-center">
                                         Thông tin chi tiết về chuyến bay đã được gửi đến email của bạn.
                                         Bạn cũng có thể xem lại trong mục "Chuyến đi của tôi".
                                     </Text>
                                 )}
                             </View>
-                            {/* --- Hiển thị chi tiết nếu thành công và có dữ liệu --- */}
-                            {isSuccess && bookingDetails && (
+                            {/* --- Hiển thị chi tiết nếu là trạng thái có thể xem và có dữ liệu --- */}
+                            {isViewableState && bookingDetails && (
                                 <View className="w-full mt-4 space-y-4">
                                     {/* Flight Segments */}
                                     {bookingDetails.flightSegments.map((segment, index) => (
@@ -273,7 +295,7 @@ const BookingResult = () => {
 
             {/* --- Nút hành động --- */}
             <View className="p-4 bg-white border-t border-gray-200 flex-row items-center gap-x-3">
-                {isSuccess && (
+                {isViewableState && bookingDetails && (
                     <TouchableOpacity
                         onPress={handleShare}
                         className="bg-gray-200 p-3 rounded-full shadow-md"
@@ -282,10 +304,10 @@ const BookingResult = () => {
                     </TouchableOpacity>
                 )}
                 <TouchableOpacity
-                    onPress={() => router.replace('/(root)/(tabs)/home')}
+                    onPress={() => router.replace('/(root)/(tabs)/my-trips')}
                     className="bg-blue-900 py-3 rounded-full shadow-md flex-1"
                 >
-                    <Text className="text-white text-center font-bold text-lg">Về trang chủ</Text>
+                    <Text className="text-white text-center font-bold text-lg">Chuyến bay của tôi</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>

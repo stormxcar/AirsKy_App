@@ -76,6 +76,7 @@ const MyTrips = () => {
         arrival: { code: firstSegment.arrivalAirport.airportCode, time: format(new Date(firstSegment.arrivalTime), 'HH:mm') },
         date: format(new Date(firstSegment.departureTime), 'dd MMM, yyyy'),
         status: booking.status,
+        totalAmount: booking.totalAmount.toLocaleString('vi-VN') + ' ₫'
       };
 
       switch (booking.status) {
@@ -96,7 +97,6 @@ const MyTrips = () => {
   }, [bookings]);
 
   const tripsToDisplay = categorizedTrips[activeTab];
-
   // Nếu chưa có user, hiển thị màn hình trống để tránh flicker trước khi chuyển hướng
   if (!user) {
     return (
@@ -125,7 +125,16 @@ const MyTrips = () => {
             {/* Danh sách chuyến đi */}
             {tripsToDisplay.length > 0 ? (
               tripsToDisplay.map(trip => (
-                <TouchableOpacity key={trip.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-4">
+                <TouchableOpacity key={trip.id} 
+                onPress={
+                  ()=>{
+                    router.replace({
+                            pathname: '/(root)/(booking)/booking-result',
+                            params: { status: trip.status, bookingId: trip.id, bookingCode: trip.bookingCode }
+                        });
+                  }
+                }
+                className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-4">
                   <View className="flex-row justify-between items-start mb-3">
                     <Text className="text-sm text-gray-500">{trip.date}</Text>
                     <Text className="text-sm font-bold text-blue-950 bg-blue-100 px-2 py-1 rounded-full">{trip.bookingCode}</Text>
@@ -142,7 +151,13 @@ const MyTrips = () => {
                       <Text className="text-2xl font-bold text-blue-950">{trip.arrival.code}</Text>
                       <Text className="text-gray-600">{trip.arrival.time}</Text>
                     </View>
+                    
+                    
                   </View>
+                  <View className="items-end pt-6">
+                      <Text className="text-xl font-bold text-blue-900">{trip.totalAmount}</Text>
+                    </View>
+                  
                 </TouchableOpacity>
               ))
             ) : (

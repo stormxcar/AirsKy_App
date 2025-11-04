@@ -58,24 +58,21 @@ function UserBookingInfo() {
     // Bắt đầu tính tổng tiền vé ở đây
     const baseTicketPrice = useMemo(() => {
         let total = 0;
-        const depPrice = departureFlight?.ticketClass.finalPrice ?? 0;
-        const retPrice = returnFlight?.ticketClass.finalPrice ?? 0;
-        const flightPrice = depPrice + (returnFlight ? retPrice : 0);
+        const depPrice = departureFlight?.ticketClass.finalPrice || 0;
+        const retPrice = returnFlight?.ticketClass.finalPrice || 0;
 
-        const adultCount = passengers.filter(p => p.type === 'adult').length;
-        const childCount = passengers.filter(p => p.type === 'child').length;
-        const infantCount = passengers.filter(p => p.type === 'infant').length;
+        passengers.forEach(p => {
+            let multiplier = 1.0; // Adult
+            if (p.type === 'child') multiplier = 0.75;
+            if (p.type === 'infant') multiplier = 0.10;
 
-        // Tính tổng cho từng nhóm để giảm sai số làm tròn
-        const adultTotal = adultCount * flightPrice;
-        const childTotal = childCount * flightPrice * 0.75;
-        const infantTotal = infantCount * flightPrice * 0.10;
+            total += (depPrice * multiplier);
+            if (returnFlight) {
+                total += (retPrice * multiplier);
+            }
+        });
 
-        total = adultTotal + childTotal + infantTotal;
-
-        // Làm tròn kết quả cuối cùng để tránh số lẻ
-        return Math.round(total);
-
+        return total;
     }, [passengers, departureFlight, returnFlight]);
 
 
@@ -259,7 +256,8 @@ function UserBookingInfo() {
                                 passengers: passengersWithDobString,
                                 contactName: bookerName,
                                 contactEmail: bookerEmail,
-                                totalPrice: baseTicketPrice,
+                                baseTicketPrice: baseTicketPrice, // Lưu giá vé gốc
+                                totalPrice: baseTicketPrice,      // Tổng tiền ban đầu bằng giá vé gốc
                             },
                         });
                         router.navigate('/(root)/(booking)/services-and-seats');

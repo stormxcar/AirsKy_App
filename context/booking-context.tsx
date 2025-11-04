@@ -31,6 +31,7 @@ interface BookingState {
     };
 
     // Pricing
+    baseTicketPrice?: number; // Giá vé gốc, không bao gồm dịch vụ
     totalPrice?: number;
     departSeats:[];
     returnSeats:[];
@@ -56,6 +57,7 @@ const initialBookingState: BookingState = {
     selectedBaggages: { depart: {}, return: {} },
     selectedAncillaryServices: { depart: {}, return: {} },
     totalPrice: 0,
+    baseTicketPrice: 0,
 };
 
 // Reducer để quản lý trạng thái đặt vé
