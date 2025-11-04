@@ -30,6 +30,7 @@ export type Flight = {
   // Thêm các hạng vé cho chuyến bay này
   ticketClasses: TicketClass[];
   departureTime: string;
+  availableSeats: number; // Thêm số ghế còn trống
 };
 
 /**

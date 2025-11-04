@@ -6,6 +6,7 @@ import { useAuth } from "@/context/auth-context";
 import { useLoading } from "@/context/loading-context";
 import { createBooking } from "@/services/booking-service";
 import { getEligibleDeals } from "@/services/deal-service";
+import { calculateDiscountFromPoints } from "@/services/loyalty-service";
 import { DealResponse } from "@/app/types/deal";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -14,7 +15,6 @@ import { Alert, Image, ScrollView, Text, TouchableOpacity, View, Linking, Modal,
 import { TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const POINTS_TO_VND_RATE = 1; // 1 điểm = 1 VND
 
 // Tỷ lệ giảm giá theo hạng thành viên (đồng bộ với backend)
 const LOYALTY_TIER_DISCOUNTS: { [key: string]: number } = {
@@ -37,7 +37,6 @@ const Checkout = () => {
     const { user } = useAuth();
     const { showLoading, hideLoading } = useLoading();
     const { bookingState, dispatch } = useBooking();
-    console.log(user)
     // --- Lấy dữ liệu từ các bước trước ---
     const {
         departureFlight,
@@ -58,7 +57,15 @@ const Checkout = () => {
     const [dealModalVisible, setDealModalVisible] = useState(false);
     const [pointsToRedeem, setPointsToRedeem] = useState('');
     const [appliedPoints, setAppliedPoints] = useState(0);
+    const [pointsDiscount, setPointsDiscount] = useState(0);
     const [isRecalculating, setIsRecalculating] = useState(false);
+    const [isApplyingPoints, setIsApplyingPoints] = useState(false);
+    const [displayLoyaltyPoints, setDisplayLoyaltyPoints] = useState(user?.loyaltyPoints || 0);
+
+    // Cập nhật điểm hiển thị khi thông tin người dùng thay đổi
+    useEffect(() => {
+        setDisplayLoyaltyPoints(user?.loyaltyPoints || 0);
+    }, [user?.loyaltyPoints]);
 
     const updateTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -84,37 +91,40 @@ const Checkout = () => {
     // Giá trị này đã được tính toán đầy đủ ở màn hình trước.
     const basePrice = useMemo(() => bookingState.totalPrice || 0, [bookingState.totalPrice]);
 
-    const { finalPrice, dealDiscount, tierDiscount, pointsDiscount } = useMemo(() => {
+    const { finalPrice, dealDiscount, tierDiscount } = useMemo(() => {
         let priceAfterDeal = basePrice;
-        let dealDiscount = 0;
+        let calculatedDealDiscount = 0;
+
+        // 1. Áp dụng mã giảm giá (deal)
         if (selectedDeal) {
             const discountValue = selectedDeal.discountPercentage ? (basePrice * selectedDeal.discountPercentage) / 100 : (selectedDeal.fixedDiscountAmount || 0);
-            // Áp dụng mức giảm giá tối đa nếu có
-            dealDiscount = selectedDeal.maxDiscountAmount ? Math.min(discountValue, selectedDeal.maxDiscountAmount) : discountValue;
-            priceAfterDeal = Math.max(0, basePrice - dealDiscount);
+            calculatedDealDiscount = selectedDeal.maxDiscountAmount ? Math.min(discountValue, selectedDeal.maxDiscountAmount) : discountValue;
         }
 
-        // Áp dụng giảm giá hạng thành viên (nếu có)
+        // 2. Cộng dồn giảm giá từ điểm vào tổng giảm giá
+        // Backend coi việc đổi điểm như tạo ra một deal giảm giá cố định, nên ta cộng dồn vào đây.
+        const totalDiscountFromDealsAndPoints = calculatedDealDiscount + pointsDiscount;
+        priceAfterDeal = Math.max(0, basePrice - totalDiscountFromDealsAndPoints);
+
+        // 3. Áp dụng giảm giá hạng thành viên (tính trên giá SAU khi đã trừ deal và điểm)
         let tierDiscount = 0;
         if (user?.loyaltyTier && LOYALTY_TIER_DISCOUNTS[user.loyaltyTier]) {
-            // SỬA LỖI: Giảm giá hạng thành viên phải được tính trên giá SAU KHI đã áp dụng deal, để khớp với backend.
             tierDiscount = priceAfterDeal * LOYALTY_TIER_DISCOUNTS[user.loyaltyTier];
         }
 
-        // Tính giá sau khi trừ deal và tier
-        const priceAfterAllDiscounts = Math.max(0, priceAfterDeal - tierDiscount);
-        const pointsDiscount = Math.min(priceAfterAllDiscounts, appliedPoints * POINTS_TO_VND_RATE);
-        const finalPrice = Math.max(0, priceAfterAllDiscounts - pointsDiscount);
+        // 4. Tính giá cuối cùng
+        const finalPrice = Math.max(0, priceAfterDeal - tierDiscount);
 
-        return { finalPrice, dealDiscount, tierDiscount, pointsDiscount };
-    }, [basePrice, selectedDeal, appliedPoints, user]);
+        // Trả về tổng giảm giá từ deal và điểm để hiển thị
+        return { finalPrice, dealDiscount: totalDiscountFromDealsAndPoints, tierDiscount };
+    }, [basePrice, selectedDeal, user, pointsDiscount]);
 
     // Sử dụng useLayoutEffect để đảm bảo UI được cập nhật đồng bộ
     useLayoutEffect(() => {
         setIsRecalculating(true);
         const timer = setTimeout(() => setIsRecalculating(false), 300); // Hiệu ứng skeleton
-        return () => clearTimeout(timer);
-    }, [selectedDeal, appliedPoints]);
+        return () => clearTimeout(timer); // Cleanup on unmount or re-run
+    }, [selectedDeal, pointsDiscount]); // Re-run effect when deal or points change
 
     const handleProcessPayment = async () => {
         if (!paymentMethod) {
@@ -239,18 +249,57 @@ const Checkout = () => {
         });
     };
 
-    const handleApplyPoints = () => {
-        const points = parseInt(pointsToRedeem);
-        if (isNaN(points) || points < 0) {
-            Alert.alert("Lỗi", "Vui lòng nhập một số điểm hợp lệ.");
+    const handleRemoveDeal = () => {
+        setSelectedDeal(null);
+    };
+
+    const handleRemovePoints = () => {
+        setAppliedPoints(0);
+        setPointsDiscount(0);
+        setPointsToRedeem(''); // Xóa cả text input
+        // Trả lại điểm đã trừ vào state hiển thị
+        setDisplayLoyaltyPoints(user?.loyaltyPoints || 0);
+    };
+
+    const handleApplyPoints = async () => {
+        const pointsValue = parseInt(pointsToRedeem);
+        if (isNaN(pointsValue) || pointsValue <= 0) {
+            Alert.alert("Không hợp lệ", "Vui lòng nhập một số điểm hợp lệ.");
             return;
         }
-        if (user && points > (user.points || 0)) {
-            Alert.alert("Không đủ điểm", `Bạn chỉ có ${user.points || 0} điểm khả dụng.`);
+        if (pointsValue < 500) {
+            Alert.alert("Không hợp lệ", "Số điểm đổi tối thiểu là 500.");
             return;
         }
-        setAppliedPoints(points);
-        Alert.alert("Thành công", `Đã áp dụng ${points} điểm.`);
+        // Kiểm tra với số điểm đang hiển thị
+        if (pointsValue > displayLoyaltyPoints) {
+            Alert.alert("Không đủ điểm", `Bạn chỉ có ${user.loyaltyPoints || 0} điểm khả dụng.`);
+            return;
+        }
+
+        setIsApplyingPoints(true);
+        try {
+            // Gọi API để tính toán số tiền giảm giá
+            const discountAmount = await calculateDiscountFromPoints(pointsValue);
+
+            // Giới hạn số tiền giảm không vượt quá giá trị còn lại của đơn hàng
+            const priceBeforePoints = basePrice - (dealDiscount + tierDiscount);
+            const finalDiscount = Math.min(discountAmount, priceBeforePoints);
+
+            // Cập nhật state
+            setAppliedPoints(pointsValue);
+            setPointsDiscount(finalDiscount);
+            // Trừ điểm khỏi state hiển thị
+            setDisplayLoyaltyPoints(prevPoints => prevPoints - pointsValue);
+
+            Alert.alert("Thành công", `Áp dụng ${pointsValue.toLocaleString('vi-VN')} điểm thành công, giảm ${finalDiscount.toLocaleString('vi-VN')} ₫.`);
+        } catch (error: any) {
+            Alert.alert("Lỗi", error.message || "Không thể áp dụng điểm. Vui lòng thử lại.");
+            // Reset nếu có lỗi
+            handleRemovePoints();
+        } finally {
+            setIsApplyingPoints(false);
+        }
     };
 
     return (
@@ -349,95 +398,116 @@ const Checkout = () => {
                                 </View>
                             </View>
                         </View>
-                        {/* --- Chi tiết giá --- */}
-                        <View className="border-t border-gray-200 mt-3 pt-3 space-y-2" key={`price-section-${isRecalculating ? 'loading' : 'loaded'}`}>
-                            {isRecalculating ? (
-                                // Thêm key để force remount, và style inline cho animation safe
-                                <View className="space-y-2">
-                                    <View className="h-5 bg-gray-200 rounded w-3/4" style={{ animation: 'none' }} />  {/* Tắt animation mặc định */}
-                                    <View className="h-5 bg-gray-200 rounded w-1/2" style={{ animation: 'none' }} />
-                                    <View className="h-8 bg-gray-300 rounded w-full mt-2" style={{ animation: 'pulse 1.5s ease-in-out infinite' }} />  {/* Chỉ pulse cái cuối */}
-                                </View>
-                            ) : (
-                                <View className="space-y-2">
-                                    <View className="flex-row justify-between items-center">
-                                        <Text className="text-base text-gray-600">Giá vé & dịch vụ:</Text>
-                                        <Text className="text-base text-gray-700">{basePrice.toLocaleString('vi-VN')} ₫</Text>
-                                    </View>
-                                    {dealDiscount > 0 && (
-                                        <View className="flex-row justify-between items-center">
-                                            <Text className="text-base text-green-600">Giảm giá ({selectedDeal?.dealCode}):</Text>
-                                            <Text className="text-base text-green-600">- {dealDiscount.toLocaleString('vi-VN')} ₫</Text>
-                                        </View>
-                                    )}
-                                    {tierDiscount > 0 && (
-                                        <View className="flex-row justify-between items-center">
-                                            <Text className="text-base text-green-600">Ưu đãi hạng {user?.loyaltyTier}:</Text>
-                                            <Text className="text-base text-green-600">- {tierDiscount.toLocaleString('vi-VN')} ₫</Text>
-                                        </View>
-                                    )}
-                                    {pointsDiscount > 0 && (
-                                        <View className="flex-row justify-between items-center">
-                                            <Text className="text-base text-green-600">Giảm từ điểm:</Text>
-                                            <Text className="text-base text-green-600">- {pointsDiscount.toLocaleString('vi-VN')} ₫</Text>
-                                        </View>
-                                    )}
-                                    <View className="border-t border-dashed border-gray-200 mt-2 pt-2 flex-row justify-between items-center">
-                                        {/* <Text className="text-lg font-bold text-gray-800">Tạm tính:</Text> */}
-                                        {/* <Text className="text-xl font-bold text-red-600">
-                                            {finalPrice.toLocaleString('vi-VN')} ₫
-                                        </Text> */}
-                                    </View>
-                                </View>
-                            )}
-                        </View>
                     </View>
                     {/* --- Mã giảm giá & Đổi điểm --- */}
                     <View className="bg-white p-4 rounded-xl mb-4 border border-gray-200 shadow-sm">
                         <Text className="text-lg font-bold text-blue-900 mb-3">Ưu đãi & Giảm giá</Text>
                         {/* Chọn mã giảm giá */}
-                        <TouchableOpacity
-                            onPress={() => setDealModalVisible(true)}
-                            className="flex-row items-center justify-between p-3 border border-dashed border-gray-400 rounded-lg"
-                        >
-                            <View className="flex-row items-center">
-                                <Ionicons name="pricetag-outline" size={20} color="#f59e0b" />
-                                <Text className="text-base text-gray-700 ml-2">{selectedDeal ? `Đã chọn: ${selectedDeal.dealCode}` : 'Chọn mã giảm giá'}</Text>
+                        {selectedDeal ? (
+                            <View className="flex-row items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <Text className="text-base text-blue-900 font-semibold">Đang áp dụng: {selectedDeal.dealCode}</Text>
+                                <TouchableOpacity onPress={handleRemoveDeal} className="p-1">
+                                    <Ionicons name="close-circle" size={22} color="#ef4444" />
+                                </TouchableOpacity>
                             </View>
-                            <Ionicons name="chevron-forward" size={20} color="#6b7280" />
-                        </TouchableOpacity>
+                        ) : (
+                            <TouchableOpacity onPress={() => setDealModalVisible(true)} className="flex-row items-center justify-between p-3 border border-dashed border-gray-400 rounded-lg">
+                                <View className="flex-row items-center"><Ionicons name="pricetag-outline" size={20} color="#f59e0b" /><Text className="text-base text-gray-700 ml-2">Chọn hoặc nhập mã giảm giá</Text></View><Ionicons name="chevron-forward" size={20} color="#6b7280" />
+                            </TouchableOpacity>
+                        )}
                         {/* Đổi điểm */}
                         {user && (
                             <View className="mt-4 pt-4 border-t border-gray-100">
                                 <View className="flex-row justify-between items-center mb-2">
-                                    <Text className="text-base font-semibold text-gray-700">Đổi điểm tích lũy</Text>
-                                    <Text className="text-sm text-blue-900 font-bold">Điểm khả dụng: {(user.loyaltyPoints || 0).toLocaleString()}</Text>
-                                </View>
-                                <View className="flex-row items-center gap-x-2">
-                                    <View className="flex-1">
-                                        <TextInput
-                                            label="Nhập số điểm"
-                                            mode="outlined"
-                                            value={pointsToRedeem}
-                                            onChangeText={setPointsToRedeem}
-                                            keyboardType="number-pad"
-                                            style={{ backgroundColor: 'transparent', fontSize: 14 }}
-                                        />
+                                    <View className="flex-row items-center gap-x-1">
+                                        <Text className="text-base font-semibold text-gray-700">Đổi điểm tích lũy</Text>
+                                        <TouchableOpacity onPress={() => Alert.alert("Đổi điểm hoạt động như thế nào?", "Nhập số điểm bạn muốn sử dụng để giảm trừ vào tổng số tiền thanh toán. Số tiền giảm giá tương ứng sẽ được hệ thống tính toán và áp dụng. Số điểm đổi tối thiểu là 500.")}>
+                                            <Ionicons name="help-circle-outline" size={16} color="gray" />
+                                        </TouchableOpacity>
                                     </View>
-                                    <TouchableOpacity
-                                        onPress={handleApplyPoints}
-                                        className="bg-blue-100 p-3 rounded-lg border border-blue-200"
-                                    >
-                                        <Text className="text-blue-900 font-bold">Áp dụng</Text>
-                                    </TouchableOpacity>
+                                    <Text className="text-sm text-blue-900 font-bold">Điểm khả dụng: {displayLoyaltyPoints.toLocaleString()}</Text>
                                 </View>
-                                {appliedPoints > 0 && (
-                                    <Text className="text-green-600 text-sm mt-1">
-                                        Đang áp dụng {appliedPoints.toLocaleString()} điểm, tương đương giảm {pointsDiscount.toLocaleString('vi-VN')} ₫.
-                                    </Text>
+                                {appliedPoints > 0 ? (
+                                    <View className="flex-row items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                                        <Text className="text-base text-green-800 font-semibold">Đang dùng {appliedPoints.toLocaleString()} điểm</Text>
+                                        <TouchableOpacity onPress={handleRemovePoints} className="p-1">
+                                            <Ionicons name="close-circle" size={22} color="#ef4444" />
+                                        </TouchableOpacity>
+                                    </View>
+                                ) : (
+                                    <View className="flex-row items-center justify-center p-3 border border-dashed border-gray-400 rounded-lg gap-x-2 ">
+                                        <View className="flex-1">
+                                            <TextInput
+                                                label="Nhập số điểm"
+                                                mode="outlined"
+                                                value={pointsToRedeem}
+                                                onChangeText={setPointsToRedeem}
+                                                keyboardType="number-pad"
+                                                style={{ backgroundColor: 'transparent', fontSize: 14,height:44,marginBottom:6 }}
+                                                disabled={isApplyingPoints}
+                                            />
+                                        </View>
+                                        <TouchableOpacity onPress={handleApplyPoints} disabled={isApplyingPoints || !pointsToRedeem} className="bg-blue-100  rounded-lg border border-blue-950 w-28 h-[48px] items-center justify-center">
+                                            {isApplyingPoints ? <ActivityIndicator size="small" color="#1e3a8a" /> : <Text className="text-blue-900 font-bold">Áp dụng</Text>}
+                                        </TouchableOpacity>
+                                    </View>
                                 )}
                             </View>
                         )}
+                    </View>
+                       {/* --- Chi tiết giá (ĐÃ DI CHUYỂN XUỐNG ĐÂY) --- */}
+                    <View className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <Text className="text-lg font-bold text-blue-900 mb-3">Chi tiết thanh toán</Text>
+                        <View className="border-t border-gray-200 pt-3">
+                            <View className="flex-row justify-between items-center mb-2">
+                                <View className="flex-row items-center gap-x-1">
+                                    <Text className="text-base text-gray-600">Tạm tính:</Text>
+                                    <TouchableOpacity onPress={() => Alert.alert("Tạm tính là gì?", "Là tổng giá vé và các dịch vụ bổ sung (ghế ngồi, hành lý, suất ăn...) bạn đã chọn ở các bước trước.")}>
+                                        <Ionicons name="help-circle-outline" size={16} color="gray" />
+                                    </TouchableOpacity>
+                                </View>
+                                <Text className="text-base text-gray-800 font-semibold">{basePrice.toLocaleString('vi-VN')} ₫</Text>
+                            </View>
+
+                            {isRecalculating ? (
+                                <View className="items-center justify-center py-4">
+                                    <ActivityIndicator size="small" color="#1e3a8a" />
+                                </View>
+                            ) : (
+                                <>
+                                    {dealDiscount > 0 && (
+                                        <View className="flex-row justify-between items-center mb-1">
+                                            <Text className="text-base text-green-600">Giảm giá ưu đãi:</Text>
+                                            <Text className="text-base text-green-600">- {(dealDiscount - pointsDiscount).toLocaleString('vi-VN')} ₫</Text>
+                                        </View>
+                                    )}
+                                    {pointsDiscount > 0 && (
+                                        <View className="flex-row justify-between items-center mb-1">
+                                            <Text className="text-base text-green-600">Giảm từ điểm:</Text>
+                                            <Text className="text-base text-green-600">- {pointsDiscount.toLocaleString('vi-VN')} ₫</Text>
+                                        </View>
+                                    )}
+                                    {tierDiscount > 0 && (
+                                        <View className="flex-row justify-between items-center mb-1">
+                                            <Text className="text-base text-green-600">Ưu đãi hạng {user?.loyaltyTier}:</Text>
+                                            <Text className="text-base text-green-600">- {tierDiscount.toLocaleString('vi-VN')} ₫</Text>
+                                        </View>
+                                    )}
+                                </>
+                            )}
+
+                            <View className="border-t border-dashed border-gray-300 mt-2 pt-2 flex-row justify-between items-center">
+                                <View className="flex-row items-center gap-x-1">
+                                    <Text className="text-lg font-bold text-gray-800">Tổng cộng:</Text>
+                                    <TouchableOpacity onPress={() => Alert.alert("Tổng cộng là gì?", "Là số tiền cuối cùng bạn cần thanh toán sau khi đã áp dụng tất cả các ưu đãi (mã giảm giá, điểm thưởng, hạng thành viên).")}>
+                                        <Ionicons name="help-circle-outline" size={18} color="gray" />
+                                    </TouchableOpacity>
+                                </View>
+                                <Text className="text-xl font-bold text-red-600">
+                                    {finalPrice.toLocaleString('vi-VN')} ₫
+                                </Text>
+                            </View>
+                        </View>
                     </View>
                     {/* --- Hiển thị QR Code hoặc lựa chọn thanh toán --- */}
                     <View className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
@@ -469,14 +539,11 @@ const Checkout = () => {
                             {paymentMethod === PaymentMethod.BANK_TRANSFER && <Ionicons name="checkmark-circle" size={24} color="#1e3a8a" style={{ marginLeft: 'auto' }} />}
                         </TouchableOpacity>
                     </View>
+                 
                 </View>
             </ScrollView>
             {/* --- Nút Thanh toán --- */}
             <View className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200">
-                <View className="flex-row justify-between items-center mb-2">
-                    <Text className="text-lg font-bold text-gray-800">Tổng cộng:</Text>
-                    <Text className="text-xl font-bold text-red-600">{finalPrice.toLocaleString('vi-VN')} ₫</Text>
-                </View>
                 <TouchableOpacity
                     onPress={handleProcessPayment}
                     disabled={!paymentMethod}
@@ -511,7 +578,12 @@ const Checkout = () => {
                                 ))}
                             </ScrollView>
                         )}
-                        <TouchableOpacity onPress={() => { setSelectedDeal(null); setDealModalVisible(false); }} className="mt-2 p-3 bg-red-100 rounded-lg"><Text className="text-center text-red-700 font-semibold">Không dùng mã</Text></TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => { handleRemoveDeal(); setDealModalVisible(false); }}
+                            className="mt-2 p-3 bg-red-100 rounded-lg"
+                        >
+                            <Text className="text-center text-red-700 font-semibold">Không dùng mã</Text>
+                        </TouchableOpacity>
                         <TouchableOpacity onPress={() => setDealModalVisible(false)} className="mt-4 p-3"><Text className="text-center text-gray-600">Đóng</Text></TouchableOpacity>
                     </View>
                 </View>

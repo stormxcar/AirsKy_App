@@ -4,7 +4,7 @@ import { useBooking } from "@/context/booking-context";
 import PassengerForm from "@/components/screens/book-flight/passenger-form";
 import { useAuth } from "@/context/auth-context";
 import { Ionicons } from "@expo/vector-icons";
-import { differenceInYears, format, parseISO } from "date-fns";
+import { differenceInDays, differenceInYears, format, isAfter, parseISO } from "date-fns";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
@@ -42,13 +42,13 @@ function UserBookingInfo() {
         let currentId = 0;
 
         for (let i = 0; i < adults; i++) {
-            initialPassengers.push({ id: currentId++, firstName: '', lastName: '', dob: null, gender: null, idCard: '', type: 'adult' });
+            initialPassengers.push({ id: currentId++, firstName: '', lastName: '', dob: null, gender: null, idCard: '', type: 'adult', dateOfBirth: '', passportNumber: '' });
         }
         for (let i = 0; i < children; i++) {
-            initialPassengers.push({ id: currentId++, firstName: '', lastName: '', dob: null, gender: null, idCard: '', type: 'child' });
+            initialPassengers.push({ id: currentId++, firstName: '', lastName: '', dob: null, gender: null, idCard: '', type: 'child', dateOfBirth: '', passportNumber: '' });
         }
         for (let i = 0; i < infants; i++) {
-            initialPassengers.push({ id: currentId++, firstName: '', lastName: '', dob: null, gender: null, idCard: '', type: 'infant' });
+            initialPassengers.push({ id: currentId++, firstName: '', lastName: '', dob: null, gender: null, idCard: '', type: 'infant', dateOfBirth: '', passportNumber: '' });
         }
         setPassengers(initialPassengers);
         setNextPassengerId(currentId); // Set the next available ID
@@ -58,21 +58,24 @@ function UserBookingInfo() {
     // Bắt đầu tính tổng tiền vé ở đây
     const baseTicketPrice = useMemo(() => {
         let total = 0;
-        const depPrice = departureFlight?.ticketClass.finalPrice || 0;
-        const retPrice = returnFlight?.ticketClass.finalPrice || 0;
+        const depPrice = departureFlight?.ticketClass.finalPrice ?? 0;
+        const retPrice = returnFlight?.ticketClass.finalPrice ?? 0;
+        const flightPrice = depPrice + (returnFlight ? retPrice : 0);
 
-        passengers.forEach(p => {
-            let multiplier = 1.0; // Adult
-            if (p.type === 'child') multiplier = 0.75;
-            if (p.type === 'infant') multiplier = 0.10;
+        const adultCount = passengers.filter(p => p.type === 'adult').length;
+        const childCount = passengers.filter(p => p.type === 'child').length;
+        const infantCount = passengers.filter(p => p.type === 'infant').length;
 
-            total += (depPrice * multiplier);
-            if (returnFlight) {
-                total += (retPrice * multiplier);
-            }
-        });
+        // Tính tổng cho từng nhóm để giảm sai số làm tròn
+        const adultTotal = adultCount * flightPrice;
+        const childTotal = childCount * flightPrice * 0.75;
+        const infantTotal = infantCount * flightPrice * 0.10;
 
-        return total;
+        total = adultTotal + childTotal + infantTotal;
+
+        // Làm tròn kết quả cuối cùng để tránh số lẻ
+        return Math.round(total);
+
     }, [passengers, departureFlight, returnFlight]);
 
 
@@ -95,7 +98,7 @@ function UserBookingInfo() {
     const handleAddPassenger = () => {
         setPassengers(prev => [
             ...prev,
-            { id: nextPassengerId, firstName: '', lastName: '', dob: null, gender: null, idCard: '', type: 'adult' }
+            { id: nextPassengerId, firstName: '', lastName: '', dob: null, gender: null, idCard: '', type: 'adult', dateOfBirth: '', passportNumber: '' }
         ]);
         setNextPassengerId(prev => prev + 1);
     };
@@ -117,7 +120,7 @@ function UserBookingInfo() {
     const canRemoveAdult = passengers.filter(p => p.type === 'adult').length > 1;
 
     const handleContinue = () => {
-        // 1. Validate Booker Info
+        // 1️⃣ Validate Booker Info
         if (!bookerName.trim()) {
             Alert.alert("Lỗi", "Vui lòng nhập họ và tên người đặt vé.");
             return;
@@ -128,7 +131,17 @@ function UserBookingInfo() {
             return;
         }
 
-        // 2. Validate Passenger Info
+        // 2️⃣ Validate Passenger Info
+        if (passengers.length === 0) {
+            Alert.alert("Lỗi", "Vui lòng thêm ít nhất một hành khách.");
+            return;
+        }
+
+        if (passengers.length > 9) {
+            Alert.alert("Không hợp lệ", "Hệ thống chỉ hỗ trợ tối đa 9 hành khách trong một lần đặt vé.");
+            return;
+        }
+
         for (let i = 0; i < passengers.length; i++) {
             const p = passengers[i];
             const passengerLabel = `Hành khách ${i + 1}`;
@@ -145,32 +158,83 @@ function UserBookingInfo() {
                 Alert.alert("Thiếu thông tin", `Vui lòng chọn giới tính cho ${passengerLabel}.`);
                 return;
             }
-            // Kiểm tra CCCD nếu hành khách từ 14 tuổi trở lên
+
             const age = differenceInYears(new Date(), p.dob);
+
+            // Ngăn chặn ngày sinh ở tương lai
+            if (isAfter(p.dob, new Date())) {
+                Alert.alert("Không hợp lệ", `${passengerLabel} có ngày sinh trong tương lai.`);
+                return;
+            }
+
+            // CCCD/Passport bắt buộc nếu >= 14 tuổi
             if (age >= 14 && !p.idCard.trim()) {
                 Alert.alert("Thiếu thông tin", `${passengerLabel} từ 14 tuổi trở lên, vui lòng nhập số CCCD/Passport.`);
                 return;
             }
         }
 
-        // 3️⃣ Kiểm tra ràng buộc hàng không
+        // 3️⃣ Ràng buộc theo quy định AirSky Air
         const adultsOver18 = passengers.filter(p => {
             if (!p.dob) return false;
             const age = differenceInYears(new Date(), p.dob);
             return age >= 18;
         }).length;
 
-        const infants = passengers.filter(p => p.type === 'infant').length;
-        const children = passengers.filter(p => p.type === 'child').length;
+        const infants = passengers.filter(p => {
+            if (!p.dob) return false;
+            const age = differenceInYears(new Date(), p.dob);
+            return age < 2;
+        }).length;
 
-        if (adultsOver18 === 0) {
-            Alert.alert("Không hợp lệ", "Phải có ít nhất một hành khách từ 18 tuổi trở lên.");
+        const children = passengers.filter(p => {
+            if (!p.dob) return false;
+            const age = differenceInYears(new Date(), p.dob);
+            return age >= 2 && age < 12;
+        }).length;
+
+        const adults = passengers.filter(p => {
+            if (!p.dob) return false;
+            const age = differenceInYears(new Date(), p.dob);
+            return age >= 12;
+        }).length; 
+
+        // ⚠️ Không chấp nhận trẻ dưới 14 ngày tuổi
+        const infantUnder14Days = passengers.find(p => {
+            if (!p.dob) return false; // Add null check
+            const diffDays = differenceInDays(new Date(), p.dob); // Fix: Ensure p.dob is not null
+            return diffDays < 14;
+        });
+        if (infantUnder14Days) {
+            Alert.alert("Không hợp lệ", "AirSky không vận chuyển trẻ em dưới 14 ngày tuổi.");
+            return;
+        }
+        // ⚠️ Ràng buộc người đi cùng
+        if (passengers.length > 1 && adultsOver18 === 0) {
+            Alert.alert("Không hợp lệ", "Phải có ít nhất một hành khách từ 18 tuổi trở lên trong nhóm.");
             return;
         }
 
+        // ⚠️ Em bé phải có người lớn đi cùng
         if (infants > adultsOver18) {
-            Alert.alert("Không hợp lệ", "Số lượng em bé (dưới 2 tuổi) không được vượt quá số người lớn (≥18 tuổi).");
+            Alert.alert("Không hợp lệ", "Mỗi người lớn chỉ được đi kèm 1 em bé (<2 tuổi).");
             return;
+        }
+
+        // ⚠️ Trẻ em (2–11 tuổi) phải có người lớn đi cùng
+        if (children > 0 && adultsOver18 === 0) {
+            Alert.alert("Không hợp lệ", "Trẻ em (2–11 tuổi) phải đi cùng ít nhất một người lớn (≥18 tuổi).");
+            return;
+        }
+
+        // ⚠️ Trẻ vị thành niên đi một mình (12–13 tuổi)
+        if (passengers.length === 1) {
+            const onlyPassenger = passengers[0];
+            const age = onlyPassenger.dob ? differenceInYears(new Date(), onlyPassenger.dob) : 0; // Fix: Add null check
+            if (age < 12) {
+                Alert.alert("Không hợp lệ", "Trẻ dưới 12 tuổi không được phép bay một mình theo quy định của AirSky Air.");
+                return;
+            }
         }
 
         // 4️⃣ Xác nhận trước khi tiếp tục
@@ -182,10 +246,17 @@ function UserBookingInfo() {
                 {
                     text: "Xác nhận",
                     onPress: () => {
+                        // Chuẩn hóa dữ liệu trước khi lưu
+                        const passengersWithDobString = passengers.map(p => ({
+                            ...p,
+                            dateOfBirth: p.dob ? format(p.dob, 'yyyy-MM-dd') : undefined,
+                            passportNumber: p.idCard,
+                        }));
+
                         dispatch({
                             type: 'UPDATE_STATE',
                             payload: {
-                                passengers: passengers,
+                                passengers: passengersWithDobString,
                                 contactName: bookerName,
                                 contactEmail: bookerEmail,
                                 totalPrice: baseTicketPrice,
@@ -197,6 +268,7 @@ function UserBookingInfo() {
             ]
         );
     };
+
 
 
     return (

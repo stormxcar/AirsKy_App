@@ -1,4 +1,4 @@
-import { Flight, TicketClass } from "@/app/types";
+import { Flight, TicketClass } from "@/app/types/types";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import React, { memo } from "react";
 import Animated, { useAnimatedStyle, withTiming, Easing, useSharedValue } from 'react-native-reanimated';
@@ -16,7 +16,7 @@ type FlightItemProps = {
 const FlightItem = memo(({ flight, isSelected, selectedClassId, onSelect, onSelectClass }: FlightItemProps) => {
     // Sử dụng useSharedValue để lưu trữ chiều cao của nội dung
     const contentHeight = useSharedValue(0);
-
+   
     // Tạo style động cho container của phần chọn hạng vé
     const animatedContainerStyle = useAnimatedStyle(() => {
         return {
@@ -31,7 +31,7 @@ const FlightItem = memo(({ flight, isSelected, selectedClassId, onSelect, onSele
             overflow: 'hidden', // Quan trọng: ẩn nội dung khi chiều cao là 0
         };
     });
-
+ console.log(flight);
     return (
         <TouchableOpacity activeOpacity={0.8} onPress={onSelect} className="bg-white rounded-xl p-4 mb-4 border border-gray-100 shadow-sm overflow-hidden">
             {/* Airline Info */}
@@ -71,9 +71,16 @@ const FlightItem = memo(({ flight, isSelected, selectedClassId, onSelect, onSele
 
             {/* Price */}
             <View className="border-t border-dashed border-gray-200 mt-4 pt-3 flex-row justify-between items-center ">
-                <View className="flex-row items-baseline">
-                    <Text className="text-lg font-bold text-blue-900">{flight.price.toLocaleString('vi-VN')} ₫</Text>
-                    <Text className="text-gray-500 text-xs ml-1">/khách</Text>
+                <View>
+                    <View className="flex-row items-baseline">
+                        <Text className="text-lg font-bold text-blue-900">{flight.price.toLocaleString('vi-VN')} ₫</Text>
+                        <Text className="text-gray-500 text-xs ml-1">/khách</Text>
+                    </View>
+                    {flight.availableSeats < 10 && (
+                        <Text className="text-red-600 text-xs font-bold mt-1 animate-pulse">
+                            Chỉ còn {flight.availableSeats} chỗ!
+                        </Text>
+                    )}
                 </View>
 
                 {/* Nút mới để mở/đóng phần chọn hạng vé */}

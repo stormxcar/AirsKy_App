@@ -299,9 +299,9 @@ const ServiceAndSeatSelection = () => {
 
         dispatch({
             type: 'UPDATE_STATE',
-            payload: { selectedSeats: selectedSeatsWithDetails, selectedBaggages, selectedAncillaryServices }
+            payload: { selectedSeats: selectedSeatsWithDetails, selectedBaggages, selectedAncillaryServices, totalPrice: totalPrice }
         });
-    }, [selectedSeats, selectedBaggages, selectedAncillaryServices, dispatch, departSeats, seats]);
+    }, [selectedSeats, selectedBaggages, selectedAncillaryServices, dispatch, departSeats, seats, totalPrice]);
 
 
     return (

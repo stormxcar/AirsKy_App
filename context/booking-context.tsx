@@ -32,6 +32,8 @@ interface BookingState {
 
     // Pricing
     totalPrice?: number;
+    departSeats:[];
+    returnSeats:[];
 }
 
 // Định nghĩa các hành động cho reducer

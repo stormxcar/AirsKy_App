@@ -50,6 +50,7 @@ export const mapApiFlightToFlight = (apiFlight: FlightResponse): Flight => {
             time: format(parseISO(apiFlight.arrivalTime), 'HH:mm'),
         },
         duration: formatDuration(apiFlight.duration),
+        availableSeats: apiFlight.availableSeats,
         price: displayPrice,
         type: formatStops(apiFlight.stops),
         status: apiFlight.status,
