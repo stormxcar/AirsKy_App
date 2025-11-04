@@ -7,19 +7,19 @@ import {
     type PassengerSeatRequest,
     PaymentMethod,
 } from "@/app/types/booking"
+import type { DealResponse } from "@/app/types/deal"
 import { MOCK_ANCILLARY_SERVICES, type Passenger } from "@/app/types/types"
 import BookingStepper from "@/components/screens/book-flight/booking-stepper"
-import { useBooking } from "@/context/booking-context"
 import { useAuth } from "@/context/auth-context"
+import { useBooking } from "@/context/booking-context"
 import { useLoading } from "@/context/loading-context"
 import { createBooking } from "@/services/booking-service"
 import { getEligibleDeals } from "@/services/deal-service"
 import { calculateDiscountFromPoints } from "@/services/loyalty-service"
-import type { DealResponse } from "@/app/types/deal"
-import { Ionicons, MaterialIcons } from "@expo/vector-icons"
+import { Ionicons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
-import { useMemo, useState, useEffect, useLayoutEffect, useRef } from "react"
-import { Alert, Image, ScrollView, Text, TouchableOpacity, View, Linking, Modal, ActivityIndicator } from "react-native"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { ActivityIndicator, Alert, Image, Linking, Modal, ScrollView, Text, TouchableOpacity, View } from "react-native"
 import { TextInput } from "react-native-paper"
 import { SafeAreaView } from "react-native-safe-area-context"
 
@@ -123,14 +123,16 @@ const Checkout = () => {
         priceAfterDeal = Math.max(0, basePrice - totalDiscountFromDealsAndPoints)
 
         // 3. Áp dụng giảm giá hạng thành viên (tính trên giá SAU khi đã trừ deal và điểm)
-        let tierDiscount = 0
-        if (user?.loyaltyTier && LOYALTY_TIER_DISCOUNTS[user.loyaltyTier]) {
-            tierDiscount = priceAfterDeal * LOYALTY_TIER_DISCOUNTS[user.loyaltyTier]
-        }
+         let tierDiscount = 0;
+         if (user?.loyaltyTier && LOYALTY_TIER_DISCOUNTS[user.loyaltyTier]) {
+             // Tính giảm giá hạng thành viên trên giá gốc (basePrice) đã trừ deal
+            //  tierDiscount = (basePrice - calculatedDealDiscount) * LOYALTY_TIER_DISCOUNTS[user.loyaltyTier];
+         tierDiscount = priceAfterDeal * LOYALTY_TIER_DISCOUNTS[user.loyaltyTier]
+            }
 
         // 4. Tính giá cuối cùng
         const finalPrice = Math.max(0, priceAfterDeal - tierDiscount)
-
+    
         // Trả về tổng giảm giá từ deal và điểm để hiển thị
         return { finalPrice, dealDiscount: totalDiscountFromDealsAndPoints, tierDiscount }
     }, [basePrice, selectedDeal, user, pointsDiscount])
@@ -240,6 +242,8 @@ const Checkout = () => {
                 // 2. Gọi API để tạo booking
                 const createdBooking = await createBooking(bookingData)
                 // 3. Lấy checkoutUrl từ response của createBooking
+                console.log("booking req:", bookingData)
+                console.log("booking:", createdBooking)
                 const checkoutUrl = createdBooking.payment?.checkoutUrl
                 if (!checkoutUrl) {
                     throw new Error("Không nhận được đường dẫn thanh toán từ máy chủ.")
@@ -420,12 +424,15 @@ const Checkout = () => {
                                 // 2. Giá dịch vụ
                                 const seatPrice = (seatDepart?.price || 0) + (seatReturn?.price || 0)
                                 const baggagePrice = (baggage?.price || 0) * (baggage ? segmentCount : 0)
+                                // FIX: Tính giá dịch vụ cộng thêm cho từng hành khách
                                 const ancillaryPrice = Object.entries(ancillary).reduce((total, [serviceId, isSelected]) => {
                                     if (isSelected) {
                                         const service = MOCK_ANCILLARY_SERVICES.find((s) => s.serviceId === Number.parseInt(serviceId))
                                         if (service) {
+                                            // Nếu dịch vụ tính theo chặng, nhân với số chặng
                                             const serviceSegmentMultiplier = service.isPerSegment ? segmentCount : 1
-                                            return total + service.price * serviceSegmentMultiplier
+                                            // Chỉ cộng giá của dịch vụ, không nhân với số hành khách
+                                            return total + (service.price * serviceSegmentMultiplier);
                                         }
                                     }
                                     return total
@@ -646,6 +653,14 @@ const Checkout = () => {
                                             </Text>
                                         </View>
                                     )}
+                                     {tierDiscount > 0 && (
+                                        <View className="flex-row justify-between items-center">
+                                            <Text className="text-sm text-emerald-600 font-medium">Ưu đãi hạng {user?.loyaltyTier}:</Text>
+                                            <Text className="text-sm text-emerald-600 font-semibold">
+                                                - {tierDiscount.toLocaleString("vi-VN")} ₫
+                                            </Text>
+                                        </View>
+                                    )}
                                     {pointsDiscount > 0 && (
                                         <View className="flex-row justify-between items-center">
                                             <Text className="text-sm text-emerald-600 font-medium">Giảm từ điểm:</Text>
@@ -654,14 +669,7 @@ const Checkout = () => {
                                             </Text>
                                         </View>
                                     )}
-                                    {tierDiscount > 0 && (
-                                        <View className="flex-row justify-between items-center">
-                                            <Text className="text-sm text-emerald-600 font-medium">Ưu đãi hạng {user?.loyaltyTier}:</Text>
-                                            <Text className="text-sm text-emerald-600 font-semibold">
-                                                - {tierDiscount.toLocaleString("vi-VN")} ₫
-                                            </Text>
-                                        </View>
-                                    )}
+                                   
                                 </>
                             )}
 

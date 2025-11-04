@@ -2,9 +2,9 @@ import { AncillaryServiceType, BookingResponse } from "@/app/types/booking";
 import { useLoading } from "@/context/loading-context";
 import { getBookingDetailsById } from "@/services/booking-service";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator, Share, Alert } from "react-native";
+import { Alert, ScrollView, Share, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // Helper để dịch tên loại ghế
@@ -213,7 +213,7 @@ const BookingResult = () => {
                                 {isSuccessState && !bookingDetails && (
                                     <Text className="text-gray-600 mt-2 text-center">
                                         Thông tin chi tiết về chuyến bay đã được gửi đến email của bạn.
-                                        Bạn cũng có thể xem lại trong mục "Chuyến đi của tôi".
+                                        Bạn cũng có thể xem lại trong mục &apos; Chuyến đi của tôi &apos;.
                                     </Text>
                                 )}
                             </View>
@@ -251,7 +251,7 @@ const BookingResult = () => {
                                         <Text className="text-lg font-bold text-blue-900 mb-2">Hành khách & Dịch vụ</Text>
                                         {bookingDetails.passengers.map((p, index) => (
                                             <View key={index} className="py-3 border-b border-gray-100 last:border-b-0">
-                                                <Text className="text-base font-semibold text-gray-800">{p.lastName} {p.firstName}</Text>
+                                                <Text className="text-base font-semibold text-gray-800">{p.lastName} {p.firstName} {p.type}</Text>
                                                 {/* Hiển thị dịch vụ đã nhóm */}
                                                 {Object.entries(groupedServices[p.passengerId] || {}).map(([groupName, services], gIdx) => (
                                                     <View key={gIdx} className="mt-2">
