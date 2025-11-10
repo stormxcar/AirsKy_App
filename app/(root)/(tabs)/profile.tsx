@@ -22,6 +22,7 @@ const Profile = () => {
   }, [isAuthLoading, user]);
   return (
     <SafeAreaView className="flex-1 bg-blue-950" edges={["top", "left", "right"]}>
+      <Text className="p-4 text-center text-white font-bold uppercase">Hồ sơ cá nhân</Text>
       {user ? (
         <ScrollView className="bg-white rounded-t-[40px]">
           {/* User Header */}

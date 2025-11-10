@@ -1,34 +1,44 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react'; 
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Passenger, Seat, BaggagePackage } from '@/app/types/types';
+import { Passenger, Seat, BaggagePackage, MOCK_ANCILLARY_SERVICES, SelectedFlight } from '@/app/types/types';
 
 const { height: screenHeight } = Dimensions.get('window');
 
 type BookingSummaryModalProps = {
+    departureFlight?: SelectedFlight | null;
+    returnFlight?: SelectedFlight | null;
     passengers: Passenger[];
-    selectedSeats: { [passengerId: number]: string }; // passengerId -> seatId
-    selectedBaggages: { [passengerId: number]: BaggagePackage | null };
-    selectedMeals: { [passengerId: number]: boolean };
-    allSeats: Seat[]; // To get seatNumber from seatId
+    selectedSeats: { depart: { [passengerId: number]: string }, return: { [passengerId: number]: string } };
+    selectedBaggages: { depart: { [passengerId: number]: BaggagePackage | null }, return: { [passengerId: number]: BaggagePackage | null } };
+    selectedAncillaryServices: { depart: { [passengerId: number]: { [serviceId: number]: boolean } }, return: { [passengerId: number]: { [serviceId: number]: boolean } } };
+    departSeats: Seat[]; // Ghế chuyến đi
+    returnSeats: Seat[]; // Ghế chuyến về
     currentPassengerIndex: number;
     onPassengerSelect: (index: number) => void;
     totalPrice: number;
     onContinue: () => void;
     showContinueButton: boolean;
+    isRoundTrip: boolean;
+    selectionPhase: 'depart' | 'return';
 };
 
 const BookingSummaryModal = ({
+    departureFlight,
+    returnFlight,
     passengers,
     selectedSeats,
     selectedBaggages,
-    selectedMeals,
-    allSeats,
+    selectedAncillaryServices,
+    departSeats,
+    returnSeats,
     currentPassengerIndex,
     onPassengerSelect,
     totalPrice,
     onContinue,
     showContinueButton,
+    isRoundTrip,
+    selectionPhase,
 }: BookingSummaryModalProps) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const animatedHeight = React.useRef(new Animated.Value(0)).current;
@@ -45,31 +55,71 @@ const BookingSummaryModal = ({
         }).start();
     }, [isExpanded]);
 
+    const getPassengerTypeLabel = (type: 'adult' | 'child' | 'infant') => {
+        switch (type) {
+            case 'adult': return 'Người lớn';
+            case 'child': return 'Trẻ em';
+            case 'infant': return 'Em bé';
+            default: return type;
+        }
+    };
+
+    const getPassengerPrice = (passenger: Passenger) => {
+        let total = 0;
+        const depPrice = departureFlight?.ticketClass.finalPrice || 0;
+        const retPrice = returnFlight?.ticketClass.finalPrice || 0;
+
+        let multiplier = 1.0; // Adult
+        if (passenger.type === 'child') multiplier = 0.75;
+        if (passenger.type === 'infant') multiplier = 0.10;
+
+        total += (depPrice * multiplier);
+        if (returnFlight) {
+            total += (retPrice * multiplier);
+        }
+        return total;
+    };
+
     const summaryHeightStyle = {
         height: animatedHeight,
     };
 
-    const getSeatNumber = (seatId: string | undefined) => {
+    const getSeatInfo = (seatId: string | undefined, phase: 'depart' | 'return') => {
         if (!seatId) return 'Chưa chọn';
-        const seat = allSeats.find(s => s.id === seatId);
-        return seat ? seat.seatNumber : 'N/A';
+        const seatList = phase === 'depart' ? departSeats : returnSeats;
+        const seat = seatList.find(s => s.id === seatId);
+        if (!seat) return 'N/A';
+
+        const priceText = seat.price > 0 ? ` (+${seat.price.toLocaleString('vi-VN')} ₫)` : '';
+        const seatTypeText = seat.seatType !== 'STANDARD' ? ` (${seat.seatType})` : '';
+        return `${seat.seatNumber}${seatTypeText}${priceText}`;
     };
 
     const getBaggageLabel = (pkg: BaggagePackage | null) => {
         return pkg ? pkg.label : 'Không';
     };
 
-    const getMealLabel = (hasMeal: boolean) => {
-        return hasMeal ? 'Có' : 'Không';
+    const getAncillaryServicesSummary = (passengerId: number, phase: 'depart' | 'return') => {
+        const services = selectedAncillaryServices?.[phase]?.[passengerId];
+        if (!services || Object.keys(services).length === 0) {
+            return <Text className="text-sm text-gray-600">Dịch vụ khác: Không</Text>;
+        }
+        const selectedServiceNames = Object.keys(services)
+            .filter(serviceId => services[parseInt(serviceId)])
+            .map(serviceId => {
+                const serviceInfo = MOCK_ANCILLARY_SERVICES.find(s => s.serviceId === parseInt(serviceId));
+                return serviceInfo ? serviceInfo.serviceName : `Dịch vụ #${serviceId}`;
+            });
+        return <Text className="text-sm text-gray-600">Dịch vụ khác: {selectedServiceNames.join(', ')}</Text>;
     };
 
     return (
         <View style={styles.container} className="bg-white border-t border-gray-200 shadow-lg">
-            {/* Header / Toggle Bar */}
+            {/* Header / Toggle Bar - Hiển thị khi thu gọn */}
             <TouchableOpacity onPress={toggleExpand} style={styles.toggleBar} className="flex-row justify-between items-center p-4">
                 <View className="flex-row items-center">
                     <Ionicons name={isExpanded ? "chevron-down" : "chevron-up"} size={24} color="#1e3a8a" />
-                    <Text className="text-lg font-bold text-blue-900 ml-2">Tổng số tiền:</Text>
+                    <Text className="text-lg font-bold text-blue-900 ml-2">{isExpanded ? 'Thu gọn' : 'Tóm tắt & tổng tiền'}</Text>
                 </View>
                 <Text className="text-xl font-bold text-red-600">{totalPrice.toLocaleString('vi-VN')} ₫</Text>
             </TouchableOpacity>
@@ -77,26 +127,56 @@ const BookingSummaryModal = ({
             {/* Expanded Content */}
             <Animated.View style={[styles.expandedContent, summaryHeightStyle]}>
                 <ScrollView contentContainerStyle={styles.scrollContent}>
-                    {passengers.map((p, index) => (
+                    {passengers.map((p, index) => {
+                        const passengerPrice = getPassengerPrice(p);
+                        const isInfant = p.type === 'infant';
+                        return (
                         <TouchableOpacity
                             key={p.id}
-                            onPress={() => onPassengerSelect(index)}
+                            onPress={() => !isInfant && onPassengerSelect(index)} // Không cho chọn em bé
                             className={`p-3 mb-2 rounded-lg border-2 ${currentPassengerIndex === index ? 'border-blue-900 bg-blue-50' : 'border-gray-200 bg-white'}`}
                         >
-                            <Text className={`font-bold ${currentPassengerIndex === index ? 'text-blue-900' : 'text-gray-800'}`}>
-                                {p.lastName} {p.firstName}
-                            </Text>
-                            <Text className="text-sm text-gray-600">
-                                Ghế: {getSeatNumber(selectedSeats[p.id])}
-                            </Text>
-                            <Text className="text-sm text-gray-600">
-                                Hành lý: {getBaggageLabel(selectedBaggages[p.id])}
-                            </Text>
-                            <Text className="text-sm text-gray-600">
-                                Suất ăn: {getMealLabel(selectedMeals[p.id])}
-                            </Text>
+                            <View className="flex-row justify-between items-center">
+                                <Text className={`font-bold ${currentPassengerIndex === index ? 'text-blue-900' : 'text-gray-800'}`}>
+                                    {p.lastName} {p.firstName} ({getPassengerTypeLabel(p.type)})
+                                </Text>
+                                <Text className="font-semibold text-gray-700">
+                                    {passengerPrice.toLocaleString('vi-VN')} ₫
+                                </Text>
+                            </View>
+                            {/* Chuyến đi */}
+                            <View className="mt-1 pl-2 border-l-2 border-gray-200">
+                                <Text className="text-xs font-semibold text-gray-500">Chuyến đi</Text>
+                                <Text className="text-sm text-gray-600">
+                                    Ghế: {isInfant ? 'Không áp dụng':getSeatInfo(selectedSeats.depart[p.id], 'depart')}
+                                </Text>
+                                <Text className="text-sm text-gray-600">
+                                    Hành lý: {isInfant ? 'Không áp dụng' : getBaggageLabel(selectedBaggages.depart[p.id])}
+                                </Text>
+                                {isInfant ? <Text className="text-sm text-gray-600">Dịch vụ khác: Không áp dụng</Text> : getAncillaryServicesSummary(p.id, 'depart')}
+                            </View>
+                            {/* Chuyến về (nếu có) */}
+                            {isRoundTrip && (
+                                <View className="mt-2 pl-2 border-l-2 border-gray-200">
+                                    <Text className="text-xs font-semibold text-gray-500">Chuyến về</Text>
+                                    {!isInfant ? (
+                                        <>
+                                            <Text className="text-sm text-gray-600">
+                                                Ghế: {getSeatInfo(selectedSeats.return[p.id], 'return')}
+                                            </Text>
+                                            <Text className="text-sm text-gray-600">
+                                                Hành lý: {getBaggageLabel(selectedBaggages.return[p.id])}
+                                            </Text>
+                                            {getAncillaryServicesSummary(p.id, 'return')}
+                                        </>
+                                    ) : (
+                                        <Text className="text-sm text-gray-600">Không áp dụng dịch vụ</Text>
+                                    )}
+                                </View>
+                            )}
                         </TouchableOpacity>
-                    ))}
+                    );
+                    })}
                 </ScrollView>
             </Animated.View>
 
@@ -104,7 +184,11 @@ const BookingSummaryModal = ({
             {showContinueButton && (
                 <View className="p-4 bg-white border-t border-gray-200">
                     <TouchableOpacity onPress={onContinue} className="bg-blue-900 py-3 rounded-full shadow-md">
-                        <Text className="text-white text-center font-bold text-lg">Tiếp tục</Text>
+                        <Text className="text-white text-center font-bold text-lg">
+                            {isRoundTrip && selectionPhase === 'depart'
+                                ? 'Chọn cho chuyến về'
+                                : 'Tiếp tục'}
+                        </Text>
                     </TouchableOpacity>
                 </View>
             )}

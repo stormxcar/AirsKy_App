@@ -44,3 +44,14 @@ export const getBooking = async (bookingCode: string): Promise<BookingResponse> 
         throw new Error(error.response?.data?.message || "Không thể tải thông tin đặt vé.");
     }
 };
+
+export const getBookingDetailsById = async (bookingId: string): Promise<BookingResponse> => {
+    try {
+        console.log(`Fetching booking details for id: ${bookingId}`);
+        const response = await api.get<ApiResponse<BookingResponse>>(`/bookings/${bookingId}`);
+        return response.data.data;
+    } catch (error: any) {
+        console.error(`Error fetching booking ${bookingId}:`, error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
+        throw new Error(error.response?.data?.message || "Không thể tải thông tin đặt vé.");
+    }
+};

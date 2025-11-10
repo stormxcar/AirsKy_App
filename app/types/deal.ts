@@ -1,0 +1,32 @@
+export interface DealResponse {
+    dealId: number;
+    dealCode: string;
+    title: string;
+    discountPercentage: number | null;
+    minimumOrderAmount: number;
+    validFrom: string;
+    validTo: string;
+    description: string;
+    thumbnail: string | null;
+    maxDiscountAmount: number | null;
+    totalUsageLimit: number;
+    usedCount: number;
+    usagePerUser: number | null;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+    departureAirportId: number | null;
+    departureAirportName: string | null;
+    departureAirportCode: string | null;
+    arrivalAirportId: number | null;
+    arrivalAirportName: string | null;
+    arrivalAirportCode: string | null;
+    remainingUsage: number;
+    status: string;
+    isGuestOnly: boolean | null;
+    requiredLoyaltyTier: string | null;
+    isLoyaltyExclusive: boolean | null;
+    pointsRequired: number | null;
+    isPointsRedemption: boolean | null;
+    fixedDiscountAmount: number | null;
+}

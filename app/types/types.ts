@@ -1,4 +1,6 @@
-import { SeatStatus } from "./booking"; // Import SeatStatus từ booking.ts
+import { SeatStatus,AncillaryServiceType } from "./booking"; // Import SeatStatus từ booking.ts
+import { AncillaryServiceResponse } from './ancillary-service';
+
 /**
  * Represents an airport.
  */
@@ -28,6 +30,7 @@ export type Flight = {
   // Thêm các hạng vé cho chuyến bay này
   ticketClasses: TicketClass[];
   departureTime: string;
+  availableSeats: number; // Thêm số ghế còn trống
 };
 
 /**
@@ -79,7 +82,85 @@ export const BAGGAGE_PACKAGES: BaggagePackage[] = [
 ];
 
 /**
+ * Mock data cho danh sách các dịch vụ bổ trợ (Ancillary Services).
+ * Dữ liệu này tuân theo interface `AncillaryServiceResponse`.
+ */
+export const MOCK_ANCILLARY_SERVICES: AncillaryServiceResponse[] = [
+  {
+    serviceId: 1,
+    serviceName: 'Suất ăn đặc biệt',
+    serviceType: AncillaryServiceType.MEAL,
+    serviceTypeDisplayName: 'Dịch vụ ăn uống',
+    description:
+      'Đặc biệt suất ăn nóng với lựa chọn món Á hoặc món Âu, phục vụ trong chuyến bay.',
+    price: 150000.0,
+    isActive: true,
+    thumbnail: 'https://example.com/thumbnails/meal.jpg',
+    maxQuantity: 5, // Có thể mua cho nhiều người
+    isPerPassenger: true, // Tính phí trên mỗi hành khách
+    isPerSegment: true, // Tính phí cho mỗi chặng bay (khứ hồi x2)
+    createdAt: '2025-10-07T09:48:49',
+    updatedAt: '2025-10-26T16:14:22.710023',
+  },
+  {
+    serviceId: 2,
+    serviceName: 'Internet trên máy bay',
+    serviceType: AncillaryServiceType.WIFI,
+    serviceTypeDisplayName: 'Internet trên máy bay',
+    description:
+      'Kết nối internet tốc độ cao trong suốt chuyến bay, hỗ trợ streaming và làm việc.',
+    price: 80000.0,
+    isActive: true,
+    thumbnail: 'https://example.com/thumbnails/wifi.jpg',
+    maxQuantity: 1,
+    isPerPassenger: true, // Mỗi hành khách đăng ký riêng
+    isPerSegment: true, // Tính phí cho mỗi chặng bay
+    createdAt: '2025-10-07T09:48:49',
+    updatedAt: '2025-10-26T16:14:22.793187',
+  },
+  {
+    serviceId: 4,
+    serviceName: 'Lên máy bay ưu tiên',
+    serviceType: AncillaryServiceType.PRIORITY_BOARDING,
+    serviceTypeDisplayName: 'Lên máy bay ưu tiên',
+    description:
+      'Lên máy bay ưu tiên với hàng đợi riêng, tiết kiệm thời gian và thuận tiện.',
+    price: 120000.0,
+    isActive: true,
+    thumbnail: 'https://example.com/thumbnails/priority-boarding.jpg',
+    maxQuantity: 1,
+    isPerPassenger: true, // Mỗi hành khách đăng ký riêng
+    isPerSegment: true, // Tính phí cho mỗi chặng bay
+    createdAt: '2025-10-07T09:48:49',
+    updatedAt: '2025-10-26T16:14:22.873352',
+  },
+  {
+    serviceId: 5,
+    serviceName: 'Bảo hiểm du lịch',
+    serviceType: AncillaryServiceType.TRAVEL_INSURANCE,
+    serviceTypeDisplayName: 'Bảo hiểm du lịch',
+    description:
+      'Bảo hiểm du lịch toàn diện bao gồm hủy chuyến, trễ chuyến và tai nạn.',
+    price: 50000.0,
+    isActive: true,
+    thumbnail: 'https://example.com/thumbnails/travel-insurance.jpg',
+    maxQuantity: 1,
+    isPerPassenger: false, // Tính phí trên mỗi booking, không phải mỗi hành khách
+    isPerSegment: false, // Chỉ tính phí một lần cho cả hành trình (kể cả khứ hồi)
+    createdAt: '2025-10-07T09:48:49',
+    updatedAt: '2025-10-07T09:48:49',
+  },
+];
+
+/**
  * Represents the status and details of a seat on a plane.
  */
 // export type SeatStatus = 'available' | 'occupied' | 'selected' | 'exit';
-export type Seat = { id: string; status: SeatStatus; price?: number, seatNumber?: string }; // SeatStatus giờ đây được import
+export type Seat = {
+  id: string;
+  status: SeatStatus;
+  price: number; // Phụ phí cho loại ghế này
+  seatNumber: string;
+  seatType: string; // e.g., 'STANDARD', 'EXIT_ROW', 'FRONT_ROW'
+  className: string; // e.g., 'Economy', 'Business', 'First'
+};

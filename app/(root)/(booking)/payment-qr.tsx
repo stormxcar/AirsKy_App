@@ -5,7 +5,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { View, Text, Image, TouchableOpacity, AppState, AppStateStatus, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const PAYMENT_TIMEOUT = 600; // 10 phút
+const PAYMENT_TIMEOUT = 600; 
 
 const PaymentQR = () => {
     const router = useRouter();

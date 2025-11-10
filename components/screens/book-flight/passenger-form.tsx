@@ -3,8 +3,8 @@ import GenderSelectionModal from '@/components/screens/book-flight/modals/gender
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { differenceInYears, format } from 'date-fns';
-import React, { useState } from 'react';
-import { Platform, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react'; 
+import { Platform, Text, TouchableOpacity, View, Alert } from 'react-native';
 import { TextInput } from 'react-native-paper';
 
 // Helper to calculate age and determine passenger type
@@ -37,6 +37,18 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showGenderPicker, setShowGenderPicker] = useState(false);
 
+    const passengerTypeLabels = {
+        adult: 'Người lớn',
+        child: 'Trẻ em',
+        infant: 'Em bé'
+    };
+
+    const passengerTypeExplanations = {
+        adult: "Hành khách từ 12 tuổi trở lên tính đến ngày bay.",
+        child: "Hành khách từ 2 đến 11 tuổi tính đến ngày bay, phải có người lớn đi kèm và có ghế ngồi riêng.",
+        infant: "Hành khách dưới 2 tuổi tính đến ngày bay, phải có người lớn (từ 18 tuổi) đi kèm và ngồi trong lòng người lớn đó (không có ghế riêng)."
+    };
+
     const isIdCardRequired = passenger.dob ? differenceInYears(new Date(), passenger.dob) >= 14 : false;
 
     const handleDateChange = (event: any, selectedDate?: Date) => {
@@ -44,7 +56,6 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
         setShowDatePicker(false);
         if (selectedDate) {
             onChange(passenger.id, 'dob', selectedDate);
-            onChange(passenger.id, 'type', getPassengerType(selectedDate)); // Update type based on DOB
         }
     };
 
@@ -56,8 +67,13 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
     return (
         <>
             <View className="bg-white rounded-xl p-4 gap-2 mb-4 border border-gray-200">
-                <View className="flex-row justify-between items-center mb-3">
-                    <Text className="text-lg font-bold text-blue-900">Hành khách {index + 1} ({passenger.type === 'adult' ? 'Người lớn' : passenger.type === 'child' ? 'Trẻ em' : 'Em bé'})</Text>
+                <View className="flex-row justify-between items-center mb-3">                    
+                    <View className="flex-row items-center gap-x-1">
+                        <Text className="text-lg font-bold text-blue-900">Hành khách {index + 1} ({passengerTypeLabels[passenger.type]})</Text>
+                        <TouchableOpacity onPress={() => Alert.alert(`Thông tin về "${passengerTypeLabels[passenger.type]}"`, passengerTypeExplanations[passenger.type])}>
+                            <Ionicons name="help-circle-outline" size={18} color="gray" />
+                        </TouchableOpacity>
+                    </View>
                     {canRemove && onRemove && (
                         <TouchableOpacity onPress={() => onRemove(passenger.id)} className="p-2">
                             <Ionicons name="trash-outline" size={24} color="#1e3a8a" />
@@ -70,8 +86,9 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
                     value={passenger.lastName}
                     onChangeText={(text) => onChange(passenger.id, 'lastName', processNameInput(text))}
                     className="flex-1 "
-                    style={{ backgroundColor: 'transparent' }}
+                    style={{ backgroundColor: 'transparent',fontSize:14 }}
                     autoCapitalize="characters"
+                    
                 />
                 <TextInput
                     label="Tên"
@@ -79,7 +96,7 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
                     value={passenger.firstName}
                     onChangeText={(text) => onChange(passenger.id, 'firstName', processNameInput(text))}
                     className="flex-1"
-                    style={{ backgroundColor: 'transparent' }}
+                    style={{ backgroundColor: 'transparent',fontSize:14 }}
                     autoCapitalize="characters"
                 />
 
@@ -92,7 +109,7 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
                         editable={false}
                         pointerEvents="none" // Prevent keyboard from opening
                         // right={<TextInput.Icon icon="calendar" />}
-                        style={{ backgroundColor: 'transparent' }}
+                        style={{ backgroundColor: 'transparent',fontSize:14 }}
                     />
                 </TouchableOpacity>
                 {showDatePicker && (
@@ -115,7 +132,7 @@ const PassengerForm = ({ passenger, index, onChange, onRemove, canRemove }: Pass
                         editable={false}
                         pointerEvents="none"
                         // right={<TextInput.Icon icon="chevron-down" />}
-                        style={{ backgroundColor: 'transparent' }}
+                        style={{ backgroundColor: 'transparent',fontSize:14 }}
                     />
                 </TouchableOpacity>
 

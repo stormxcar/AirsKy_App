@@ -34,7 +34,7 @@ export default function FlightSummaryModal({
             {departureFlight && (
               <View className="mb-4 border-b border-gray-200 pb-3">
                 <Text className="font-semibold text-blue-900 mb-1">
-                  Chuyến đi: {departureFlight.flight.origin} → {departureFlight.flight.destination}
+                  Chuyến đi: {departureFlight.flight.departure.code} → {departureFlight.flight.arrival.code}
                 </Text>
                 <Text className="text-gray-600 text-sm">
                   {departureFlight.flight.flightNumber} —{" "}
@@ -53,7 +53,7 @@ export default function FlightSummaryModal({
             {returnFlight && (
               <View className="mb-4 border-b border-gray-200 pb-3">
                 <Text className="font-semibold text-blue-900 mb-1">
-                  Chuyến về: {returnFlight.flight.origin} → {returnFlight.flight.destination}
+                  Chuyến về: {returnFlight.flight.departure.code} → {returnFlight.flight.arrival.code}
                 </Text>
                 <Text className="text-gray-600 text-sm">
                   {returnFlight.flight.flightNumber} —{" "}

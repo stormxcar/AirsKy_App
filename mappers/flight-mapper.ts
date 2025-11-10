@@ -50,6 +50,7 @@ export const mapApiFlightToFlight = (apiFlight: FlightResponse): Flight => {
             time: format(parseISO(apiFlight.arrivalTime), 'HH:mm'),
         },
         duration: formatDuration(apiFlight.duration),
+        availableSeats: apiFlight.availableSeats,
         price: displayPrice,
         type: formatStops(apiFlight.stops),
         status: apiFlight.status,
@@ -74,7 +75,9 @@ export const mapApiSeatToSeat = (apiSeat: SeatResponse): Seat => {
     return {
         id: apiSeat.seatId.toString(),
         status: apiSeat.status,
-        price: apiSeat.price,
         seatNumber: apiSeat.seatNumber,
+        seatType: apiSeat.seatType,
+        className:apiSeat.className
+        
     };
 };

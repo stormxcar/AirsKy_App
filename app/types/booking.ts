@@ -44,6 +44,25 @@ export enum BaggageType {
   CABIN = 'CABIN',
 }
 
+/**
+ * Enum cho các loại dịch vụ bổ trợ (Ancillary Service).
+ * Phản ánh AncillaryServiceType.java từ backend.
+ */
+export enum AncillaryServiceType {
+  MEAL = 'MEAL',
+  SEAT = 'SEAT',
+  ENTERTAINMENT = 'ENTERTAINMENT',
+  WIFI = 'WIFI',
+  PRIORITY_BOARDING = 'PRIORITY_BOARDING',
+  LOUNGE_ACCESS = 'LOUNGE_ACCESS',
+  EXTRA_LEGROOM = 'EXTRA_LEGROOM',
+  PET_TRANSPORT = 'PET_TRANSPORT',
+  INFANT_MEAL = 'INFANT_MEAL',
+  SPECIAL_ASSISTANCE = 'SPECIAL_ASSISTANCE',
+  TRAVEL_INSURANCE = 'TRAVEL_INSURANCE',
+  OTHER = 'OTHER',
+}
+
 // Enum này phản ánh cách backend sử dụng BaggagePackage
 export enum BaggagePackageEnum {
   NONE = 'NONE',

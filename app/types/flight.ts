@@ -71,4 +71,6 @@ export interface SeatResponse {
   price: number; // Additional price for this seat type
   flightId: number;
   travelClassId: number;
+  className: string;
+
 }

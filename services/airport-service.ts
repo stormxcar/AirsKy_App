@@ -7,9 +7,11 @@ import api from "./api"; // Giả sử bạn có một file api.ts để cấu h
  */
 export const fetchAllAirports = async (): Promise<Airport[]> => {
     try {
+
         const response = await api.get('/airports', {
             params: { page: 0, size: 1000 } // Giả sử 1000 là đủ
         });
+
         return response.data.data.content.map((airport: any) => ({
             id: airport.airportId, // Thêm dòng này để lấy ID
             code: airport.airportCode,
