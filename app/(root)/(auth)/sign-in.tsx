@@ -6,9 +6,9 @@ import { Alert, Text, TouchableOpacity, View } from "react-native";
 import { Button, TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { FontAwesome } from '@expo/vector-icons'; 
-import * as WebBrowser from 'expo-web-browser'; 
-import { useAuthRequest } from 'expo-auth-session/providers/google'; 
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
+import { useAuthRequest } from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
 import { jwtDecode } from 'jwt-decode';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -93,11 +93,16 @@ const SignIn = () => {
 
   return (
     <>
-      <SafeAreaView className="mt-32 flex-1 bg-white px-6 justify-start rounded-t-3xl"> 
+      <SafeAreaView className="mt-32 flex-1 bg-white px-6 justify-start rounded-t-3xl">
         {/* Tiêu đề */}
-        
+        <TouchableOpacity onPress={() => {
+          router.replace("/(root)/(tabs)/home");
+        }
+        }>
+          <Ionicons name="chevron-back" size={24} color="#1e3a8a" />
+        </TouchableOpacity>
         <View className="mb-8 items-center">
-          <Text className="text-3xl font-bold text-blue-900">Đăng nhập</Text>
+          <Text className="text-3xl font-bold text-blue-950">Đăng nhập</Text>
           <Text className="text-gray-500 mt-2">Chào mừng bạn trở lại!</Text>
         </View>
 
@@ -107,7 +112,7 @@ const SignIn = () => {
           mode="outlined"
           value={email}
           onChangeText={setEmail}
-          className="mb-4"
+          className=""
           autoCapitalize="none" // Good practice for email inputs
           keyboardType="email-address" // Good practice for email inputs
         />
@@ -118,7 +123,7 @@ const SignIn = () => {
           secureTextEntry={!isPasswordVisible}
           value={password}
           onChangeText={setPassword}
-          className="mb-4"
+          className=" "
           right={
             <TextInput.Icon icon={isPasswordVisible ? "eye-off" : "eye"} onPress={() => setIsPasswordVisible(!isPasswordVisible)} />
           }
@@ -127,9 +132,9 @@ const SignIn = () => {
         {/* Quên mật khẩu */}
         <TouchableOpacity
           onPress={() => router.navigate("/(root)/(auth)/forgot-password")}
-          className="mt-2 mb-6 items-end" 
+          className="mt-2 mb-6 items-end"
         >
-          <Text className="text-blue-900 font-semibold">Quên mật khẩu?</Text>
+          <Text className="text-blue-950 font-semibold">Quên mật khẩu?</Text>
         </TouchableOpacity>
 
         {/* Nút đăng nhập */}
@@ -141,7 +146,9 @@ const SignIn = () => {
           style={{ borderRadius: 16, paddingVertical: 6 }} // Removed mt-10, will rely on mb-6 from forgot password
           labelStyle={{ fontSize: 16, fontWeight: 'bold' }} // Make text bold and slightly larger
         >
-          Đăng nhập
+          <Text>
+            Đăng nhập
+          </Text>
         </Button>
 
         {/* Divider or "OR" text */}
@@ -155,17 +162,17 @@ const SignIn = () => {
         <TouchableOpacity
           onPress={() => handleGoogleSignIn()}
           disabled={!request || googleLoading}
-          className="bg-white py-3 rounded-2xl w-full items-center border border-blue-900 flex-row justify-center"
+          className="bg-white py-3 rounded-2xl w-full items-center border border-blue-950 flex-row justify-center"
         >
           <FontAwesome name="google" size={20} color="#1e3a8a" />
-          <Text className="font-semibold text-blue-900 ml-2">{googleLoading ? 'Đang xử lý...' : 'Đăng nhập bằng Google'}</Text>
+          <Text className="font-semibold text-blue-950 ml-2">{googleLoading ? 'Đang xử lý...' : 'Đăng nhập bằng Google'}</Text>
         </TouchableOpacity>
 
         {/* Đăng ký */}
         <View className="mt-8 flex-row justify-center"> {/* Increased mt for better separation */}
           <Text className="text-gray-600">Chưa có tài khoản? </Text>
           <TouchableOpacity onPress={() => router.navigate("/(root)/(auth)/sign-up")}>
-            <Text className="font-medium text-blue-900 ">Đăng ký ngay</Text>
+            <Text className="font-medium text-blue-950 ">Đăng ký ngay</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

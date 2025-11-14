@@ -67,7 +67,7 @@ const SideModal = ({ visible, onClose, direction, children, title }: SideModalPr
               <Text className={`text-lg font-bold ${headerTextColor} flex-1 text-center mr-8`}>{title}</Text>
             </View>
             <View className="flex-1">
-              {React.cloneElement(children as React.ReactElement, { color: headerIconColor })}
+              {children}
             </View>
           </SafeAreaView>
         </Animated.View>

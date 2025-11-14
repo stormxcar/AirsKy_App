@@ -55,3 +55,27 @@ export const getBookingDetailsById = async (bookingId: string): Promise<BookingR
         throw new Error(error.response?.data?.message || "Không thể tải thông tin đặt vé.");
     }
 };
+/**
+ * Tra cứu thông tin đặt vé bằng mã đặt chỗ và họ tên.
+ * @param bookingCode Mã đặt chỗ (PNR).
+ * @param fullName Họ và tên hành khách (không dấu, viết hoa).
+ * @returns Promise chứa thông tin chi tiết của booking.
+ */
+export const lookupBooking = async (bookingCode: string, fullName: string): Promise<BookingResponse> => {
+    try {
+        const response = await api.get<ApiResponse<BookingResponse>>('/bookings/lookup', {
+            params: {
+                bookingCode,
+                fullName,
+            },
+        });
+        return response.data.data;
+    } catch (error: any) {
+        // Xử lý lỗi 404 (Not Found) một cách rõ ràng hơn
+        if (error.response && error.response.status === 404) {
+            throw new Error("Không tìm thấy đặt vé với thông tin đã cung cấp. Vui lòng kiểm tra lại.");
+        }
+        console.error("Error looking up booking:", error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
+        throw new Error(error.response?.data?.message || "Đã có lỗi xảy ra khi tìm kiếm.");
+    }
+};

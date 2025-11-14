@@ -1,14 +1,17 @@
 import Menus from "@/components/screens/home/menus";
 import Notifications from "@/components/screens/home/notifications";
 import SideModal from "@/components/screens/home/side-modal";
+import { useAuth } from "@/context/auth-context";
+import { useNotification } from "@/context/notification-context"; 
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React, { useState } from "react";
-import { ImageBackground, Text, TouchableOpacity, View } from "react-native";
+import { ImageBackground, Modal, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   Extrapolate,
   interpolate,
   interpolateColor,
-  useAnimatedScrollHandler,
+  useAnimatedScrollHandler, 
   useAnimatedStyle,
   useSharedValue,
 } from "react-native-reanimated";
@@ -16,7 +19,9 @@ import Animated, {
 // Tạo một component Ionicons có thể được animate
 const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons);
 
-const Home = () => {
+const Home = () => { 
+  const { user } = useAuth();
+  const { unreadCount, markAllAsRead } = useNotification();
   // --- Reanimated Setup ---
   const [menuVisible, setMenuVisible] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
@@ -84,8 +89,15 @@ const Home = () => {
 
           <Animated.Text className="font-bold uppercase" style={animatedHeaderContentStyle}>AirSky</Animated.Text>
 
-          <TouchableOpacity onPress={() => setNotificationsVisible(true)}>
+          <TouchableOpacity onPress={() => user ? setNotificationsVisible(true) : router.push('/(root)/(auth)/sign-in')} className="relative"> 
             <AnimatedIonicons name="notifications-outline" size={28} style={animatedHeaderContentStyle} />
+            {user && unreadCount > 0 && (
+              <View className="absolute -top-1 -right-1 bg-blue-950 rounded-full w-6 h-6 flex items-center justify-center border-2 border-white">
+                <Text className="text-white text-[10px] font-bold">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </Animated.View>
@@ -180,8 +192,9 @@ const Home = () => {
         direction="right"
         title="Thông báo"
       >
-        <Notifications color="#1e3a8a" />
+        <Notifications onClose={() => setNotificationsVisible(false)} />
       </SideModal>
+
     </View>
   );
 };

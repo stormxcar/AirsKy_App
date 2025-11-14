@@ -4,22 +4,25 @@ import { LoadingProvider } from "@/context/loading-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { PaperProvider } from "react-native-paper";
+import { NotificationProvider } from "@/context/notification-context";
 import "./global.css";
 import { AppTheme } from "./theme";
 
 const queryClient = new QueryClient();
 
-export default function AppLayout(){
+export default function AppLayout() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <LoadingProvider>
-          <PaperProvider theme={AppTheme}>
-            <Stack screenOptions={{ headerShown: false }} />
-            <LoadingOverlay />
-          </PaperProvider>
-        </LoadingProvider>
-      </AuthProvider>
+      <LoadingProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            <PaperProvider theme={AppTheme}>
+              <Stack screenOptions={{ headerShown: false }} />
+              <LoadingOverlay />
+            </PaperProvider>
+          </NotificationProvider>
+        </AuthProvider>
+      </LoadingProvider>
     </QueryClientProvider>
   );
 };
