@@ -10,5 +10,6 @@ function getEnvVars() {
 }
 
 const { API_BASE_URL } = getEnvVars() as { API_BASE_URL?: string };
+const { API_SOCKET_URL } = getEnvVars() as { API_SOCKET_URL?: string };
 
-export default { API_BASE_URL };
+export default { API_BASE_URL,API_SOCKET_URL };

@@ -4,7 +4,7 @@ import api from "@/services/api";
 import * as SecureStore from 'expo-secure-store';
 import { useRouter, useSegments } from "expo-router";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { Alert } from "react-native";
+import { Alert, AppState } from "react-native";
 
 const AUTH_KEY = 'auth-data';
 
@@ -68,6 +68,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, [authData, segments, isLoading, router]);
 
+    useEffect(() => {
+        const responseInterceptor = api.interceptors.response.use(
+            response => response,
+            async (error) => {
+                const originalRequest = error.config;
+                // Chỉ xử lý khi lỗi là 401 và chưa thử lại
+                if (error.response?.status === 401 && !originalRequest._retry) {
+                    originalRequest._retry = true; // Đánh dấu đã thử lại để tránh vòng lặp
+
+                    // Chỉ hiển thị alert một lần
+                    if (AppState.currentState === 'active') {
+                        Alert.alert(
+                            "Phiên đăng nhập hết hạn",
+                            "Vui lòng đăng nhập lại để tiếp tục.",
+                            [
+                                {
+                                    text: "OK",
+                                    onPress: () => logout(),
+                                },
+                            ],
+                            { cancelable: false }
+                        );
+                    } else {
+                        logout(); // Nếu app ở dưới nền, chỉ đăng xuất mà không hiện alert
+                    }
+                }
+                return Promise.reject(error);
+            }
+        );
+        return () => api.interceptors.response.eject(responseInterceptor);
+    }, []);
     const setAuthData = async (data: AuthResponse | null) => {
         setAuthDataState(data);
         if (data) {

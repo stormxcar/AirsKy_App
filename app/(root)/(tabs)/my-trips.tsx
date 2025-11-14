@@ -6,40 +6,57 @@ import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, Text, Touchab
 import { TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
-import { useLoading } from "@/context/loading-context";
+import { useLoading } from "@/context/loading-context"; 
 import { getMyBookings } from "@/services/user-service";
 import { BookingResponse } from "@/app/types/booking";
 import { format } from "date-fns";
+import { lookupBooking } from "@/services/booking-service";
 
 type Tab = 'upcoming' | 'completed' | 'cancelled';
 
+// Helper để xử lý input tên, tương tự trang Check-in
+const processNameInput = (text: string) => {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d").replace(/Đ/g, "D")
+    .toUpperCase();
+};
+
 const MyTrips = () => {
   const [bookingCode, setBookingCode] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [fullName, setFullName] = useState('');
   const [bookings, setBookings] = useState<BookingResponse[]>([]);
   const [activeTab, setActiveTab] = useState<Tab>('upcoming');
   const [isFindBookingModalVisible, setFindBookingModalVisible] = useState(false);
   const { user } = useAuth(); // Kiểm tra trạng thái đăng nhập
   const router = useRouter();
-  const { showLoading } = useLoading();
+  const { showLoading, hideLoading } = useLoading();
 
   const handleFindBooking = () => {
-    if (!bookingCode.trim() || !lastName.trim()) {
+    if (!bookingCode.trim()) {
       Alert.alert("Thiếu thông tin", "Vui lòng nhập Mã đặt chỗ và Họ.");
       return;
     }
-    Alert.alert("Tìm kiếm", `Đang tìm kiếm mã đặt chỗ: ${bookingCode}`);
+    showLoading(async () => {
+      try {
+        const bookingDetails = await lookupBooking(bookingCode.trim().toUpperCase(), '');
+        setFindBookingModalVisible(false); // Đóng modal
+        setBookingCode(''); // Reset input
+        setFullName('');   // Reset input
+
+        // Điều hướng đến trang kết quả với dữ liệu đã tìm thấy
+        router.push({
+          pathname: '/(root)/(booking)/booking-result',
+          params: { bookingId: bookingDetails.bookingId.toString(), status: bookingDetails.status, bookingCode: bookingDetails.bookingCode }
+        });
+      } catch (error: any) {
+        Alert.alert("Tìm kiếm thất bại", error.message);
+      }
+    });
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      // Khi màn hình được focus, kiểm tra xem người dùng đã đăng nhập chưa
-      // Nếu chưa, chuyển hướng đến trang đăng nhập
-      if (!user) {
-        router.replace('/(root)/(auth)/sign-in');
-      }
-    }, [user, router])
-  );
+
 
   // Lấy danh sách booking khi người dùng đã đăng nhập
   useEffect(() => {
@@ -97,12 +114,12 @@ const MyTrips = () => {
   }, [bookings]);
 
   const tripsToDisplay = categorizedTrips[activeTab];
-  // Nếu chưa có user, hiển thị màn hình trống để tránh flicker trước khi chuyển hướng
-  if (!user) {
-    return (
-      <SafeAreaView className="flex-1 bg-blue-950" edges={["top", "left", "right"]} />
-    );
-  }
+  // // Nếu chưa có user, hiển thị màn hình trống để tránh flicker trước khi chuyển hướng
+  // if (!user) {
+  //   return (
+  //     <SafeAreaView className="flex-1 bg-blue-950" edges={["top", "left", "right"]} />
+  //   );
+  // }
 
   return (
     <SafeAreaView className="flex-1 bg-blue-950" edges={["top", "left", "right"]}>
@@ -172,14 +189,14 @@ const MyTrips = () => {
             <Ionicons name="airplane-outline" size={64} color="#9ca3af" />
             <Text className="text-lg font-bold text-gray-700 mt-4">Không có chuyến bay nào</Text>
             <Text className="text-gray-500 text-center mt-2 mb-6">
-              Bạn có thể thêm chuyến bay và truy xuất chi tiết bằng cách sử dụng mã đặt chỗ.
+              Bạn có thể tìm chuyến đi của mình và truy xuất chi tiết bằng cách sử dụng mã đặt chỗ hoặc đăng nhập để hiển thị toàn bộ lịch sử.
             </Text>
             <TouchableOpacity
               onPress={() => setFindBookingModalVisible(true)}
               className="bg-blue-950 py-3 px-8 rounded-full shadow-md mt-6 flex-row items-center justify-center"
             >
               <Ionicons name="add-circle-outline" size={20} color="white" />
-              <Text className="text-white text-center font-bold text-base ml-2">Thêm chuyến đi</Text>
+              <Text className="text-white text-center font-bold text-base ml-2">Tìm chuyến đi</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -199,14 +216,14 @@ const MyTrips = () => {
           <View className="flex-1 justify-end bg-black/40">
             <View className="bg-white rounded-t-3xl p-6">
               <View className="flex-row justify-between items-center mb-4">
-                <Text className="text-xl font-bold text-blue-950">Thêm chuyến đi của bạn</Text>
+                <Text className="text-xl font-bold text-blue-950">Tìm chuyến đi của bạn</Text>
                 <TouchableOpacity onPress={() => setFindBookingModalVisible(false)}>
                   <Ionicons name="close-circle" size={28} color="#ccc" />
                 </TouchableOpacity>
               </View>
               <View className="gap-4">
                 <TextInput label="Mã đặt chỗ (PNR)" mode="outlined" value={bookingCode} onChangeText={setBookingCode} autoCapitalize="characters" style={{ backgroundColor: 'transparent', fontSize: 14 }} />
-                <TextInput label="Họ (không dấu, viết hoa)" mode="outlined" value={lastName} onChangeText={setLastName} autoCapitalize="characters" style={{ backgroundColor: 'transparent', fontSize: 14 }} />
+                {/* <TextInput label="Họ và tên (không dấu, viết hoa)" mode="outlined" value={fullName} onChangeText={(text) => setFullName(processNameInput(text))} autoCapitalize="characters" style={{ backgroundColor: 'transparent', fontSize: 14 }} /> */}
               </View>
               <TouchableOpacity onPress={handleFindBooking} className="bg-blue-950 py-3 rounded-full shadow-md mt-6 flex-row items-center justify-center">
                 <Text className="text-white text-center font-bold text-base">Tìm chuyến đi</Text>

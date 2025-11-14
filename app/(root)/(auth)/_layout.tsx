@@ -11,12 +11,10 @@ const AuthLayout = () => {
         headerTransparent: true,
         // Không hiển thị tiêu đề mặc định của header 
         headerTitle: "",
-        // Màu của nút quay lại (mũi tên) 
-        headerTintColor: "#1e3a8a", // blue-900
-        // Ẩn chữ "Back" trên iOS 
-        headerBackTitleVisible: false,
+        // // Ẩn chữ "Back" trên iOS 
+        // headerBackTitleVisible: false,
         // Đặt màu nền chung cho tất cả các màn hình trong Stack này 
-        contentStyle: { backgroundColor: "#1e3a8a" }, // bg-blue-50
+        contentStyle: { backgroundColor: "#172554" }, // bg-blue-50
       }}
     >
       <Stack.Screen name="sign-in" options={{ headerShown: false }} />
