@@ -1,47 +1,47 @@
 export enum BookingStatus {
-  PENDING = 'PENDING',
-  CONFIRMED = 'CONFIRMED',
-  CANCELLED = 'CANCELLED',
-  COMPLETED = 'COMPLETED',
+  PENDING = "PENDING",
+  CONFIRMED = "CONFIRMED",
+  CANCELLED = "CANCELLED",
+  COMPLETED = "COMPLETED",
 }
 
 export enum PaymentMethod {
-  CREDIT_CARD = 'CREDIT_CARD',
-  PAYPAL = 'PAYPAL',
-  BANK_TRANSFER = 'BANK_TRANSFER',
+  CREDIT_CARD = "CREDIT_CARD",
+  PAYPAL = "PAYPAL",
+  BANK_TRANSFER = "BANK_TRANSFER",
 }
 
 export enum PaymentStatus {
-  PENDING = 'PENDING',
-  COMPLETED = 'COMPLETED',
-  FAILED = 'FAILED',
-  CANCELLED = 'CANCELLED',
-  REFUNDED = 'REFUNDED',
+  PENDING = "PENDING",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED",
+  CANCELLED = "CANCELLED",
+  REFUNDED = "REFUNDED",
 }
 
 export enum PassengerType {
-  ADULT = 'ADULT',
-  CHILD = 'CHILD',
-  INFANT = 'INFANT',
+  ADULT = "ADULT",
+  CHILD = "CHILD",
+  INFANT = "INFANT",
 }
 
 export enum SeatStatus {
-  AVAILABLE = 'AVAILABLE',
-  OCCUPIED = 'OCCUPIED',
-  SELECTED = 'SELECTED',
-  EXIT = 'EXIT',
-  PENDING_PAYMENT = 'PENDING_PAYMENT',
+  AVAILABLE = "AVAILABLE",
+  OCCUPIED = "OCCUPIED",
+  SELECTED = "SELECTED",
+  EXIT = "EXIT",
+  PENDING_PAYMENT = "PENDING_PAYMENT",
 }
 
 export enum Gender {
-  MALE = 'MALE',
-  FEMALE = 'FEMALE',
-  OTHER = 'OTHER',
+  MALE = "MALE",
+  FEMALE = "FEMALE",
+  OTHER = "OTHER",
 }
 
 export enum BaggageType {
-  CHECK_IN = 'CHECK_IN',
-  CABIN = 'CABIN',
+  CHECK_IN = "CHECK_IN",
+  CABIN = "CABIN",
 }
 
 /**
@@ -49,37 +49,38 @@ export enum BaggageType {
  * Phản ánh AncillaryServiceType.java từ backend.
  */
 export enum AncillaryServiceType {
-  MEAL = 'MEAL',
-  SEAT = 'SEAT',
-  ENTERTAINMENT = 'ENTERTAINMENT',
-  WIFI = 'WIFI',
-  PRIORITY_BOARDING = 'PRIORITY_BOARDING',
-  LOUNGE_ACCESS = 'LOUNGE_ACCESS',
-  EXTRA_LEGROOM = 'EXTRA_LEGROOM',
-  PET_TRANSPORT = 'PET_TRANSPORT',
-  INFANT_MEAL = 'INFANT_MEAL',
-  SPECIAL_ASSISTANCE = 'SPECIAL_ASSISTANCE',
-  TRAVEL_INSURANCE = 'TRAVEL_INSURANCE',
-  OTHER = 'OTHER',
+  MEAL = "MEAL",
+  SEAT = "SEAT",
+  ENTERTAINMENT = "ENTERTAINMENT",
+  WIFI = "WIFI",
+  PRIORITY_BOARDING = "PRIORITY_BOARDING",
+  LOUNGE_ACCESS = "LOUNGE_ACCESS",
+  EXTRA_LEGROOM = "EXTRA_LEGROOM",
+  PET_TRANSPORT = "PET_TRANSPORT",
+  INFANT_MEAL = "INFANT_MEAL",
+  SPECIAL_ASSISTANCE = "SPECIAL_ASSISTANCE",
+  TRAVEL_INSURANCE = "TRAVEL_INSURANCE",
+  OTHER = "OTHER",
 }
 
 // Enum này phản ánh cách backend sử dụng BaggagePackage
 export enum BaggagePackageEnum {
-  NONE = 'NONE',
-  PKG_20KG = 'PKG_20KG',
-  PKG_30KG = 'PKG_30KG',
-  PKG_40KG = 'PKG_40KG',
+  NONE = "NONE",
+  PKG_20KG = "PKG_20KG",
+  PKG_30KG = "PKG_30KG",
+  PKG_40KG = "PKG_40KG",
 }
 
 export enum CheckinStatus {
-  PENDING = 'PENDING',
-  ELIGIBLE = 'ELIGIBLE',
-  ALREADY_CHECKED_IN = 'ALREADY_CHECKED_IN',
-  BOOKING_NOT_CONFIRMED = 'BOOKING_NOT_CONFIRMED',
-  PAYMENT_PENDING = 'PAYMENT_PENDING',
-  BOOKING_CANCELLED = 'BOOKING_CANCELLED',
-  NOT_AVAILABLE = 'NOT_AVAILABLE',
-  COMPLETED = 'COMPLETED',
+  PENDING = "PENDING",
+  ELIGIBLE = "ELIGIBLE",
+  ALREADY_CHECKED_IN = "ALREADY_CHECKED_IN",
+  BOOKING_NOT_CONFIRMED = "BOOKING_NOT_CONFIRMED",
+  PAYMENT_PENDING = "PAYMENT_PENDING",
+  BOOKING_CANCELLED = "BOOKING_CANCELLED",
+  NOT_AVAILABLE = "NOT_AVAILABLE",
+  COMPLETED = "COMPLETED",
+  CHECKIN_NOT_OPEN = "CHECKIN_NOT_OPEN",
 }
 
 export interface FlightSegmentRequest {
@@ -98,7 +99,7 @@ export interface FlightSegmentResponse {
   departureAirportCode: string;
   arrivalAirportCode: string;
   departureTime: string; // LocalDateTime in Java
-  arrivalTime: string;   // LocalDateTime in Java
+  arrivalTime: string; // LocalDateTime in Java
   duration?: string;
   aircraft?: string;
   price: number; // BigDecimal in Java
@@ -121,7 +122,7 @@ export interface PassengerSeatAssignmentResponse {
 
 export interface PassengerSeatRequest {
   firstName: string;
-  lastName:string;
+  lastName: string;
   dateOfBirth: string; // "YYYY-MM-DD"
   passportNumber?: string;
   type: PassengerType;
