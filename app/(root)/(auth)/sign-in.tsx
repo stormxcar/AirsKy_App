@@ -122,7 +122,7 @@ const SignIn = () => {
           secureTextEntry={!isPasswordVisible}
           value={password}
           onChangeText={setPassword}
-          className=" "
+          className=""
           right={
             <TextInput.Icon icon={isPasswordVisible ? "eye-off" : "eye"} onPress={() => setIsPasswordVisible(!isPasswordVisible)} />
           }
@@ -141,13 +141,11 @@ const SignIn = () => {
           mode="contained"
           onPress={handleSignIn}
           loading={loading}
-          disabled={loading || !email || !password} // Disable if fields are empty
-          style={{ borderRadius: 16, paddingVertical: 6 }} // Removed mt-10, will rely on mb-6 from forgot password
-          labelStyle={{ fontSize: 16, fontWeight: 'bold' }} // Make text bold and slightly larger
+          disabled={loading || !email || !password}
+          style={{ borderRadius: 16, paddingVertical: 6 }}
+          labelStyle={{ fontSize: 16, fontWeight: 'bold' }}
         >
-          <Text>
-            Đăng nhập
-          </Text>
+          Đăng nhập
         </Button>
 
         {/* Divider or "OR" text */}
@@ -166,6 +164,7 @@ const SignIn = () => {
           <FontAwesome name="google" size={20} color="#1e3a8a" />
           <Text className="font-semibold text-blue-950 ml-2">{googleLoading ? 'Đang xử lý...' : 'Đăng nhập bằng Google'}</Text>
         </TouchableOpacity>
+
 
         {/* Đăng ký */}
         <View className="mt-8 flex-row justify-center"> {/* Increased mt for better separation */}

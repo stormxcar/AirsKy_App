@@ -8,9 +8,10 @@ import { useLoading } from "@/context/loading-context";
 import { useNotification } from "@/context/notification-context";
 import { fetch5Blog } from "@/services/blog-service";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Alert, Dimensions, ImageBackground, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Dimensions, ImageBackground, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   Extrapolate,
   interpolate,
@@ -36,21 +37,18 @@ const Home = () => {
   const scrollY = useSharedValue(0);
   const HEADER_BACKGROUND_IMAGE = "https://images.unsplash.com/photo-1753958509957-c18ef30ffbba?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTAxfHxmbGlnaHQlMjBhdHRlbmRhbnQlMjB0YWtlJTIwY2FyZSUyMGN1c3RvbWVyfGVufDB8fDB8fHww&auto=format&fit=crop&q=60&w=500";
 
-  const [blogs, setBlogs] = useState<Blog[]>([]);
-  useEffect(() => {
-    const fetchBlogs = async () => {
-      showLoading(async () => {
-        try {
-          const blogs = await fetch5Blog();
-          setBlogs(blogs);
-        } catch (error: any) {
-          Alert.alert("Lỗi", error.message || "Không thể tải danh sách chuyến đi.");
-        }
-      });
-    }
+  const {
+    data: blogs = [],
+    isLoading: isLoadingBlogs,
+    isError: isErrorBlogs,
+  } = useQuery<Blog[], Error>({
+    queryKey: ["latest5Blogs"],
+    queryFn: fetch5Blog,
+  });
 
-    fetchBlogs();
-  }, []);
+  useEffect(() => {
+    if (isErrorBlogs) Alert.alert("Lỗi", "Không thể tải các bài viết mới nhất.");
+  }, [isErrorBlogs]);
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -98,7 +96,7 @@ const Home = () => {
 
           <Animated.Text className="font-bold uppercase" style={animatedHeaderContentStyle}>AirSky</Animated.Text>
 
-          <TouchableOpacity onPress={() => user ? setNotificationsVisible(true) : router.push('/(root)/(auth)/sign-in')} className="relative">
+          <TouchableOpacity onPress={() => setNotificationsVisible(true)} className="relative">
             <AnimatedIonicons name="notifications-outline" size={28} style={animatedHeaderContentStyle} />
             {user && unreadCount > 0 && (
               <View className="absolute -top-1 -right-1 bg-blue-950 rounded-full w-6 h-6 flex items-center justify-center border-2 border-white">
@@ -166,38 +164,44 @@ const Home = () => {
 
 
 
-          <Animated.ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
-            {blogs.map((item) => (
-              <TouchableOpacity
-                activeOpacity={0.85}
-                key={item.id}
-                onPress={() =>
-                  router.push({
-                    pathname: `/(root)/(blog)/${item.id}`,
-                    params: { blog: JSON.stringify(item) },
-                  })
-                }
-                style={{ width: ITEM_WIDTH, marginRight: 12, borderRadius: 16, overflow: "hidden", backgroundColor: "#fff", borderWidth: 1, borderColor: "#e2e8f0" }}
-              >
-                <ImageBackground
-                  source={{ uri: item.featuredImage }}
-                  style={{ width: ITEM_WIDTH, height: 180 }}
-                  resizeMode="cover"
-                />
-                <View style={{ padding: 12 }}>
-                  <Text style={{ fontSize: 12, color: "#2563eb", fontWeight: "bold", marginBottom: 4 }}>
-                    {item.categories?.[0]?.name ?? "Không phân loại"}
-                  </Text>
-                  <Text style={{ fontSize: 16, fontWeight: "800", color: "#111827" }} numberOfLines={2}>
-                    {item.title}
-                  </Text>
-                  <Text style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }} numberOfLines={2}>
-                    {item.excerpt}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </Animated.ScrollView>
+          {isLoadingBlogs ? (
+            <View className="h-[280px] justify-center items-center">
+              <ActivityIndicator size="large" color="#1e3a8a" />
+            </View>
+          ) : (
+            <Animated.ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+              {blogs.map((item) => (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  key={item.id}
+                  onPress={() =>
+                    router.push({
+                      pathname: `/(root)/(blog)/${item.id}`,
+                      params: { blog: JSON.stringify(item) },
+                    })
+                  }
+                  style={{ width: ITEM_WIDTH, marginRight: 12, borderRadius: 16, overflow: "hidden", backgroundColor: "#fff", borderWidth: 1, borderColor: "#e2e8f0" }}
+                >
+                  <ImageBackground
+                    source={{ uri: item.featuredImage }}
+                    style={{ width: ITEM_WIDTH, height: 180 }}
+                    resizeMode="cover"
+                  />
+                  <View style={{ padding: 12 }}>
+                    <Text style={{ fontSize: 12, color: "#2563eb", fontWeight: "bold", marginBottom: 4 }}>
+                      {item.categories?.[0]?.name ?? "Không phân loại"}
+                    </Text>
+                    <Text style={{ fontSize: 16, fontWeight: "800", color: "#111827" }} numberOfLines={2}>
+                      {item.title}
+                    </Text>
+                    <Text style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }} numberOfLines={2}>
+                      {item.excerpt}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </Animated.ScrollView>
+          )}
 
         </View>
 

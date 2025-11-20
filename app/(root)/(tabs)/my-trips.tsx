@@ -1,88 +1,68 @@
-import { Ionicons } from "@expo/vector-icons";
+import { BookingResponse } from "@/app/types/booking";
 import { useAuth } from "@/context/auth-context";
-import React, { useEffect, useMemo, useState, useCallback } from "react";
-
-import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { lookupBooking } from "@/services/booking-service";
+import { getMyBookings } from "@/services/user-service";
+import { Ionicons } from "@expo/vector-icons";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { useRouter } from "expo-router";
+import React, { useMemo, useState } from "react";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useFocusEffect } from "expo-router";
-import { useLoading } from "@/context/loading-context"; 
-import { getMyBookings } from "@/services/user-service";
-import { BookingResponse } from "@/app/types/booking";
-import { format } from "date-fns";
-import { lookupBooking } from "@/services/booking-service";
 
 type Tab = 'upcoming' | 'completed' | 'cancelled';
 
-// Helper để xử lý input tên, tương tự trang Check-in
-const processNameInput = (text: string) => {
-  return text
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d").replace(/Đ/g, "D")
-    .toUpperCase();
-};
-
 const MyTrips = () => {
   const [bookingCode, setBookingCode] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [bookings, setBookings] = useState<BookingResponse[]>([]);
   const [activeTab, setActiveTab] = useState<Tab>('upcoming');
   const [isFindBookingModalVisible, setFindBookingModalVisible] = useState(false);
-  const { user } = useAuth(); // Kiểm tra trạng thái đăng nhập
+
+  const { user } = useAuth();
   const router = useRouter();
-  const { showLoading, hideLoading } = useLoading();
+
+  // useQuery object syntax
+  const { data: bookings = [], isLoading: isBookingsLoading } = useQuery<BookingResponse[]>({
+    queryKey: ['myBookings', user?.id],
+    queryFn: () => getMyBookings(user!.id),
+    enabled: !!user?.id,
+    staleTime: 1000 * 60,
+    onError: (error: any) => Alert.alert("Lỗi", error.message || "Không thể tải danh sách chuyến đi.")
+  });
+
+  // useMutation object syntax
+  const findBookingMutation = useMutation({
+    mutationFn: (code: string) => lookupBooking(code.toUpperCase(), ''),
+    onSuccess: (bookingDetails) => {
+      setFindBookingModalVisible(false);
+      setBookingCode('');
+      router.push({
+        pathname: '/(root)/(booking)/booking-result',
+        params: {
+          bookingId: bookingDetails.bookingId.toString(),
+          status: bookingDetails.status,
+          bookingCode: bookingDetails.bookingCode
+        }
+      });
+    },
+    onError: (error: any) => Alert.alert("Tìm kiếm thất bại", error.message)
+  });
 
   const handleFindBooking = () => {
     if (!bookingCode.trim()) {
-      Alert.alert("Thiếu thông tin", "Vui lòng nhập Mã đặt chỗ và Họ.");
+      Alert.alert("Thiếu thông tin", "Vui lòng nhập Mã đặt chỗ.");
       return;
     }
-    showLoading(async () => {
-      try {
-        const bookingDetails = await lookupBooking(bookingCode.trim().toUpperCase(), '');
-        setFindBookingModalVisible(false); // Đóng modal
-        setBookingCode(''); // Reset input
-        setFullName('');   // Reset input
-
-        // Điều hướng đến trang kết quả với dữ liệu đã tìm thấy
-        router.push({
-          pathname: '/(root)/(booking)/booking-result',
-          params: { bookingId: bookingDetails.bookingId.toString(), status: bookingDetails.status, bookingCode: bookingDetails.bookingCode }
-        });
-      } catch (error: any) {
-        Alert.alert("Tìm kiếm thất bại", error.message);
-      }
-    });
+    findBookingMutation.mutate(bookingCode);
   };
 
-
-
-  // Lấy danh sách booking khi người dùng đã đăng nhập
-  useEffect(() => {
-    const fetchBookings = async () => {
-      if (user?.id) {
-        showLoading(async () => {
-          try {
-            const userBookings = await getMyBookings(user.id);
-            setBookings(userBookings);
-          } catch (error: any) {
-            Alert.alert("Lỗi", error.message || "Không thể tải danh sách chuyến đi.");
-          }
-        });
-      }
-    };
-
-    fetchBookings();
-  }, [user]);
-
-  // Phân loại các chuyến đi vào các tab
+  // --- Phân loại chuyến đi theo tab ---
   const categorizedTrips = useMemo(() => {
     const upcoming: any[] = [];
     const completed: any[] = [];
     const cancelled: any[] = [];
 
-    bookings.forEach(booking => {
+    (bookings as BookingResponse[]).forEach((booking: BookingResponse) => {
       const firstSegment = booking.flightSegments.find(s => s.segmentOrder === 1);
       if (!firstSegment) return;
 
@@ -114,14 +94,12 @@ const MyTrips = () => {
   }, [bookings]);
 
   const tripsToDisplay = categorizedTrips[activeTab];
-  
 
   return (
     <SafeAreaView className="flex-1 bg-blue-950" edges={["top", "left", "right"]}>
       <Text className="p-4 text-center text-white font-bold uppercase">Chuyến đi của tôi</Text>
       <ScrollView className="bg-white flex-1 rounded-t-[40px] p-4">
         {user ? (
-          // --- Giao diện khi người dùng đã đăng nhập ---
           <View>
             {/* Tabs */}
             <View className="flex-row justify-around border-b border-gray-200 mb-4">
@@ -134,19 +112,21 @@ const MyTrips = () => {
               ))}
             </View>
 
-            {/* Danh sách chuyến đi */}
-            {tripsToDisplay.length > 0 ? (
+            {/* Loading */}
+            {isBookingsLoading ? (
+              <View className="py-10 items-center">
+                <ActivityIndicator size="large" color="#1e3a8a" />
+              </View>
+            ) : tripsToDisplay.length > 0 ? (
               tripsToDisplay.map(trip => (
-                <TouchableOpacity key={trip.id} 
-                onPress={
-                  ()=>{
-                    router.replace({
-                            pathname: '/(root)/(booking)/booking-result',
-                            params: { status: trip.status, bookingId: trip.id, bookingCode: trip.bookingCode }
-                        });
-                  }
-                }
-                className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-4">
+                <TouchableOpacity
+                  key={trip.id}
+                  onPress={() => router.replace({
+                    pathname: '/(root)/(booking)/booking-result',
+                    params: { status: trip.status, bookingId: trip.id, bookingCode: trip.bookingCode }
+                  })}
+                  className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-4"
+                >
                   <View className="flex-row justify-between items-start mb-3">
                     <Text className="text-sm text-gray-500">{trip.date}</Text>
                     <Text className="text-sm font-bold text-blue-950 bg-blue-100 px-2 py-1 rounded-full">{trip.bookingCode}</Text>
@@ -163,13 +143,10 @@ const MyTrips = () => {
                       <Text className="text-2xl font-bold text-blue-950">{trip.arrival.code}</Text>
                       <Text className="text-gray-600">{trip.arrival.time}</Text>
                     </View>
-                    
-                    
                   </View>
                   <View className="items-end pt-6">
-                      <Text className="text-xl font-bold text-blue-900">{trip.totalAmount}</Text>
-                    </View>
-                  
+                    <Text className="text-xl font-bold text-blue-900">{trip.totalAmount}</Text>
+                  </View>
                 </TouchableOpacity>
               ))
             ) : (
@@ -179,7 +156,6 @@ const MyTrips = () => {
             )}
           </View>
         ) : (
-          // --- Giao diện khi người dùng chưa đăng nhập ---
           <View className="items-center justify-center py-16">
             <Ionicons name="airplane-outline" size={64} color="#9ca3af" />
             <Text className="text-lg font-bold text-gray-700 mt-4">Không có chuyến bay nào</Text>
@@ -217,11 +193,24 @@ const MyTrips = () => {
                 </TouchableOpacity>
               </View>
               <View className="gap-4">
-                <TextInput label="Mã đặt chỗ (PNR)" mode="outlined" value={bookingCode} onChangeText={setBookingCode} autoCapitalize="characters" style={{ backgroundColor: 'transparent', fontSize: 14 }} />
-                {/* <TextInput label="Họ và tên (không dấu, viết hoa)" mode="outlined" value={fullName} onChangeText={(text) => setFullName(processNameInput(text))} autoCapitalize="characters" style={{ backgroundColor: 'transparent', fontSize: 14 }} /> */}
+                <TextInput
+                  label="Mã đặt chỗ (PNR)"
+                  mode="outlined"
+                  value={bookingCode}
+                  onChangeText={setBookingCode}
+                  autoCapitalize="characters"
+                  style={{ backgroundColor: 'transparent', fontSize: 14 }}
+                />
               </View>
-              <TouchableOpacity onPress={handleFindBooking} className="bg-blue-950 py-3 rounded-full shadow-md mt-6 flex-row items-center justify-center">
-                <Text className="text-white text-center font-bold text-base">Tìm chuyến đi</Text>
+              <TouchableOpacity
+                onPress={handleFindBooking}
+                className="bg-blue-950 py-3 rounded-full shadow-md mt-6 flex-row items-center justify-center"
+              >
+                {findBookingMutation.isPending ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text className="text-white text-center font-bold text-base">Tìm chuyến đi</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>

@@ -3,11 +3,13 @@
 import { AncillaryServiceType, type BookingResponse } from "@/app/types/booking"
 import { useLoading } from "@/context/loading-context"
 import { getBookingDetailsById } from "@/services/booking-service"
+import { checkSepayPayment } from "@/services/payment-service"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import { useEffect, useMemo, useState } from "react"
-import { Alert, ScrollView, Share, Text, TouchableOpacity, View } from "react-native"
+import { Alert, Image, Linking, ScrollView, Share, Text, TouchableOpacity, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
+
 // Helper để dịch tên loại ghế
 const getSeatTypeName = (seatType: string) => {
   switch (seatType) {
@@ -64,6 +66,7 @@ const BookingResult = () => {
   const [bookingDetails, setBookingDetails] = useState<BookingResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [hasInitialData, setHasInitialData] = useState(false)
+  const [timeLeft, setTimeLeft] = useState<number | null>(null)
 
   // Parse initialDetails từ params để tránh double-fetch (từ Notifications)
   useEffect(() => {
@@ -96,6 +99,39 @@ const BookingResult = () => {
       }, 300)
     }
   }, [shouldFetchDetails, bookingId])
+
+  // Countdown timer effect
+  useEffect(() => {
+    // Tính toán thời gian hết hạn: 10 phút sau khi đặt vé
+    if (bookingDetails?.bookingDate) {
+      const bookingTime = new Date(bookingDetails.bookingDate).getTime()
+      const PAYMENT_DURATION_MINUTES = 30
+      const expiryTime = bookingTime + PAYMENT_DURATION_MINUTES * 60 * 1000
+
+      const timer = setInterval(() => {
+        const now = new Date().getTime()
+        const remaining = Math.max(0, Math.floor((expiryTime - now) / 1000))
+        setTimeLeft(remaining)
+
+        if (remaining === 0) {
+          clearInterval(timer)
+        }
+      }, 1000)
+
+      // Initial set
+      const now = new Date().getTime()
+      const remaining = Math.max(0, Math.floor((expiryTime - now) / 1000))
+      setTimeLeft(remaining)
+
+      return () => clearInterval(timer)
+    }
+  }, [bookingDetails?.bookingDate])
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = seconds % 60
+    return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`
+  }
   const handleCheckPayment = async () => {
     if (!bookingCode) {
       Alert.alert("Lỗi", "Không tìm thấy mã đặt chỗ để kiểm tra.")
@@ -112,7 +148,26 @@ const BookingResult = () => {
             params: { ...params, status: "success" },
           })
         } else {
-          Alert.alert("Chưa thanh toán", "Giao dịch của bạn chưa được hoàn tất. Vui lòng thử lại sau ít phút.")
+          // Xử lý riêng cho từng phương thức thanh toán khi thất bại
+          if (bookingDetails?.payment?.paymentMethod === "PAYPAL") {
+            Alert.alert(
+              "Chưa hoàn tất",
+              "Thanh toán qua PayPal của bạn chưa được hoàn tất.",
+              [
+                { text: "Xác nhận", style: "cancel" },
+                {
+                  text: "Tiếp tục đến PayPal",
+                  onPress: () => {
+                    if (bookingDetails.payment?.checkoutUrl) {
+                      Linking.openURL(bookingDetails.payment.checkoutUrl)
+                    }
+                  },
+                },
+              ],
+            )
+          } else {
+            Alert.alert("Chưa thanh toán", "Giao dịch của bạn chưa được hoàn tất. Vui lòng thử lại sau ít phút.")
+          }
         }
       } catch (error: any) {
         Alert.alert("Lỗi", error.message || "Không thể kiểm tra trạng thái thanh toán.")
@@ -299,6 +354,11 @@ const BookingResult = () => {
   const hasBasicInfo = !!bookingId
   // Render full details nếu có bookingDetails
   const hasFullDetails = !!bookingDetails
+  // Điều kiện để render nội dung: chỉ khi có lỗi hoặc đã có đủ thông tin chi tiết
+  const canRenderContent = !!error || hasFullDetails
+  if (!canRenderContent && status !== "failure") {
+    return null // Không render gì cả trong khi đang tải và chưa có lỗi
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-gray-100" edges={["top"]}>
@@ -338,11 +398,39 @@ const BookingResult = () => {
                 </Text>
               )}
               {/* Nút kiểm tra thanh toán khi đang pending */}
-              {(status === "pending" || status === "PENDING") && (
-                <TouchableOpacity onPress={handleCheckPayment} className="bg-blue-900 py-3 rounded-full mt-4">
-                  <Text className="text-white text-center font-bold">Kiểm tra thanh toán</Text>
-                </TouchableOpacity>
-              )}
+              {(status === "pending" || status === "PENDING") &&
+                bookingDetails?.payment && (
+                  <View className="mt-4">
+                    {/* Hiển thị QR cho Bank Transfer */}
+                    {bookingDetails.payment.paymentMethod === "BANK_TRANSFER" && bookingDetails.payment.checkoutUrl && (
+                      <View className="items-center mb-4">
+                        <Text className="text-center text-gray-600 mb-4">
+                          Sử dụng ứng dụng Ngân hàng hoặc Ví điện tử hỗ trợ VietQR để hoàn tất.
+                        </Text>
+                        <Image
+                          source={{ uri: bookingDetails.payment.checkoutUrl }}
+                          className="w-64 h-64 border-4 border-white rounded-lg shadow-lg"
+                        />
+                      </View>
+                    )}
+
+                    {/* Hiển thị thời gian còn lại */}
+                    {timeLeft !== null && timeLeft > 0 && (
+                      <View className="items-center my-4">
+                        <Text className="text-gray-500">Thời gian thanh toán còn lại:</Text>
+                        <Text className="text-2xl font-bold text-red-600 mt-1">{formatTime(timeLeft)}</Text>
+                      </View>
+                    )}
+                    {/* {timeLeft === 0 && (
+                      <Text className="text-center font-bold text-red-600 my-4">Đã hết hạn thanh toán</Text>
+                    )} */}
+
+                    {/* Nút kiểm tra thanh toán */}
+                    <TouchableOpacity onPress={handleCheckPayment} className="bg-blue-900 py-3 rounded-full">
+                      <Text className="text-white text-center font-bold">Kiểm tra</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
             </View>
           )}
 

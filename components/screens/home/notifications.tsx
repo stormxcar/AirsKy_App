@@ -1,19 +1,21 @@
-import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { NotificationResponse } from '@/app/types/notification';
+import { useLoading } from '@/context/loading-context';
+import { useAuth } from '@/context/auth-context';
 import { useNotification } from '@/context/notification-context';
-import { useRouter } from 'expo-router';
+import { getBookingDetailsById } from '@/services/booking-service';
+import { Ionicons } from '@expo/vector-icons';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { NotificationResponse } from '@/app/types/notification';
-import { getBookingDetailsById } from '@/services/booking-service'
-import { useLoading } from '@/context/loading-context';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from 'react-native';
 
 type NotificationsProps = {
     onClose?: () => void; // Thêm prop để đóng modal
 };
 
 const Notifications = ({ onClose }: NotificationsProps) => {
+    const { user } = useAuth();
     const { notifications, isLoading, fetchNotifications, markAsRead } = useNotification();
     const router = useRouter();
     const { showLoading } = useLoading();
@@ -63,6 +65,15 @@ const Notifications = ({ onClose }: NotificationsProps) => {
         return <ActivityIndicator size="large" color="#1e3a8a" className="my-8" />;
     }
 
+    // Nếu người dùng chưa đăng nhập, hiển thị màn hình trống
+    if (!user) {
+        return (
+            <View className="flex-1 justify-center items-center py-10">
+                <Ionicons name="notifications-off-outline" size={48} color="#9ca3af" />
+                <Text className="text-gray-500 mt-4">Bạn chưa có thông báo nào.</Text>
+            </View>
+        );
+    }
     return (
         <FlatList
             data={notifications}

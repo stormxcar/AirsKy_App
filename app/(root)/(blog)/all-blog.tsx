@@ -1,10 +1,9 @@
 import { Category } from "@/app/types/types";
-import { useLoading } from "@/context/loading-context";
 import { useBlogs } from "@/hooks/use-blogs";
 import { useCategories } from "@/hooks/use-categories";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
     Alert,
     Animated,
@@ -23,52 +22,53 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const SCREEN_W = Dimensions.get("window").width;
 
 
-// const SkeletonCard = () => {
-//     const shimmer = useRef(new Animated.Value(0)).current;
+const SkeletonCard = () => {
+    const shimmer = useRef(new Animated.Value(0)).current;
 
-//     useEffect(() => {
-//         Animated.loop(
-//             Animated.timing(shimmer, {
-//                 toValue: 1,
-//                 duration: 1000,
-//                 useNativeDriver: true,
-//             })
-//         ).start();
-//     }, []);
+    useEffect(() => {
+        Animated.loop(
+            Animated.timing(shimmer, {
+                toValue: 1,
+                duration: 1200,
+                useNativeDriver: true,
+            })
+        ).start();
+    }, []);
 
-//     const translateX = shimmer.interpolate({
-//         inputRange: [0, 1],
-//         outputRange: [-SCREEN_W, SCREEN_W],
-//     });
+    const translateX = shimmer.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-SCREEN_W, SCREEN_W],
+    });
 
-//     return (
-//         <View className="h-[260px] rounded-xl bg-white mb-4 overflow-hidden border border-slate-200 relative">
-//             <View className="h-[140px] w-full bg-slate-200" />
+    return (
+        <View className="bg-white rounded-xl mb-4 border border-slate-200 overflow-hidden shadow-sm relative">
+            {/* Shimmer Overlay */}
+            <Animated.View
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    transform: [{ translateX }],
+                    backgroundColor: 'rgba(255,255,255,0.3)',
+                    zIndex: 1,
+                }}
+            />
+            <View className="h-44 w-full bg-slate-200" />
+            <View className="p-4">
+                <View className="h-3 w-1/3 bg-slate-200 rounded-md" />
+                <View className="h-5 w-4/5 bg-slate-200 mt-2 rounded-md" />
+                <View className="h-4 w-full bg-slate-200 mt-2 rounded-md" />
+                <View className="flex-row justify-between items-center mt-4">
+                    <View className="h-3 w-1/4 bg-slate-200 rounded-md" />
+                    <View className="h-3 w-1/4 bg-slate-200 rounded-md" />
+                </View>
+            </View>
+        </View>
+    );
+};
 
-//             <View className="p-3">
-//                 <View className="h-3.5 w-1/3 bg-slate-200 mt-3 rounded-md" />
-//                 <View className="h-3.5 w-4/5 bg-slate-200 mt-2 rounded-md" />
-
-//                 <View className="flex-row items-center mt-3">
-//                     <View className="w-7 h-7 rounded-full bg-slate-200" />
-//                     <View className="h-3 w-1/5 bg-slate-200 ml-2 rounded-md" />
-//                 </View>
-//             </View>
-
-//             <Animated.View
-//                 style={{
-//                     position: "absolute",
-//                     left: -SCREEN_W,
-//                     top: 0,
-//                     bottom: 0,
-//                     width: SCREEN_W * 1.5,
-//                     backgroundColor: "rgba(255,255,255,0.35)",
-//                     transform: [{ translateX }],
-//                 }}
-//             />
-//         </View>
-//     );
-// };
 
 const CategoryChip = ({
     category,
@@ -128,7 +128,6 @@ const CategoryChip = ({
 
 const AllBlog = () => {
     const router = useRouter();
-    const { hideLoading, showLoading } = useLoading();
     // React Query
     const {
         data: blogs = [],
@@ -142,14 +141,6 @@ const AllBlog = () => {
         isError: catError,
     } = useCategories();
     const isLoadingData = loadingBlogs || loadingCategories;
-    // Sử dụng useLayoutEffect để hiển thị loading overlay ngay lập tức
-    useLayoutEffect(() => {
-        if (isLoadingData) {
-            showLoading();
-        } else {
-            hideLoading();
-        }
-    }, [isLoadingData]);
     // Local state
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
     const [query, setQuery] = useState("");
@@ -258,6 +249,13 @@ const AllBlog = () => {
             </View>
 
             {/* List */}
+            {isLoadingData ? (
+                <View style={{ padding: 16, paddingBottom: 48 }}>
+                    <SkeletonCard />
+                    <SkeletonCard />
+                    <SkeletonCard />
+                </View>
+            ) : (
             <FlatList
                 data={filteredBlogs}
                 renderItem={({ item }) => (
@@ -324,9 +322,9 @@ const AllBlog = () => {
                     )
                 }
             />
+            )}
         </SafeAreaView>
     );
 };
 
 export default AllBlog;
-
