@@ -1,5 +1,5 @@
-import { SeatStatus,AncillaryServiceType } from "./booking"; // Import SeatStatus từ booking.ts
 import { AncillaryServiceResponse } from './ancillary-service';
+import { AncillaryServiceType, SeatStatus } from "./booking"; // Import SeatStatus từ booking.ts
 
 /**
  * Represents an airport.
@@ -7,8 +7,36 @@ import { AncillaryServiceResponse } from './ancillary-service';
 export type Airport = {
   id: any;
   code: string;
-  name:string;
+  name: string;
   city: string;
+};
+export type Category = {
+  categoryId: number;
+  name: string;
+  slug: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+  blogCount: number;
+  active: boolean;
+};
+
+export type Blog = {
+  id: number;
+  title: string;
+  content: string;
+  slug: string;
+  excerpt: string;
+  featuredImage: string;
+  publishedDate: string;
+  isPublished: boolean;
+  viewCount: number;
+  likeCount: number;
+  createdAt: string;
+  updatedAt: string;
+  authorName: string;
+  authorEmail: string;
+  categories: Category[];
 };
 
 /**
@@ -20,8 +48,8 @@ export type Flight = {
   airlineLogo: string | null; // URL ảnh từ API
   flightNumber: string;
   departure: {
-    date: string | number | Date; code: string; time: string 
-};
+    date: string | number | Date; code: string; time: string
+  };
   arrival: { code: string; time: string };
   duration: string;
   price: number; // Giá cơ bản (basePrice)
@@ -67,18 +95,18 @@ export type Passenger = {
 // In app/types.ts
 
 export interface BaggagePackage {
-    key: string;
-    label: string;
-    price: number;
+  key: string;
+  label: string;
+  price: number;
 }
 
 // Danh sách các gói hành lý có thể chọn
 export const BAGGAGE_PACKAGES: BaggagePackage[] = [
-    { key: 'NONE', label: 'Không chọn', price: 0 }, // Giữ lại để UI có thể bỏ chọn
-    { key: 'KG_15', label: 'Gói 15kg', price: 200000 },
-    { key: 'KG_20', label: 'Gói 20kg', price: 300000 },
-    { key: 'KG_25', label: 'Gói 25kg', price: 400000 },
-    { key: 'KG_30', label: 'Gói 30kg', price: 500000 },
+  { key: 'NONE', label: 'Không chọn', price: 0 }, // Giữ lại để UI có thể bỏ chọn
+  { key: 'KG_15', label: 'Gói 15kg', price: 200000 },
+  { key: 'KG_20', label: 'Gói 20kg', price: 300000 },
+  { key: 'KG_25', label: 'Gói 25kg', price: 400000 },
+  { key: 'KG_30', label: 'Gói 30kg', price: 500000 },
 ];
 
 /**

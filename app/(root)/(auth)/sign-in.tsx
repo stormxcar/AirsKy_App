@@ -36,7 +36,6 @@ const SignIn = () => {
     setLoading(true);
     try {
       const authData = await login({ email, password });
-      console.log("Auth Data:", authData);
 
       // Giải mã token để kiểm tra vai trò
       const decodedToken: DecodedToken = jwtDecode(authData.accessToken);

@@ -8,7 +8,6 @@ import { useLocalSearchParams, useRouter } from "expo-router"
 import { useEffect, useMemo, useState } from "react"
 import { Alert, ScrollView, Share, Text, TouchableOpacity, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
-
 // Helper để dịch tên loại ghế
 const getSeatTypeName = (seatType: string) => {
   switch (seatType) {
@@ -97,7 +96,29 @@ const BookingResult = () => {
       }, 300)
     }
   }, [shouldFetchDetails, bookingId])
-
+  const handleCheckPayment = async () => {
+    if (!bookingCode) {
+      Alert.alert("Lỗi", "Không tìm thấy mã đặt chỗ để kiểm tra.")
+      return
+    }
+    showLoading(async () => {
+      try {
+        const result = await checkSepayPayment(bookingCode)
+        if (result.success) {
+          Alert.alert("Thanh toán thành công!", "Đơn hàng của bạn đã được xác nhận.")
+          // Điều hướng lại chính trang này với status mới để refresh toàn bộ UI
+          router.replace({
+            pathname: "/(root)/(booking)/booking-result",
+            params: { ...params, status: "success" },
+          })
+        } else {
+          Alert.alert("Chưa thanh toán", "Giao dịch của bạn chưa được hoàn tất. Vui lòng thử lại sau ít phút.")
+        }
+      } catch (error: any) {
+        Alert.alert("Lỗi", error.message || "Không thể kiểm tra trạng thái thanh toán.")
+      }
+    })
+  }
   const handleShare = async () => {
     if (!bookingDetails) {
       Alert.alert("Chưa có thông tin", "Không thể chia sẻ vì chưa tải được chi tiết đặt vé.")
@@ -306,15 +327,21 @@ const BookingResult = () => {
               <View className="flex-row justify-between items-center mb-3">
                 <Text className="text-base text-gray-600">Mã đặt chỗ:</Text>
                 <Text className="text-base font-bold text-blue-900 bg-blue-100 px-3 py-1 rounded-full">
-                  {bookingCode || "Đang tải..."}
+                  {bookingDetails!==null?bookingDetails?.bookingCode : "..."}
                 </Text>
               </View>
 
               {isSuccessState && !hasFullDetails && (
                 <Text className="text-gray-600 mt-2 text-center">
                   Thông tin chi tiết về chuyến bay đã được gửi đến email của bạn. Bạn cũng có thể xem lại trong mục
-                  'Chuyến đi của tôi'.
+                  &apos;Chuyến đi của tôi&apos;.
                 </Text>
+              )}
+              {/* Nút kiểm tra thanh toán khi đang pending */}
+              {(status === "pending" || status === "PENDING") && (
+                <TouchableOpacity onPress={handleCheckPayment} className="bg-blue-900 py-3 rounded-full mt-4">
+                  <Text className="text-white text-center font-bold">Kiểm tra thanh toán</Text>
+                </TouchableOpacity>
               )}
             </View>
           )}

@@ -1,10 +1,10 @@
 import { forgotPassword } from "@/services/auth-service";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
 import { Button, TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from '@expo/vector-icons';
 
 const ForgotPassword = () => {
     const [email, setEmail] = useState("");
@@ -32,8 +32,14 @@ const ForgotPassword = () => {
 
     return (
         <>
-            <SafeAreaView className="mt-32 flex-1 bg-white px-6 justify-start rounded-t-3xl">
+            <SafeAreaView className="mt-32 flex-1 bg-white px-6 justify-start rounded-t-[40px]">
                 {/* Tiêu đề */}
+                <TouchableOpacity onPress={() => {
+                    router.back();
+                }
+                }>
+                    <Ionicons name="chevron-back" size={24} color="#1e3a8a" />
+                </TouchableOpacity>
                 <View className="mb-8 items-center">
                     <Text className="text-3xl font-bold text-blue-950">Quên mật khẩu</Text>
                     <Text className="text-gray-500 mt-2 text-center">Nhập email của bạn để nhận mã xác minh.</Text>

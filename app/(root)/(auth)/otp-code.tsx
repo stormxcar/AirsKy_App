@@ -1,7 +1,7 @@
 import { forgotPassword, verifyAccount } from "@/services/auth-service";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Alert, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Text, View } from "react-native";
 import { Button, TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -58,9 +58,7 @@ const OtpCode = () => {
         <>
             <SafeAreaView className="mt-32 flex-1 bg-white px-6 justify-start rounded-t-3xl">
                 {/* Tiêu đề */}
-                <TouchableOpacity onPress={() => router.back()} className="mb-4">
-                    {/* <Ionicons name="chevron-back" size={24} color="#1e3a8a" /> */}
-                </TouchableOpacity>
+
                 <View className="mb-8 items-center">
                     <Text className="text-3xl font-bold text-blue-950">Xác minh tài khoản</Text>
                     <Text className="text-gray-500 mt-2 text-center">Nhập mã OTP đã được gửi đến <Text className="font-bold">{email}</Text>.</Text>

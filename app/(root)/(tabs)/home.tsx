@@ -1,47 +1,56 @@
+import { Blog } from "@/app/types/types";
 import Menus from "@/components/screens/home/menus";
 import Notifications from "@/components/screens/home/notifications";
 import SideModal from "@/components/screens/home/side-modal";
+import VoucherModal from "@/components/screens/home/voucher-modal";
 import { useAuth } from "@/context/auth-context";
-import { useNotification } from "@/context/notification-context"; 
+import { useLoading } from "@/context/loading-context";
+import { useNotification } from "@/context/notification-context";
+import { fetch5Blog } from "@/services/blog-service";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useState } from "react";
-import { ImageBackground, Modal, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Alert, Dimensions, ImageBackground, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   Extrapolate,
   interpolate,
   interpolateColor,
-  useAnimatedScrollHandler, 
+  useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
 } from "react-native-reanimated";
-
 // Tạo một component Ionicons có thể được animate
 const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons);
+const SCREEN_W = Dimensions.get("window").width;
+const ITEM_WIDTH = SCREEN_W * 0.8;
 
-const Home = () => { 
+const Home = () => {
   const { user } = useAuth();
   const { unreadCount, markAllAsRead } = useNotification();
   // --- Reanimated Setup ---
   const [menuVisible, setMenuVisible] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
+  const { showLoading } = useLoading();
+  const [voucherModalVisible, setVoucherModalVisible] = useState(false);
 
   const scrollY = useSharedValue(0);
   const HEADER_BACKGROUND_IMAGE = "https://images.unsplash.com/photo-1753958509957-c18ef30ffbba?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTAxfHxmbGlnaHQlMjBhdHRlbmRhbnQlMjB0YWtlJTIwY2FyZSUyMGN1c3RvbWVyfGVufDB8fDB8fHww&auto=format&fit=crop&q=60&w=500";
-  const MALAYSIA_AIRLINES_LOGO = "https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Malaysia_Airlines_logo.svg/1200px-Malaysia_Airlines_logo.svg.png";
 
-  const PROMOTIONS = [
-    {
-      id: '1',
-      title: 'Time for KATA',
-      image: 'https://images.unsplash.com/photo-1507525428034-b723cf961dde?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
-    },
-    {
-      id: '2',
-      title: 'More flights, more freedom to explore',
-      image: 'https://images.unsplash.com/photo-1501785888041-af3ba6f60648?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
-    },
-  ];
+  const [blogs, setBlogs] = useState<Blog[]>([]);
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      showLoading(async () => {
+        try {
+          const blogs = await fetch5Blog();
+          setBlogs(blogs);
+        } catch (error: any) {
+          Alert.alert("Lỗi", error.message || "Không thể tải danh sách chuyến đi.");
+        }
+      });
+    }
+
+    fetchBlogs();
+  }, []);
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -89,7 +98,7 @@ const Home = () => {
 
           <Animated.Text className="font-bold uppercase" style={animatedHeaderContentStyle}>AirSky</Animated.Text>
 
-          <TouchableOpacity onPress={() => user ? setNotificationsVisible(true) : router.push('/(root)/(auth)/sign-in')} className="relative"> 
+          <TouchableOpacity onPress={() => user ? setNotificationsVisible(true) : router.push('/(root)/(auth)/sign-in')} className="relative">
             <AnimatedIonicons name="notifications-outline" size={28} style={animatedHeaderContentStyle} />
             {user && unreadCount > 0 && (
               <View className="absolute -top-1 -right-1 bg-blue-950 rounded-full w-6 h-6 flex items-center justify-center border-2 border-white">
@@ -123,13 +132,13 @@ const Home = () => {
               <View className="w-14 h-14 rounded-full bg-blue-950 justify-center items-center mb-1">
                 <MaterialCommunityIcons name="airplane-takeoff" size={20} color="white" />
               </View>
-              <Text className="text-xs text-gray-700 font-medium text-center">MHflypass</Text>
+              <Text className="text-xs text-gray-700 font-medium text-center">ASflypass</Text>
             </TouchableOpacity>
-            <TouchableOpacity className="items-center">
+            <TouchableOpacity onPress={() => setVoucherModalVisible(true)} className="items-center">
               <View className="w-14 h-14 rounded-full bg-blue-950 justify-center items-center mb-1">
                 <Ionicons name="gift-outline" size={20} color="white" />
               </View>
-              <Text className="text-xs text-gray-700 font-medium text-center">MHvoucher</Text>
+              <Text className="text-xs text-gray-700 font-medium text-center">ASvoucher</Text>
             </TouchableOpacity>
             <TouchableOpacity className="items-center">
               <View className="w-14 h-14 rounded-full bg-blue-950 justify-center items-center mb-1">
@@ -149,27 +158,47 @@ const Home = () => {
         {/* Promotions Section */}
         <View className="p-4 bg-white">
           <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-xl font-bold text-blue-900">Ưu đãi dành cho bạn</Text>
-            <TouchableOpacity onPress={() => console.log("View All Promotions")}>
+            <Text className="text-xl font-bold text-blue-900">Theo dõi bài viết</Text>
+            <TouchableOpacity onPress={() => router.push('/(root)/(blog)/all-blog')}>
               <Text className="text-blue-900 font-semibold">Xem tất cả</Text>
             </TouchableOpacity>
           </View>
 
-          <Animated.ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {PROMOTIONS.map((promo) => (
-              <TouchableOpacity key={promo.id} className="w-96 h-60 mr-4 rounded-xl overflow-hidden shadow-md bg-blue-950">
+
+
+          <Animated.ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+            {blogs.map((item) => (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                key={item.id}
+                onPress={() =>
+                  router.push({
+                    pathname: `/(root)/(blog)/${item.id}`,
+                    params: { blog: JSON.stringify(item) },
+                  })
+                }
+                style={{ width: ITEM_WIDTH, marginRight: 12, borderRadius: 16, overflow: "hidden", backgroundColor: "#fff", borderWidth: 1, borderColor: "#e2e8f0" }}
+              >
                 <ImageBackground
-                  source={{ uri: promo.image }}
-                  className="flex-1 justify-end p-3"
-                  imageStyle={{ borderRadius: 12 }}
-                >
-                  <View className="bg-black/40 rounded-md p-2">
-                    <Text className="text-white font-bold text-lg">{promo.title}</Text>
-                  </View>
-                </ImageBackground>
+                  source={{ uri: item.featuredImage }}
+                  style={{ width: ITEM_WIDTH, height: 180 }}
+                  resizeMode="cover"
+                />
+                <View style={{ padding: 12 }}>
+                  <Text style={{ fontSize: 12, color: "#2563eb", fontWeight: "bold", marginBottom: 4 }}>
+                    {item.categories?.[0]?.name ?? "Không phân loại"}
+                  </Text>
+                  <Text style={{ fontSize: 16, fontWeight: "800", color: "#111827" }} numberOfLines={2}>
+                    {item.title}
+                  </Text>
+                  <Text style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }} numberOfLines={2}>
+                    {item.excerpt}
+                  </Text>
+                </View>
               </TouchableOpacity>
             ))}
           </Animated.ScrollView>
+
         </View>
 
         {/* Placeholder for more content */}
@@ -194,7 +223,10 @@ const Home = () => {
       >
         <Notifications onClose={() => setNotificationsVisible(false)} />
       </SideModal>
-
+      <VoucherModal
+        visible={voucherModalVisible}
+        onClose={() => setVoucherModalVisible(false)}
+      />
     </View>
   );
 };

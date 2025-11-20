@@ -114,12 +114,7 @@ const MyTrips = () => {
   }, [bookings]);
 
   const tripsToDisplay = categorizedTrips[activeTab];
-  // // Nếu chưa có user, hiển thị màn hình trống để tránh flicker trước khi chuyển hướng
-  // if (!user) {
-  //   return (
-  //     <SafeAreaView className="flex-1 bg-blue-950" edges={["top", "left", "right"]} />
-  //   );
-  // }
+  
 
   return (
     <SafeAreaView className="flex-1 bg-blue-950" edges={["top", "left", "right"]}>

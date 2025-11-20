@@ -1,10 +1,10 @@
 import LoadingOverlay from "@/components/global/loading-overlay";
 import { AuthProvider } from "@/context/auth-context";
 import { LoadingProvider } from "@/context/loading-context";
+import { NotificationProvider } from "@/context/notification-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { PaperProvider } from "react-native-paper";
-import { NotificationProvider } from "@/context/notification-context";
 import "./global.css";
 import { AppTheme } from "./theme";
 

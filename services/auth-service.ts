@@ -1,4 +1,4 @@
-import { LoginRequest, AuthResponse, RegisterRequest } from "@/app/types/auth";
+import { AuthResponse, LoginRequest, RegisterRequest } from "@/app/types/auth";
 import api from "./api";
 
 type ApiResponse<T> = {

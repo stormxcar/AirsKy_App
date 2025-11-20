@@ -296,7 +296,7 @@ const CheckIn = () => {
       const firstPassenger = segmentPassengers[0];
       const message =
         statusMessages[
-          firstPassenger.checkinStatus as keyof typeof statusMessages
+        firstPassenger.checkinStatus as keyof typeof statusMessages
         ] || "Check-in chưa khả dụng cho chuyến bay này.";
 
       Alert.alert("Không thể check-in", message, [{ text: "OK" }]);
@@ -832,22 +832,19 @@ const CheckIn = () => {
         {filteredSteps.map((step, index) => (
           <View key={step.step} className="flex-1 items-center">
             <View
-              className={`w-8 h-8 rounded-full items-center justify-center ${
-                currentStep >= step.step ? "bg-blue-600" : "bg-gray-300"
-              }`}
+              className={`w-8 h-8 rounded-full items-center justify-center ${currentStep >= step.step ? "bg-blue-600" : "bg-gray-300"
+                }`}
             >
               <Text
-                className={`font-bold text-sm ${
-                  currentStep >= step.step ? "text-white" : "text-gray-500"
-                }`}
+                className={`font-bold text-sm ${currentStep >= step.step ? "text-white" : "text-gray-500"
+                  }`}
               >
                 {index + 1}
               </Text>
             </View>
             <Text
-              className={`text-xs mt-1 ${
-                currentStep >= step.step ? "text-blue-600" : "text-gray-500"
-              }`}
+              className={`text-xs mt-1 ${currentStep >= step.step ? "text-blue-600" : "text-gray-500"
+                }`}
             >
               {step.label}
             </Text>
@@ -858,63 +855,46 @@ const CheckIn = () => {
   };
 
   const renderSearchStep = () => (
-    <ScrollView className="flex-1 p-4">
-      <View className="items-center mb-6">
-        <Ionicons name="airplane" size={60} color="#1e3a8a" />
-        <Text className="text-2xl font-bold text-blue-900 mt-4">
-          Check-in Online
-        </Text>
-        <Text className="text-gray-600 text-center mt-2">
-          Nhập thông tin đặt chỗ để tiến hành check-in
-        </Text>
-      </View>
+    <ScrollView className="flex-1 p-4 ">
+      <View className="space-y-4 gap-2 ">
 
-      <View className="space-y-4">
-        <View>
-          <Text className="text-base font-semibold text-gray-700 mb-2">
-            Mã đặt chỗ
-          </Text>
+        <View className="pt-6">
           <TextInput
             mode="outlined"
+            label="Mã đặt chỗ (PNR)"
             value={bookingCode}
             onChangeText={setBookingCode}
             placeholder="Ví dụ: ABC123"
             autoCapitalize="characters"
-            outlineColor="#e5e7eb"
-            activeOutlineColor="#1e3a8a"
-            style={{ backgroundColor: "white" }}
-          />
+            style={{ backgroundColor: 'transparent', fontSize: 14 }} />
         </View>
 
         <View>
-          <Text className="text-base font-semibold text-gray-700 mb-2">
-            Tên hành khách
-          </Text>
           <TextInput
             mode="outlined"
+            label="Họ và tên"
             value={fullName}
             onChangeText={setFullName}
             placeholder="Tên đầy đủ như trên giấy tờ"
-            autoCapitalize="words"
-            outlineColor="#e5e7eb"
-            activeOutlineColor="#1e3a8a"
-            style={{ backgroundColor: "white" }}
-          />
+            autoCapitalize="characters"
+            style={{ backgroundColor: 'transparent', fontSize: 14 }} />
         </View>
+        <Button
+          mode="contained"
+          onPress={handleSearch}
+          loading={loading}
+          disabled={loading || !bookingCode.trim() || !fullName.trim()}
+          buttonColor="#172554"
+          style={{ borderRadius: 9999 }}
+          labelStyle={{ fontSize: 16, fontWeight: "bold", borderRadius: "9999px" }}
+        >
+          <Text className="text-white text-center font-bold text-base ml-2 ">Tìm chuyến đi</Text>
+
+        </Button>
       </View>
 
-      <Button
-        mode="contained"
-        onPress={handleSearch}
-        loading={loading}
-        disabled={loading || !bookingCode.trim() || !fullName.trim()}
-        style={{ marginTop: 24, borderRadius: 12, paddingVertical: 6 }}
-        labelStyle={{ fontSize: 16, fontWeight: "bold" }}
-      >
-        Tìm kiếm
-      </Button>
 
-      <View className="bg-blue-50 rounded-xl p-4 mt-6">
+      <View className="bg-blue-50 rounded-xl p-4 mt-6 ">
         <Text className="font-bold text-blue-900 mb-2">Lưu ý</Text>
         <Text className="text-blue-800 text-sm">
           • Nhập chính xác tên như trên giấy tờ tùy thân{"\n"}• Mã đặt chỗ có
@@ -976,7 +956,7 @@ const CheckIn = () => {
             };
             statusText =
               statusMessages[
-                firstPassenger.checkinStatus as keyof typeof statusMessages
+              firstPassenger.checkinStatus as keyof typeof statusMessages
               ] || "Không khả dụng";
           }
         }
@@ -986,45 +966,40 @@ const CheckIn = () => {
             key={segment.segmentId}
             onPress={() => handleSelectFlight(segment)}
             disabled={!canSelect}
-            className={`border rounded-xl p-4 mb-3 shadow-sm ${
-              canSelect
-                ? "bg-white border-gray-200"
-                : "bg-gray-50 border-gray-300 opacity-60"
-            }`}
+            className={`border rounded-xl p-4 mb-3 shadow-sm ${canSelect
+              ? "bg-white border-gray-200"
+              : "bg-gray-50 border-gray-300 opacity-60"
+              }`}
           >
             <View className="flex-row items-center justify-between mb-3">
               <Text
-                className={`font-bold text-lg ${
-                  canSelect ? "text-blue-900" : "text-gray-500"
-                }`}
+                className={`font-bold text-lg ${canSelect ? "text-blue-900" : "text-gray-500"
+                  }`}
               >
                 {segment.flightNumber}
               </Text>
               <View className="flex-row items-center">
                 <Text
-                  className={`font-semibold mr-2 ${
-                    canSelect ? "text-blue-600" : "text-gray-500"
-                  }`}
+                  className={`font-semibold mr-2 ${canSelect ? "text-blue-600" : "text-gray-500"
+                    }`}
                 >
                   Chặng {segment.segmentOrder}
                 </Text>
                 <View
-                  className={`px-2 py-1 rounded-full ${
-                    statusColor === "green"
-                      ? "bg-green-100"
-                      : statusColor === "orange"
-                        ? "bg-orange-100"
-                        : "bg-gray-100"
-                  }`}
+                  className={`px-2 py-1 rounded-full ${statusColor === "green"
+                    ? "bg-green-100"
+                    : statusColor === "orange"
+                      ? "bg-orange-100"
+                      : "bg-gray-100"
+                    }`}
                 >
                   <Text
-                    className={`font-semibold text-xs ${
-                      statusColor === "green"
-                        ? "text-green-700"
-                        : statusColor === "orange"
-                          ? "text-orange-700"
-                          : "text-gray-600"
-                    }`}
+                    className={`font-semibold text-xs ${statusColor === "green"
+                      ? "text-green-700"
+                      : statusColor === "orange"
+                        ? "text-orange-700"
+                        : "text-gray-600"
+                      }`}
                   >
                     {statusText}
                   </Text>
@@ -1034,9 +1009,8 @@ const CheckIn = () => {
             <View className="flex-row justify-between items-center">
               <View>
                 <Text
-                  className={`font-bold text-2xl ${
-                    canCheckIn ? "text-gray-800" : "text-gray-500"
-                  }`}
+                  className={`font-bold text-2xl ${canCheckIn ? "text-gray-800" : "text-gray-500"
+                    }`}
                 >
                   {segment.departureAirport.airportCode}
                 </Text>
@@ -1060,9 +1034,8 @@ const CheckIn = () => {
 
               <View className="items-end">
                 <Text
-                  className={`font-bold text-2xl ${
-                    canCheckIn ? "text-gray-800" : "text-gray-500"
-                  }`}
+                  className={`font-bold text-2xl ${canCheckIn ? "text-gray-800" : "text-gray-500"
+                    }`}
                 >
                   {segment.arrivalAirport.airportCode}
                 </Text>
@@ -1075,9 +1048,8 @@ const CheckIn = () => {
             </View>
             <View className="mt-3">
               <Text
-                className={`text-center text-sm ${
-                  canCheckIn ? "text-gray-600" : "text-gray-500"
-                }`}
+                className={`text-center text-sm ${canCheckIn ? "text-gray-600" : "text-gray-500"
+                  }`}
               >
                 {format(new Date(segment.departureTime), "dd/MM/yyyy", {
                   locale: vi,
@@ -1101,8 +1073,8 @@ const CheckIn = () => {
     // Lọc passengers theo segment đã chọn
     const segmentPassengers = selectedSegment
       ? eligiblePassengers.filter(
-          (passenger) => passenger.segmentId === selectedSegment.segmentId
-        )
+        (passenger) => passenger.segmentId === selectedSegment.segmentId
+      )
       : [];
 
     return (
@@ -1390,38 +1362,35 @@ const CheckIn = () => {
                                 onPress={() =>
                                   canSelect ? handleSelectSeat(seat) : null
                                 }
-                                className={`w-12 h-12 rounded-xl justify-center items-center border-2 ${
-                                  isSelectedSeat
-                                    ? "bg-blue-500 border-blue-700"
-                                    : isCurrentSeat
-                                      ? "bg-yellow-500 border-yellow-600" // Ghế hiện tại - màu vàng
-                                      : seat.isAvailable
-                                        ? "bg-white border-green-400"
-                                        : "bg-gray-400 border-gray-500"
-                                } ${!canSelect ? "opacity-50" : "opacity-100"}`}
+                                className={`w-12 h-12 rounded-xl justify-center items-center border-2 ${isSelectedSeat
+                                  ? "bg-blue-500 border-blue-700"
+                                  : isCurrentSeat
+                                    ? "bg-yellow-500 border-yellow-600" // Ghế hiện tại - màu vàng
+                                    : seat.isAvailable
+                                      ? "bg-white border-green-400"
+                                      : "bg-gray-400 border-gray-500"
+                                  } ${!canSelect ? "opacity-50" : "opacity-100"}`}
                                 disabled={!canSelect}
                               >
                                 <Text
-                                  className={`text-sm font-bold ${
-                                    isSelectedSeat
+                                  className={`text-sm font-bold ${isSelectedSeat
+                                    ? "text-white"
+                                    : isCurrentSeat
                                       ? "text-white"
-                                      : isCurrentSeat
-                                        ? "text-white"
-                                        : seat.isAvailable
-                                          ? "text-green-700"
-                                          : "text-gray-600"
-                                  }`}
+                                      : seat.isAvailable
+                                        ? "text-green-700"
+                                        : "text-gray-600"
+                                    }`}
                                 >
                                   {seat.column}
                                 </Text>
                                 {seat.additionalPrice &&
                                   seat.additionalPrice > 0 && (
                                     <Text
-                                      className={`text-xs ${
-                                        isSelectedSeat || isCurrentSeat
-                                          ? "text-yellow-200"
-                                          : "text-orange-600"
-                                      }`}
+                                      className={`text-xs ${isSelectedSeat || isCurrentSeat
+                                        ? "text-yellow-200"
+                                        : "text-orange-600"
+                                        }`}
                                     >
                                       +
                                       {(seat.additionalPrice / 1000).toFixed(0)}
@@ -1459,38 +1428,35 @@ const CheckIn = () => {
                                 onPress={() =>
                                   canSelect ? handleSelectSeat(seat) : null
                                 }
-                                className={`w-12 h-12 rounded-xl justify-center items-center border-2 ${
-                                  isSelectedSeat
-                                    ? "bg-blue-500 border-blue-700"
-                                    : isCurrentSeat
-                                      ? "bg-yellow-500 border-yellow-600" // Ghế hiện tại - màu vàng
-                                      : seat.isAvailable
-                                        ? "bg-white border-green-400"
-                                        : "bg-gray-400 border-gray-500"
-                                } ${!canSelect ? "opacity-50" : "opacity-100"}`}
+                                className={`w-12 h-12 rounded-xl justify-center items-center border-2 ${isSelectedSeat
+                                  ? "bg-blue-500 border-blue-700"
+                                  : isCurrentSeat
+                                    ? "bg-yellow-500 border-yellow-600" // Ghế hiện tại - màu vàng
+                                    : seat.isAvailable
+                                      ? "bg-white border-green-400"
+                                      : "bg-gray-400 border-gray-500"
+                                  } ${!canSelect ? "opacity-50" : "opacity-100"}`}
                                 disabled={!canSelect}
                               >
                                 <Text
-                                  className={`text-sm font-bold ${
-                                    isSelectedSeat
+                                  className={`text-sm font-bold ${isSelectedSeat
+                                    ? "text-white"
+                                    : isCurrentSeat
                                       ? "text-white"
-                                      : isCurrentSeat
-                                        ? "text-white"
-                                        : seat.isAvailable
-                                          ? "text-green-700"
-                                          : "text-gray-600"
-                                  }`}
+                                      : seat.isAvailable
+                                        ? "text-green-700"
+                                        : "text-gray-600"
+                                    }`}
                                 >
                                   {seat.column}
                                 </Text>
                                 {seat.additionalPrice &&
                                   seat.additionalPrice > 0 && (
                                     <Text
-                                      className={`text-xs ${
-                                        isSelectedSeat || isCurrentSeat
-                                          ? "text-yellow-200"
-                                          : "text-orange-600"
-                                      }`}
+                                      className={`text-xs ${isSelectedSeat || isCurrentSeat
+                                        ? "text-yellow-200"
+                                        : "text-orange-600"
+                                        }`}
                                     >
                                       +
                                       {(seat.additionalPrice / 1000).toFixed(0)}
@@ -1542,8 +1508,8 @@ const CheckIn = () => {
                     const seat =
                       availableSeats && availableSeats.length > 0
                         ? availableSeats.find(
-                            (s) => s.seatNumber === selectedSeat
-                          )
+                          (s) => s.seatNumber === selectedSeat
+                        )
                         : null;
                     return (
                       seat && (
@@ -1630,11 +1596,10 @@ const CheckIn = () => {
                     onPress={() =>
                       setSelectedPaymentMethod(PaymentMethod.PAYPAL)
                     }
-                    className={`flex-1 flex-row items-center justify-center p-3 border-2 rounded-lg ${
-                      selectedPaymentMethod === PaymentMethod.PAYPAL
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 bg-white"
-                    }`}
+                    className={`flex-1 flex-row items-center justify-center p-3 border-2 rounded-lg ${selectedPaymentMethod === PaymentMethod.PAYPAL
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-300 bg-white"
+                      }`}
                   >
                     <Ionicons
                       name="logo-paypal"
@@ -1646,11 +1611,10 @@ const CheckIn = () => {
                       }
                     />
                     <Text
-                      className={`ml-2 font-medium ${
-                        selectedPaymentMethod === PaymentMethod.PAYPAL
-                          ? "text-blue-600"
-                          : "text-gray-600"
-                      }`}
+                      className={`ml-2 font-medium ${selectedPaymentMethod === PaymentMethod.PAYPAL
+                        ? "text-blue-600"
+                        : "text-gray-600"
+                        }`}
                     >
                       PayPal
                     </Text>
@@ -1660,11 +1624,10 @@ const CheckIn = () => {
                     onPress={() =>
                       setSelectedPaymentMethod(PaymentMethod.BANK_TRANSFER)
                     }
-                    className={`flex-1 flex-row items-center justify-center p-3 border-2 rounded-lg ${
-                      selectedPaymentMethod === PaymentMethod.BANK_TRANSFER
-                        ? "border-green-500 bg-green-50"
-                        : "border-gray-300 bg-white"
-                    }`}
+                    className={`flex-1 flex-row items-center justify-center p-3 border-2 rounded-lg ${selectedPaymentMethod === PaymentMethod.BANK_TRANSFER
+                      ? "border-green-500 bg-green-50"
+                      : "border-gray-300 bg-white"
+                      }`}
                   >
                     <Ionicons
                       name="qr-code"
@@ -1676,11 +1639,10 @@ const CheckIn = () => {
                       }
                     />
                     <Text
-                      className={`ml-2 font-medium ${
-                        selectedPaymentMethod === PaymentMethod.BANK_TRANSFER
-                          ? "text-green-600"
-                          : "text-gray-600"
-                      }`}
+                      className={`ml-2 font-medium ${selectedPaymentMethod === PaymentMethod.BANK_TRANSFER
+                        ? "text-green-600"
+                        : "text-gray-600"
+                        }`}
                     >
                       SePay
                     </Text>
@@ -1913,12 +1875,9 @@ const CheckIn = () => {
   };
 
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: "#1e3a8a" }}
-      edges={["top", "left", "right"]}
-    >
+    <SafeAreaView className="flex-1 bg-blue-950" edges={["top", "left", "right"]}>
       {/* Header */}
-      <View style={{ flexDirection: "row", alignItems: "center", padding: 16 }}>
+      <View className="" >
         {currentStep > CheckinStep.SEARCH && (
           <TouchableOpacity
             onPress={() => {
@@ -1936,18 +1895,10 @@ const CheckIn = () => {
           </TouchableOpacity>
         )}
         <Text
-          style={{
-            flex: 1,
-            textAlign: "center",
-            color: "white",
-            fontWeight: "bold",
-            textTransform: "uppercase",
-            fontSize: 18,
-          }}
+          className="p-4 text-center text-white font-bold uppercase"
         >
           CHECK-IN
         </Text>
-        <View style={{ width: 24 }} />
       </View>
 
       {/* Progress Bar */}

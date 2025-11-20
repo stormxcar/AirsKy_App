@@ -6,7 +6,7 @@ const AuthLayout = () => {
     <Stack
       screenOptions={{
         // Hiển thị header 
-        headerShown: true,
+        headerShown: false,
         // Header trong suốt để nền của màn hình được hiển thị 
         headerTransparent: true,
         // Không hiển thị tiêu đề mặc định của header 
@@ -17,7 +17,7 @@ const AuthLayout = () => {
         contentStyle: { backgroundColor: "#172554" }, // bg-blue-50
       }}
     >
-      <Stack.Screen name="sign-in" options={{ headerShown: false }} />
+      <Stack.Screen name="sign-in" />
       <Stack.Screen name="sign-up" />
       <Stack.Screen name="forgot-password" />
     </Stack>

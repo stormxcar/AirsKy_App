@@ -1,20 +1,20 @@
 import { Airport, Flight, TicketClass } from "@/app/types/types";
+import FlightListContent from '@/components/screens/book-flight/flight-list-content';
+import FlightSummaryModal from "@/components/screens/book-flight/modals/flight-summary-modal";
 import SortFilterModal, { FilterOptions, SortOption } from "@/components/screens/book-flight/modals/sort-filter-modal";
 import { useBooking } from "@/context/booking-context";
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
-import {  ScrollView, Text, TouchableOpacity, View, Dimensions, RefreshControl } from 'react-native';
-import { useFlightSearch } from "@/hooks/use-flight-search";
-import { useFlightDisplay } from "@/hooks/use-flight-display";
-import { SafeAreaView } from "react-native-safe-area-context";
-import FlightSummaryModal from "@/components/screens/book-flight/modals/flight-summary-modal";
-import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import { useDateScroller } from "@/hooks/use-date-scroller";
-import { useQuery } from "@tanstack/react-query";
-import { fetchAllAirports } from "@/services/airport-service";
-import FlightListContent from '@/components/screens/book-flight/flight-list-content';
 import { useLoading } from "@/context/loading-context";
+import { useDateScroller } from "@/hooks/use-date-scroller";
+import { useFlightDisplay } from "@/hooks/use-flight-display";
+import { useFlightSearch } from "@/hooks/use-flight-search";
+import { fetchAllAirports } from "@/services/airport-service";
+import { Ionicons } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Dimensions, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type SelectionPhase = 'depart' | 'return';
 
@@ -311,7 +311,7 @@ function FlightList() {
         params={searchParams}
         dateScrollerData={dateScrollerData}
         handleSelectDateFromScroller={handleSelectDateFromScroller}
-        dateScrollViewRef={dateScrollViewRef}
+        dateScrollViewRef={dateScrollViewRef as React.RefObject<ScrollView>}
         scrollPosition={scrollPosition}
         setScrollPosition={setScrollPosition}
         SCROLL_AMOUNT={SCROLL_AMOUNT}
