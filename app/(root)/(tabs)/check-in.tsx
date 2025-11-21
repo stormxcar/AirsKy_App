@@ -142,6 +142,7 @@ const CheckIn = () => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
     useState<PaymentMethod>(PaymentMethod.PAYPAL);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [isBoardingPassSaved, setIsBoardingPassSaved] = useState(false);
 
   // Handle payment return from payment screens
   useEffect(() => {
@@ -258,6 +259,7 @@ const handleSaveBoardingPass = async () => {
     await MediaLibrary.saveToLibraryAsync(fileUri);
 
     Alert.alert("Thành công", "Boarding pass đã được lưu!");
+    setIsBoardingPassSaved(true);
   } catch (e) {
     console.log("❌ Lỗi lưu ảnh", e);
     Alert.alert("Lỗi", "Không thể lưu ảnh.");
@@ -1087,6 +1089,7 @@ const blobToBase64 = (blob: Blob): Promise<string> =>
     setNeedsPayment(false);
     setPaymentProcessing(false);
     setSelectedPaymentMethod(PaymentMethod.PAYPAL);
+    setIsBoardingPassSaved(false);
   };
 
   const renderProgressBar = () => {
@@ -2080,11 +2083,18 @@ const blobToBase64 = (blob: Blob): Promise<string> =>
 
             <TouchableOpacity
               onPress={handleSaveBoardingPass}
-              disabled={loading}
-              className="mt-4 p-3 bg-blue-900 rounded-lg flex-row items-center justify-center"
+              disabled={loading || isBoardingPassSaved}
+              className={`mt-4 p-3 rounded-lg flex-row items-center justify-center ${
+                isBoardingPassSaved ? "bg-green-600" : "bg-blue-900"
+              }`}
             >
               {loading ? (
                 <ActivityIndicator color="white" />
+              ) : isBoardingPassSaved ? (
+                <>
+                  <Ionicons name="checkmark-done-outline" size={20} color="white" />
+                  <Text className="text-white font-semibold ml-2">Đã lưu</Text>
+                </>
               ) : (
                 <>
                   <Ionicons name="download-outline" size={20} color="white" />
