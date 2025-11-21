@@ -16,6 +16,18 @@ const Profile = () => {
   const router = useRouter();
   const { user, logout, isLoading: isAuthLoading, updateUser } = useAuth();
   const { showLoading } = useLoading();
+
+  useEffect(() => {
+    if (user === null) {
+      // user chưa load xong hoặc chưa đăng nhập
+      showLoading(() => {
+        router.replace("/(root)/(auth)/sign-in");
+      }, 1000);
+    }
+  }, [user]);
+
+
+
   const [isEditModalVisible, setEditModalVisible] = useState(false);
   const [isChangePasswordModalVisible, setChangePasswordModalVisible] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false); // State để quản lý loading khi cập nhật
@@ -65,15 +77,14 @@ const Profile = () => {
     setHasChanges(firstNameChanged || lastNameChanged || phoneChanged || avatarChanged || dobChanged);
   }, [editedFirstName, editedLastName, editedPhone, editedAvatar, dateOfBirth, user]);
 
-  useEffect(() => {
-    // Chỉ thực hiện khi quá trình xác thực ban đầu đã hoàn tất và người dùng chưa đăng nhập
-    if (!user) {
-      // Hiển thị loading overlay, sau 3 giây thì chuyển đến trang đăng nhập
-      showLoading(() => {
-        router.replace("/(root)/(auth)/sign-in");
-      }, 1000);
-    }
-  }, [user]);
+  if (!user) {
+    // Hiển thị màn hình loading/blank trong khi chờ redirect
+    return (
+      <View className="flex-1 justify-center items-center bg-white">
+        <Text>Oopsss bạn chưa đăng nhập..</Text>
+      </View>
+    );
+  }
 
   const handleSaveChanges = async () => {
     if (!user || isUpdating) return; // Ngăn chặn click nhiều lần

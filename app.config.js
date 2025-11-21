@@ -2,7 +2,7 @@ import 'dotenv/config';
 
 export default {
   expo: {
-    
+
     name: "AirsKy_App",
     slug: "AirsKy_App",
     version: "1.0.0",
@@ -11,6 +11,7 @@ export default {
     scheme: "airskyapp",
     userInterfaceStyle: "automatic",
     ios: {
+      bundleIdentifier: "com.nguyentruongan0610.airskyapp",
       supportsTablet: true
     },
     android: {
@@ -27,6 +28,8 @@ export default {
       output: "static",
       // "favicon": "./assets/images/favicon.png"
     },
+
+
     plugins: [
       "expo-router",
       // [
