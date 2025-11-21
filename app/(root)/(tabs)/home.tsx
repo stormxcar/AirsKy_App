@@ -98,7 +98,7 @@ const Home = () => {
 
           <TouchableOpacity onPress={() => setNotificationsVisible(true)} className="relative">
             <AnimatedIonicons name="notifications-outline" size={28} style={animatedHeaderContentStyle} />
-            {user && unreadCount > 0 && (
+            {user && unreadCount && unreadCount > 0 && (
               <View className="absolute -top-1 -right-1 bg-blue-950 rounded-full w-6 h-6 flex items-center justify-center border-2 border-white">
                 <Text className="text-white text-[10px] font-bold">
                   {unreadCount > 9 ? '9+' : unreadCount}
@@ -176,7 +176,7 @@ const Home = () => {
                   key={item.id}
                   onPress={() =>
                     router.push({
-                      pathname: `/(root)/(blog)/${item.id}`,
+                      pathname: `/(root)/(blog)/${item.id}` as any,
                       params: { blog: JSON.stringify(item) },
                     })
                   }

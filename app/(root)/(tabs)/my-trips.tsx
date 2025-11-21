@@ -129,7 +129,26 @@ const MyTrips = () => {
                 >
                   <View className="flex-row justify-between items-start mb-3">
                     <Text className="text-sm text-gray-500">{trip.date}</Text>
-                    <Text className="text-sm font-bold text-blue-950 bg-blue-100 px-2 py-1 rounded-full">{trip.bookingCode}</Text>
+                    <View className="flex-row items-center gap-2">
+                      <Text className="text-sm font-bold text-blue-950 bg-blue-100 px-2 py-1 rounded-full">{trip.bookingCode}</Text>
+                      {activeTab === 'completed' && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            // Navigate to check-in screen with booking code to view boarding pass
+                            router.push({
+                              pathname: '/(root)/(tabs)/check-in',
+                              params: {
+                                prefillBookingCode: trip.bookingCode,
+                                viewBoardingPass: 'true'
+                              }
+                            });
+                          }}
+                          className="bg-green-600 px-3 py-1 rounded-full"
+                        >
+                          <Text className="text-white text-xs font-bold">Boarding Pass</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   </View>
                   <View className="flex-row items-center justify-between">
                     <View className="items-start">

@@ -51,6 +51,7 @@ export default {
     // Thêm trường 'extra' để chứa các biến môi trường
     extra: {
       API_BASE_URL: process.env.API_BASE_URL,
+      API_SOCKET_URL: process.env.API_SOCKET_URL,
     },
   }
 };
