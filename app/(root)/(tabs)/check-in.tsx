@@ -47,6 +47,39 @@ const processNameInput = (text: string) => {
     .toUpperCase();
 };
 
+// Helper để format thời gian check-in
+const formatCheckinTime = (hoursUntilCheckin: number): string => {
+  if (hoursUntilCheckin < 24) {
+    return `${Math.ceil(hoursUntilCheckin)} giờ nữa`;
+  } else {
+    const days = Math.floor(hoursUntilCheckin / 24);
+    const remainingHours = hoursUntilCheckin % 24;
+
+    if (days === 1) {
+      return remainingHours > 0
+        ? `1 ngày ${Math.ceil(remainingHours)} giờ nữa`
+        : "1 ngày nữa";
+    } else if (days < 7) {
+      return remainingHours > 0
+        ? `${days} ngày ${Math.ceil(remainingHours)} giờ nữa`
+        : `${days} ngày nữa`;
+    } else {
+      const weeks = Math.floor(days / 7);
+      const remainingDays = days % 7;
+
+      if (weeks === 1) {
+        return remainingDays > 0
+          ? `1 tuần ${remainingDays} ngày nữa`
+          : "1 tuần nữa";
+      } else {
+        return remainingDays > 0
+          ? `${weeks} tuần ${remainingDays} ngày nữa`
+          : `${weeks} tuần nữa`;
+      }
+    }
+  }
+};
+
 // Helper để kiểm tra segment có thể check-in được không (trong 24h trước giờ khởi hành)
 const canCheckInSegment = (segment: FlightSegment): boolean => {
   const now = new Date();
@@ -55,7 +88,18 @@ const canCheckInSegment = (segment: FlightSegment): boolean => {
     departureTime.getTime() - 24 * 60 * 60 * 1000
   ); // 24h trước
 
-  return now >= checkInStartTime && now < departureTime;
+  const canCheckIn = now >= checkInStartTime && now < departureTime;
+
+  console.log("🔍 Check-in time validation:", {
+    flightNumber: segment.flightNumber,
+    departureTime: departureTime.toISOString(),
+    checkInStartTime: checkInStartTime.toISOString(),
+    now: now.toISOString(),
+    hoursUntilDeparture: (departureTime.getTime() - now.getTime()) / (1000 * 60 * 60),
+    canCheckIn: canCheckIn
+  });
+
+  return canCheckIn;
 };
 
 const CheckIn = () => {
@@ -115,6 +159,16 @@ const CheckIn = () => {
     }
   }, [params]);
 
+  // Handle prefill booking code and view boarding pass from My Trips
+  useEffect(() => {
+    if (params.prefillBookingCode && params.viewBoardingPass === "true") {
+      console.log("🎫 Auto-filling booking code for boarding pass view:", params.prefillBookingCode);
+      setBookingCode(params.prefillBookingCode as string);
+      // Note: We don't auto-search here as user might need to enter their name
+      // The search will happen when they enter their name and tap search
+    }
+  }, [params]);
+
   // Complete seat change sau khi payment thành công
   const handlePostPaymentSeatChange = async () => {
     try {
@@ -169,6 +223,70 @@ const CheckIn = () => {
   // Chỉ cho phép check-in khi đã chọn ghế và không có payment pending
   const canProceedCheckin = selectedSeat && selectedSeatId && !needsPayment;
 
+  // Hàm hiển thị tùy chọn xem boarding pass cho các segments đã check-in
+  const showBoardingPassOptions = (checkedInSegments: any[]) => {
+    if (checkedInSegments.length === 1) {
+      // Chỉ có 1 segment, hiển thị trực tiếp boarding pass
+      const segment = checkedInSegments[0].segment;
+      const passenger = checkedInSegments[0].passengers.find((p: any) => p.checkinStatus === "ALREADY_CHECKED_IN");
+
+      if (passenger) {
+        const mockCheckinResult: CheckinResponse = {
+          checkinId: Date.now(),
+          bookingId: 0,
+          passengerId: passenger.passengerId,
+          passengerName: passenger.fullName,
+          seatNumber: passenger.seatNumber,
+          seatType: "ECONOMY",
+          ticketPrice: passenger.ticketPrice,
+          issueDate: new Date().toISOString(),
+          boardingPassUrl: passenger.boardingpassurl || "",
+          totalCharge: passenger.ticketPrice,
+          status: "SUCCESS",
+          message: "Check-in completed successfully",
+          paymentRequired: false
+        };
+        setCheckinResult(mockCheckinResult);
+        setCurrentStep(CheckinStep.CONFIRM_AND_COMPLETE);
+      }
+    } else {
+      // Nhiều segments, cho user chọn segment nào muốn xem boarding pass
+      const options = checkedInSegments.map((segmentInfo, index) => ({
+        text: `${segmentInfo.segment.flightNumber} (${segmentInfo.segment.departureAirport.airportCode}→${segmentInfo.segment.arrivalAirport.airportCode})`,
+        onPress: () => {
+          const passenger = segmentInfo.passengers.find((p: any) => p.checkinStatus === "ALREADY_CHECKED_IN");
+          if (passenger) {
+            const mockCheckinResult: CheckinResponse = {
+              checkinId: Date.now(),
+              bookingId: 0,
+              passengerId: passenger.passengerId,
+              passengerName: passenger.fullName,
+              seatNumber: passenger.seatNumber,
+              seatType: "ECONOMY",
+              ticketPrice: passenger.ticketPrice,
+              issueDate: new Date().toISOString(),
+              boardingPassUrl: passenger.boardingpassurl || "",
+              totalCharge: passenger.ticketPrice,
+              status: "SUCCESS",
+              message: "Check-in completed successfully",
+              paymentRequired: false
+            };
+            setCheckinResult(mockCheckinResult);
+            setCurrentStep(CheckinStep.CONFIRM_AND_COMPLETE);
+          }
+        }
+      }));
+
+      options.push({ text: "Hủy", onPress: () => {} });
+
+      Alert.alert(
+        "Chọn chuyến bay",
+        "Bạn muốn xem boarding pass của chuyến bay nào?",
+        options
+      );
+    }
+  };
+
   // Step 1: Tìm kiếm booking
   const handleSearch = async () => {
     if (!bookingCode.trim() || !fullName.trim()) {
@@ -209,10 +327,9 @@ const CheckIn = () => {
           "Chuyến bay đã khởi hành",
           `Chuyến bay ${latestDepartedSegment.flightNumber} từ ${latestDepartedSegment.departureAirport.airportCode} → ${latestDepartedSegment.arrivalAirport.airportCode} đã khởi hành ${hoursAgo > 0 ? `${hoursAgo} giờ trước` : "vừa mới khởi hành"}.\n\nKhông thể thực hiện check-in cho chuyến bay đã khởi hành.`,
           [
-            { text: "Tìm kiếm khác", style: "default" },
+            { text: "Tìm kiếm khác" },
             {
               text: "OK",
-              style: "cancel",
               onPress: () => {
                 // Vẫn hiển thị thông tin nhưng không cho phép check-in
                 setBookingData(result);
@@ -227,23 +344,118 @@ const CheckIn = () => {
 
       setBookingData(result);
 
+      // Phân tích chi tiết check-in status cho từng segment
+      const allPassengers = result.checkinEligiblePassengers || [];
+      const flightSegments = result.flightSegments;
+
+      // Phân tích trạng thái check-in cho từng segment
+      const segmentAnalysis = flightSegments.map(segment => {
+        const segmentPassengers = allPassengers.filter(p =>
+          p.segmentId === segment.segmentId || p.segmentId === null
+        );
+
+        const checkedInCount = segmentPassengers.filter(p => p.checkinStatus === "ALREADY_CHECKED_IN").length;
+        const eligibleCount = segmentPassengers.filter(p =>
+          p.checkinStatus === "ELIGIBLE" || p.checkinStatus === "PENDING"
+        ).length;
+        const totalPassengers = segmentPassengers.length;
+
+        return {
+          segment,
+          passengers: segmentPassengers,
+          checkedInCount,
+          eligibleCount,
+          totalPassengers,
+          allCheckedIn: checkedInCount === totalPassengers && totalPassengers > 0,
+          hasEligible: eligibleCount > 0,
+          canCheckIn: canCheckInSegment(segment)
+        };
+      });
+
+      console.log("Segment analysis:", segmentAnalysis);
+
+      // Đếm tổng số segment đã check-in hoàn toàn
+      const fullyCheckedInSegments = segmentAnalysis.filter(s => s.allCheckedIn).length;
+      const totalSegments = segmentAnalysis.length;
+
+      // Kiểm tra xem có segment nào đã check-in hoàn toàn không
+      const hasAnyCheckedInSegments = fullyCheckedInSegments > 0;
+
+      if (hasAnyCheckedInSegments) {
+        // Có ít nhất một segment đã check-in hoàn toàn
+        const checkedInSegments = segmentAnalysis.filter(s => s.allCheckedIn);
+        const pendingSegments = segmentAnalysis.filter(s => !s.allCheckedIn);
+
+        if (fullyCheckedInSegments === totalSegments) {
+          // Tất cả segments đã check-in hoàn toàn
+          const firstCheckedInPassenger = allPassengers.find(p => p.checkinStatus === "ALREADY_CHECKED_IN");
+
+          Alert.alert(
+            "✅ Đã check-in thành công!",
+            totalSegments === 1
+              ? `Hành khách đã hoàn thành check-in cho chuyến bay ${checkedInSegments[0]?.segment.flightNumber || 'N/A'}.\n\nBạn có muốn xem boarding pass không?`
+              : `Hành khách đã hoàn thành check-in cho tất cả ${totalSegments} chuyến bay.\n\nBạn có muốn xem boarding pass không?`,
+            [
+              { text: "Để sau" },
+              {
+                text: "Xem boarding pass",
+                onPress: () => showBoardingPassOptions(checkedInSegments)
+              }
+            ]
+          );
+        } else {
+          // Một số segments đã check-in, một số chưa (round-trip với mixed status)
+          const checkedInSegmentNames = checkedInSegments.map(s =>
+            `${s.segment.flightNumber} (${s.segment.departureAirport.airportCode}→${s.segment.arrivalAirport.airportCode})`
+          ).join(", ");
+
+          Alert.alert(
+            "Thông tin check-in",
+            `Đã check-in hoàn tất cho: ${checkedInSegmentNames}\n\nCòn ${pendingSegments.length} chuyến bay có thể check-in tiếp.\n\nBạn có muốn xem boarding pass hoặc tiếp tục check-in không?`,
+            [
+              { text: "Để sau" },
+              {
+                text: "Xem boarding pass",
+                onPress: () => showBoardingPassOptions(checkedInSegments)
+              },
+              {
+                text: "Tiếp tục check-in",
+                onPress: () => setCurrentStep(CheckinStep.SELECT_FLIGHT)
+              }
+            ]
+          );
+        }
+        setLoading(false);
+        return;
+      } else if (segmentAnalysis.some(s => s.hasEligible && s.canCheckIn)) {
+        // Có ít nhất một segment có thể check-in
+        // Tiếp tục với logic hiện tại
+      } else {
+        // Không có segment nào có thể check-in
+        const reasons = segmentAnalysis.map(s => {
+          if (!s.canCheckIn) return `${s.segment.flightNumber}: Check-in chưa mở (còn >24h)`;
+          if (!s.hasEligible) return `${s.segment.flightNumber}: Không có hành khách đủ điều kiện`;
+          return `${s.segment.flightNumber}: Không thể check-in`;
+        }).join("\n");
+
+        Alert.alert(
+          "Không thể check-in",
+          `Không có chuyến bay nào khả dụng để check-in:\n\n${reasons}`,
+          [{ text: "OK" }]
+        );
+        setLoading(false);
+        return;
+      }
+
+      // Xử lý logic cho single segment hoặc multiple segments như cũ
       if (result.flightSegments.length === 1) {
         const singleSegment = result.flightSegments[0];
-        const eligiblePassengers = result.checkinEligiblePassengers || [];
-        const segmentPassengers = eligiblePassengers.filter(
-          (p) => p.segmentId === singleSegment.segmentId
-        );
+        const segmentInfo = segmentAnalysis[0];
 
-        // Kiểm tra xem có passenger nào eligible không
-        const hasEligiblePassenger = segmentPassengers.some(
-          (p) => p.checkinStatus === "ELIGIBLE" || p.checkinStatus === "PENDING"
-        );
-
-        if (hasEligiblePassenger && canCheckInSegment(singleSegment)) {
+        if (segmentInfo.hasEligible && segmentInfo.canCheckIn) {
           setSelectedSegment(singleSegment);
           setCurrentStep(CheckinStep.SELECT_PASSENGER);
         } else {
-          // Nếu segment duy nhất chưa đủ điều kiện check-in, vẫn hiển thị để user thấy
           setCurrentStep(CheckinStep.SELECT_FLIGHT);
         }
       } else {
@@ -261,14 +473,21 @@ const CheckIn = () => {
 
   // Step 2: Chọn chuyến bay (nếu có nhiều segment)
   const handleSelectFlight = (segment: FlightSegment) => {
+    console.log("handleSelectFlight called with segment:", segment);
+    console.log("segment.segmentId:", segment.segmentId);
+
     // Kiểm tra checkinStatus từ backend trước
     const eligiblePassengers = bookingData?.checkinEligiblePassengers || [];
+    console.log("eligiblePassengers:", eligiblePassengers);
+
     const segmentPassengers = eligiblePassengers.filter(
-      (p) => p.segmentId === segment.segmentId
+      (p) => p.segmentId === segment.segmentId || p.segmentId === null
     );
+    console.log("segmentPassengers for segmentId", segment.segmentId, ":", segmentPassengers);
 
     // Nếu không có passenger nào eligible cho segment này
     if (segmentPassengers.length === 0) {
+      console.log("No eligible passengers found for this segment");
       Alert.alert(
         "Không thể check-in",
         "Không có hành khách đủ điều kiện check-in cho chuyến bay này.",
@@ -281,6 +500,8 @@ const CheckIn = () => {
     const hasEligiblePassenger = segmentPassengers.some(
       (p) => p.checkinStatus === "ELIGIBLE" || p.checkinStatus === "PENDING"
     );
+    console.log("hasEligiblePassenger:", hasEligiblePassenger);
+    console.log("Passenger statuses:", segmentPassengers.map(p => p.checkinStatus));
 
     if (!hasEligiblePassenger) {
       // Hiển thị lý do không thể check-in dựa trên status
@@ -453,7 +674,6 @@ const CheckIn = () => {
         [
           {
             text: "Hủy",
-            style: "cancel",
             onPress: () => {
               // Reset lại ghế cũ
               const currentSeat = availableSeats.find(
@@ -699,7 +919,6 @@ const CheckIn = () => {
           [
             {
               text: "Hủy",
-              style: "cancel",
             },
             {
               text: "Đã hiểu",
@@ -858,6 +1077,18 @@ const CheckIn = () => {
     <ScrollView className="flex-1 p-4 ">
       <View className="space-y-4 gap-2 ">
 
+        {/* Thông báo khi đến từ My Trips để xem boarding pass */}
+        {params.viewBoardingPass === "true" && (
+          <View className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <Text className="text-blue-800 text-sm font-medium">
+              🎫 Xem boarding pass
+            </Text>
+            <Text className="text-blue-700 text-xs mt-1">
+              Nhập họ tên để xem boarding pass của chuyến đi đã check-in.
+            </Text>
+          </View>
+        )}
+
         <View className="pt-6">
           <TextInput
             mode="outlined"
@@ -886,7 +1117,7 @@ const CheckIn = () => {
           disabled={loading || !bookingCode.trim() || !fullName.trim()}
           buttonColor="#172554"
           style={{ borderRadius: 9999 }}
-          labelStyle={{ fontSize: 16, fontWeight: "bold", borderRadius: "9999px" }}
+          labelStyle={{ fontSize: 16, fontWeight: "bold", borderRadius: 9999 }}
         >
           <Text className="text-white text-center font-bold text-base ml-2 ">Tìm chuyến đi</Text>
 
@@ -914,8 +1145,22 @@ const CheckIn = () => {
       {bookingData?.flightSegments.map((segment, index) => {
         const eligiblePassengers = bookingData?.checkinEligiblePassengers || [];
         const segmentPassengers = eligiblePassengers.filter(
-          (p) => p.segmentId === segment.segmentId
+          (p) => p.segmentId === segment.segmentId || p.segmentId === null
         );
+
+        console.log("🛫 Flight segment analysis:", {
+          segmentId: segment.segmentId,
+          flightNumber: segment.flightNumber,
+          departureTime: segment.departureTime,
+          totalEligiblePassengers: eligiblePassengers.length,
+          segmentPassengersCount: segmentPassengers.length,
+          segmentPassengers: segmentPassengers.map(p => ({
+            passengerId: p.passengerId,
+            segmentId: p.segmentId,
+            checkinStatus: p.checkinStatus,
+            fullName: p.fullName
+          }))
+        });
 
         // Xác định status dựa trên checkinStatus từ backend
         const hasEligiblePassenger = segmentPassengers.some(
@@ -932,6 +1177,17 @@ const CheckIn = () => {
         let statusText = "Chưa mở check-in";
         let statusColor = "gray";
         let canSelect = false;
+
+        console.log("📊 Flight status determination:", {
+          segmentId: segment.segmentId,
+          hasEligiblePassenger: hasEligiblePassenger,
+          canCheckInSegment: canCheckInSegment(segment),
+          hoursUntilDeparture: hoursUntilDeparture,
+          initialStatusText: statusText,
+          finalStatusText: statusText,
+          finalStatusColor: statusColor,
+          canSelect: canSelect
+        });
 
         if (hasEligiblePassenger) {
           if (canCheckInSegment(segment)) {
@@ -1058,7 +1314,12 @@ const CheckIn = () => {
               </Text>
               {!canCheckIn && hoursUntilDeparture > 24 && (
                 <Text className="text-center text-orange-600 text-xs mt-1">
-                  Check-in mở sau {Math.ceil(hoursUntilDeparture - 24)} giờ nữa
+                  Check-in mở sau {formatCheckinTime(hoursUntilDeparture - 24)}
+                </Text>
+              )}
+              {hasEligiblePassenger && (
+                <Text className="text-center text-sm text-blue-600 mt-1">
+                  {segmentPassengers.length} hành khách có thể check-in
                 </Text>
               )}
             </View>
@@ -1073,9 +1334,21 @@ const CheckIn = () => {
     // Lọc passengers theo segment đã chọn
     const segmentPassengers = selectedSegment
       ? eligiblePassengers.filter(
-        (passenger) => passenger.segmentId === selectedSegment.segmentId
+        (passenger) => passenger.segmentId === selectedSegment.segmentId || passenger.segmentId === null
       )
       : [];
+
+    console.log("👥 Select passenger step:", {
+      selectedSegmentId: selectedSegment?.segmentId,
+      totalEligiblePassengers: eligiblePassengers.length,
+      segmentPassengersCount: segmentPassengers.length,
+      segmentPassengers: segmentPassengers.map(p => ({
+        passengerId: p.passengerId,
+        segmentId: p.segmentId,
+        checkinStatus: p.checkinStatus,
+        fullName: p.fullName
+      }))
+    });
 
     return (
       <ScrollView className="flex-1 p-4">

@@ -61,7 +61,12 @@ const Notifications = ({ onClose }: NotificationsProps) => {
         }
     };
 
-    if (isLoading && notifications.length === 0) {
+    // Filter out invalid notifications
+    const validNotifications = notifications.filter(
+        item => item && item.title && item.message && item.notificationId
+    );
+
+    if (isLoading && validNotifications.length === 0) {
         return <ActivityIndicator size="large" color="#1e3a8a" className="my-8" />;
     }
 
@@ -76,7 +81,7 @@ const Notifications = ({ onClose }: NotificationsProps) => {
     }
     return (
         <FlatList
-            data={notifications}
+            data={validNotifications}
             keyExtractor={(item) => item.notificationId}
             onRefresh={fetchNotifications}
             refreshing={isLoading}
@@ -95,9 +100,15 @@ const Notifications = ({ onClose }: NotificationsProps) => {
                         <Ionicons name={getIconForType(item.type)} size={24} color={!item.isRead ? '#1e3a8a' : '#9ca3af'} />
                     </View>
                     <View className="flex-1">
-                        <Text className={`text-base font-bold ${!item.isRead ? 'text-gray-900' : 'text-gray-600'}`}>{item.title}</Text>
-                        <Text className={`text-sm my-1 ${!item.isRead ? 'text-gray-700' : 'text-gray-500'}`}>{item.message}</Text>
-                        <Text className="text-xs text-gray-400">{formatDistanceToNow(new Date(item.createdAt), { addSuffix: true, locale: vi })}</Text>
+                        <Text className={`text-base font-bold ${!item.isRead ? 'text-gray-900' : 'text-gray-600'}`}>
+                            {item.title || 'Thông báo'}
+                        </Text>
+                        <Text className={`text-sm my-1 ${!item.isRead ? 'text-gray-700' : 'text-gray-500'}`}>
+                            {item.message || 'Nội dung thông báo'}
+                        </Text>
+                        <Text className="text-xs text-gray-400">
+                            {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true, locale: vi })}
+                        </Text>
                     </View>
                     {!item.isRead && <View className="w-2.5 h-2.5 bg-blue-500 rounded-full self-center ml-2" />}
                 </TouchableOpacity>

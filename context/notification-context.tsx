@@ -57,7 +57,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
             const client = new Client({
                 // Truyền token qua query parameter để Handshake Interceptor có thể xác thực
-                webSocketFactory: () => new SockJS(`https://airsky.onrender.com/ws?token=${authData.accessToken}`),
+                webSocketFactory: () => new SockJS(`${env.API_SOCKET_URL}ws?token=${authData.accessToken}`),
                 connectHeaders: {
                     // Vẫn giữ lại header này, một số cấu hình STOMP có thể cần
                     // Authorization: `Bearer ${authData.accessToken}`,
@@ -72,18 +72,36 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
                     // Subscribe to user-specific notifications
                     client.subscribe(`/topic/notifications/${user.id}`, (message: IMessage) => {
-                        const newNotification: NotificationResponse = JSON.parse(message.body);
-                        setNotifications(prev => [newNotification, ...prev]);
-                        setUnreadCount(prev => prev + 1);
-                        Alert.alert(newNotification.title, newNotification.message);
+                        try {
+                            const newNotification: NotificationResponse = JSON.parse(message.body);
+                            if (newNotification && newNotification.title && newNotification.message) {
+                                setNotifications(prev => [newNotification, ...prev]);
+                                setUnreadCount(prev => prev + 1);
+                                Alert.alert(
+                                    newNotification.title || 'Thông báo',
+                                    newNotification.message || 'Nội dung thông báo'
+                                );
+                            }
+                        } catch (error) {
+                            console.error('Failed to parse notification message:', error);
+                        }
                     });
 
                     // Subscribe to system-wide announcements
                     client.subscribe('/topic/notifications/system', (message: IMessage) => {
-                        const newNotification: NotificationResponse = JSON.parse(message.body);
-                        setNotifications(prev => [newNotification, ...prev]);
-                        setUnreadCount(prev => prev + 1);
-                        Alert.alert(newNotification.title, newNotification.message);
+                        try {
+                            const newNotification: NotificationResponse = JSON.parse(message.body);
+                            if (newNotification && newNotification.title && newNotification.message) {
+                                setNotifications(prev => [newNotification, ...prev]);
+                                setUnreadCount(prev => prev + 1);
+                                Alert.alert(
+                                    newNotification.title || 'Thông báo hệ thống',
+                                    newNotification.message || 'Nội dung thông báo hệ thống'
+                                );
+                            }
+                        } catch (error) {
+                            console.error('Failed to parse system notification message:', error);
+                        }
                     });
                 },
                 onDisconnect: () => {
