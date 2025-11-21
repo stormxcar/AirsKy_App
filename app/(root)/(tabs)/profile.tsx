@@ -67,13 +67,13 @@ const Profile = () => {
 
   useEffect(() => {
     // Chỉ thực hiện khi quá trình xác thực ban đầu đã hoàn tất và người dùng chưa đăng nhập
-    if (!isAuthLoading && !user) {
+    if (!user) {
       // Hiển thị loading overlay, sau 3 giây thì chuyển đến trang đăng nhập
       showLoading(() => {
         router.replace("/(root)/(auth)/sign-in");
       }, 1000);
     }
-  }, [isAuthLoading, user]);
+  }, [user]);
 
   const handleSaveChanges = async () => {
     if (!user || isUpdating) return; // Ngăn chặn click nhiều lần

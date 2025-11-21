@@ -16,6 +16,9 @@ import { createPayment } from "@/services/payment-service";
 import { Ionicons } from "@expo/vector-icons";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+import * as FileSystem from "expo-file-system/legacy";
+
+import * as MediaLibrary from 'expo-media-library';
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -27,7 +30,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Button, TextInput } from "react-native-paper";
+import { ActivityIndicator, Button, TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 enum CheckinStep {
@@ -220,6 +223,63 @@ const CheckIn = () => {
     }
   };
 
+
+const handleSaveBoardingPass = async () => {
+  try {
+    setLoading(true);
+
+    const { status } = await MediaLibrary.requestPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Thiếu quyền", "Hãy cấp quyền lưu ảnh.");
+      return;
+    }
+
+    const imageUrl = checkinResult?.boardingPassUrl;
+    if (!imageUrl) {
+      Alert.alert("Lỗi", "Không có URL boarding pass.");
+      return;
+    }
+
+    // 1. Tải ảnh dạng Blob
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+
+    // 2. Blob → base64
+    const base64 = await blobToBase64(blob);
+
+    // 3. Lưu file tạm
+    const fileUri = FileSystem.cacheDirectory + `${Date.now()}.png`;
+
+    await FileSystem.writeAsStringAsync(fileUri, base64, {
+      encoding: "base64", // ✔ FIX here
+    });
+
+    // 4. Lưu vào Library
+    await MediaLibrary.saveToLibraryAsync(fileUri);
+
+    Alert.alert("Thành công", "Boarding pass đã được lưu!");
+  } catch (e) {
+    console.log("❌ Lỗi lưu ảnh", e);
+    Alert.alert("Lỗi", "Không thể lưu ảnh.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Helper: Blob → Base64
+const blobToBase64 = (blob: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = (reader.result as string).split(",")[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+
+
+
   // Chỉ cho phép check-in khi đã chọn ghế và không có payment pending
   const canProceedCheckin = selectedSeat && selectedSeatId && !needsPayment;
 
@@ -277,7 +337,7 @@ const CheckIn = () => {
         }
       }));
 
-      options.push({ text: "Hủy", onPress: () => {} });
+      options.push({ text: "Hủy", onPress: () => { } });
 
       Alert.alert(
         "Chọn chuyến bay",
@@ -391,7 +451,7 @@ const CheckIn = () => {
           const firstCheckedInPassenger = allPassengers.find(p => p.checkinStatus === "ALREADY_CHECKED_IN");
 
           Alert.alert(
-            "✅ Đã check-in thành công!",
+            "Hành khác đã check-in!",
             totalSegments === 1
               ? `Hành khách đã hoàn thành check-in cho chuyến bay ${checkedInSegments[0]?.segment.flightNumber || 'N/A'}.\n\nBạn có muốn xem boarding pass không?`
               : `Hành khách đã hoàn thành check-in cho tất cả ${totalSegments} chuyến bay.\n\nBạn có muốn xem boarding pass không?`,
@@ -1525,13 +1585,13 @@ const CheckIn = () => {
                 <Text className="text-sm text-gray-700 font-medium">Trống</Text>
               </View>
               <View className="flex-row items-center">
-                <View className="w-5 h-5 bg-gray-400 rounded mr-2" />
+                <View className="w-5 h-5 bg-red-900 rounded mr-2" />
                 <Text className="text-sm text-gray-700 font-medium">
                   Đã đặt
                 </Text>
               </View>
               <View className="flex-row items-center">
-                <View className="w-5 h-5 bg-blue-500 rounded mr-2" />
+                <View className="w-5 h-5 bg-blue-900 rounded mr-2" />
                 <Text className="text-sm text-gray-700 font-medium">
                   Đã chọn
                 </Text>
@@ -1615,12 +1675,12 @@ const CheckIn = () => {
                         className="flex-row items-center justify-center mb-3 px-2"
                       >
                         {/* Số hàng bên trái */}
-                        <Text className="w-10 text-center text-gray-600 text-base font-bold">
+                        <Text className="w-10 pl-4 text-center text-gray-600 text-base font-bold">
                           {row}
                         </Text>
 
                         {/* Ghế bên trái (ABC) */}
-                        <View className="flex-row space-x-2 mx-3">
+                        <View className="flex-row space-x-2 mx-3 gap-1">
                           {leftSeats.map((seat) => {
                             const isCurrentSeat =
                               seat.seatNumber === selectedPassenger?.seatNumber;
@@ -1636,12 +1696,12 @@ const CheckIn = () => {
                                   canSelect ? handleSelectSeat(seat) : null
                                 }
                                 className={`w-12 h-12 rounded-xl justify-center items-center border-2 ${isSelectedSeat
-                                  ? "bg-blue-500 border-blue-700"
+                                  ? "bg-blue-900 border-blue-900"
                                   : isCurrentSeat
                                     ? "bg-yellow-500 border-yellow-600" // Ghế hiện tại - màu vàng
                                     : seat.isAvailable
                                       ? "bg-white border-green-400"
-                                      : "bg-gray-400 border-gray-500"
+                                      : "bg-red-500 border-red-500"
                                   } ${!canSelect ? "opacity-50" : "opacity-100"}`}
                                 disabled={!canSelect}
                               >
@@ -1670,23 +1730,19 @@ const CheckIn = () => {
                                       k
                                     </Text>
                                   )}
-                                {isCurrentSeat && !isSelectedSeat && (
-                                  <Text className="text-xs text-white font-bold">
-                                    Hiện tại
-                                  </Text>
-                                )}
+
                               </TouchableOpacity>
                             );
                           })}
                         </View>
 
                         {/* Lối đi */}
-                        <View className="w-12 items-center">
-                          <View className="w-8 h-1 bg-gray-300 rounded" />
+                        <View className="w-2 items-center">
+                          <View className="w-1 h-1 bg-gray-300 rounded" />
                         </View>
 
                         {/* Ghế bên phải (DEF) */}
-                        <View className="flex-row space-x-2 mx-3">
+                        <View className="flex-row space-x-2 mx-3 gap-1">
                           {rightSeats.map((seat) => {
                             const isCurrentSeat =
                               seat.seatNumber === selectedPassenger?.seatNumber;
@@ -1702,12 +1758,12 @@ const CheckIn = () => {
                                   canSelect ? handleSelectSeat(seat) : null
                                 }
                                 className={`w-12 h-12 rounded-xl justify-center items-center border-2 ${isSelectedSeat
-                                  ? "bg-blue-500 border-blue-700"
+                                  ? "bg-blue-900 border-blue-900"
                                   : isCurrentSeat
                                     ? "bg-yellow-500 border-yellow-600" // Ghế hiện tại - màu vàng
                                     : seat.isAvailable
                                       ? "bg-white border-green-400"
-                                      : "bg-gray-400 border-gray-500"
+                                      : "bg-red-500 border-red-500"
                                   } ${!canSelect ? "opacity-50" : "opacity-100"}`}
                                 disabled={!canSelect}
                               >
@@ -1736,18 +1792,18 @@ const CheckIn = () => {
                                       k
                                     </Text>
                                   )}
-                                {isCurrentSeat && !isSelectedSeat && (
+                                {/* {isCurrentSeat && !isSelectedSeat && (
                                   <Text className="text-xs text-white font-bold">
                                     Hiện tại
                                   </Text>
-                                )}
+                                )} */}
                               </TouchableOpacity>
                             );
                           })}
                         </View>
 
                         {/* Số hàng bên phải */}
-                        <Text className="w-10 text-center text-gray-600 text-base font-bold">
+                        <Text className="w-10 pr-4 text-center text-gray-600 text-base font-bold">
                           {row}
                         </Text>
                       </View>
@@ -1870,7 +1926,7 @@ const CheckIn = () => {
                       setSelectedPaymentMethod(PaymentMethod.PAYPAL)
                     }
                     className={`flex-1 flex-row items-center justify-center p-3 border-2 rounded-lg ${selectedPaymentMethod === PaymentMethod.PAYPAL
-                      ? "border-blue-500 bg-blue-50"
+                      ? "border-blue-900 bg-blue-50"
                       : "border-gray-300 bg-white"
                       }`}
                   >
@@ -1963,14 +2019,14 @@ const CheckIn = () => {
             disabled={loading || !canProceedCheckin || paymentProcessing}
             style={{
               borderRadius: 12,
-              paddingVertical: 6,
+              paddingVertical: 4,
               marginBottom: 24,
               backgroundColor:
                 loading || !canProceedCheckin || paymentProcessing
                   ? "#9ca3af"
-                  : "#2563eb",
+                  : "#172554",
             }}
-            labelStyle={{ fontSize: 16, fontWeight: "bold" }}
+            labelStyle={{ fontSize: 14, fontWeight: "bold" }}
           >
             {paymentProcessing
               ? "Đang xử lý thanh toán..."
@@ -1986,7 +2042,7 @@ const CheckIn = () => {
 
     // Nếu đã có checkinResult, hiển thị kết quả hoàn thành
     return (
-      <ScrollView className="flex-1 p-4">
+      <ScrollView className="flex-1 p-4 ">
         <View className="items-center mb-6">
           <Ionicons name="checkmark-circle" size={80} color="#22c55e" />
           <Text className="text-2xl font-bold text-green-600 mt-4">
@@ -2022,11 +2078,21 @@ const CheckIn = () => {
               />
             </View>
 
-            <View className="mt-4 p-3 bg-blue-50 rounded-lg">
-              <Text className="text-center text-blue-800 text-sm font-medium">
-                📱 Lưu ảnh này hoặc chụp màn hình để sử dụng tại sân bay
-              </Text>
-            </View>
+            <TouchableOpacity
+              onPress={handleSaveBoardingPass}
+              disabled={loading}
+              className="mt-4 p-3 bg-blue-900 rounded-lg flex-row items-center justify-center"
+            >
+              {loading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <>
+                  <Ionicons name="download-outline" size={20} color="white" />
+                  <Text className="text-white font-semibold ml-2">Lưu về máy</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
           </View>
         ) : (
           <View className="bg-white border-2 border-dashed border-blue-300 rounded-xl p-4 mb-6">
@@ -2123,8 +2189,8 @@ const CheckIn = () => {
         <Button
           mode="outlined"
           onPress={resetFlow}
-          style={{ borderRadius: 12, paddingVertical: 6, marginBottom: 24 }}
-          labelStyle={{ fontSize: 16, fontWeight: "bold" }}
+          style={{ borderRadius: 12, paddingVertical: 4, marginBottom: 24 }}
+          labelStyle={{ fontSize: 14, fontWeight: "bold" }}
         >
           Check-in chuyến bay khác
         </Button>
