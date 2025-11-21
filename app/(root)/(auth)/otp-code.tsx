@@ -1,4 +1,4 @@
-import { forgotPassword, verifyAccount } from "@/services/auth-service";
+import { resendVerificationCode, verifyRegistration } from "@/services/auth-service";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Alert, Text, View } from "react-native";
@@ -22,15 +22,11 @@ const OtpCode = () => {
         setLoading(true);
         try {
             if (!email) throw new Error("Email is missing");
-            await verifyAccount(email, otp);
+            await verifyRegistration(email, otp);
             console.log("OTP verified successfully");
             Alert.alert("Thành công", "Tài khoản của bạn đã được xác thực thành công.");
-            if (from === 'sign-up') {
-                router.replace("/(root)/(auth)/sign-in");
-            } else {
-                // Navigate to reset password screen
-                // router.replace({ pathname: '/(root)/(auth)/reset-password', params: { email, otp } });
-            }
+            // Điều hướng chung sau khi xác thực thành công, ví dụ về trang đăng nhập
+            router.replace("/(root)/(auth)/sign-in");
         } catch (error: any) {
             Alert.alert("Xác thực thất bại", error.message);
         } finally {
@@ -42,10 +38,7 @@ const OtpCode = () => {
         setResendLoading(true);
         try {
             if (!email) throw new Error("Email is missing");
-            // The backend should handle resending OTP for account verification
-            // or for password reset based on context. Here we call forgotPassword
-            // as it's a common way to trigger an OTP email.
-            await forgotPassword(email);
+            await resendVerificationCode(email);
             Alert.alert("Thành công", "Một mã OTP mới đã được gửi đến email của bạn.");
         } catch (error: any) {
             Alert.alert("Gửi lại thất bại", error.message);

@@ -1,6 +1,6 @@
 import { NotificationResponse } from '@/app/types/notification';
-import { useLoading } from '@/context/loading-context';
 import { useAuth } from '@/context/auth-context';
+import { useLoading } from '@/context/loading-context';
 import { useNotification } from '@/context/notification-context';
 import { getBookingDetailsById } from '@/services/booking-service';
 import { Ionicons } from '@expo/vector-icons';
@@ -68,8 +68,8 @@ const Notifications = ({ onClose }: NotificationsProps) => {
     // Nếu người dùng chưa đăng nhập, hiển thị màn hình trống
     if (!user) {
         return (
-            <View className="flex-1 justify-center items-center py-10">
-                <Ionicons name="notifications-off-outline" size={48} color="#9ca3af" />
+            <View className="flex-1 justify-center items-center py-10 ">
+                <Ionicons name="notifications-off-outline" size={48} color="#9ca3af" className='pt-56'/>
                 <Text className="text-gray-500 mt-4">Bạn chưa có thông báo nào.</Text>
             </View>
         );
@@ -81,8 +81,8 @@ const Notifications = ({ onClose }: NotificationsProps) => {
             onRefresh={fetchNotifications}
             refreshing={isLoading}
             ListEmptyComponent={
-                <View className="flex-1 justify-center items-center py-10">
-                    <Ionicons name="notifications-off-outline" size={48} color="#9ca3af" />
+                <View className="flex-1 justify-center items-center py-10  ">
+                    <Ionicons name="notifications-off-outline" size={48} color="#9ca3af" className='pt-56' />
                     <Text className="text-gray-500 mt-4">Bạn chưa có thông báo nào.</Text>
                 </View>
             }

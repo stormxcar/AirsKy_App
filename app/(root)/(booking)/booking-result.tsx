@@ -5,9 +5,10 @@ import { useLoading } from "@/context/loading-context"
 import { getBookingDetailsById } from "@/services/booking-service"
 import { checkSepayPayment } from "@/services/payment-service"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
+import * as Clipboard from 'expo-clipboard'
 import { useLocalSearchParams, useRouter } from "expo-router"
-import { useEffect, useMemo, useState } from "react"
-import { Alert, Image, Linking, ScrollView, Share, Text, TouchableOpacity, View } from "react-native"
+import React, { useEffect, useMemo, useRef, useState } from "react"
+import { Alert, Animated, Image, Linking, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 
 // Helper để dịch tên loại ghế
@@ -48,6 +49,59 @@ const getServiceIcon = (
   }
 }
 
+const BookingResultSkeleton = () => {
+  const shimmer = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(shimmer, {
+        toValue: 1,
+        duration: 1200,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+
+  const translateX = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-400, 400],
+  });
+
+  const ShimmerOverlay = () => (
+    <Animated.View
+      style={{
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+        transform: [{ translateX }],
+        backgroundColor: 'rgba(255,255,255,0.3)',
+        zIndex: 1,
+      }}
+    />
+  );
+
+  return (
+    <SafeAreaView className="flex-1 bg-gray-100" edges={["top"]}>
+      <ScrollView className="p-4 space-y-4">
+        {/* Status Skeleton */}
+        <View className="items-center my-6">
+          <View className="w-24 h-24 rounded-full bg-gray-200" />
+          <View className="h-7 w-48 bg-gray-200 rounded-md mt-4" />
+          <View className="h-5 w-64 bg-gray-200 rounded-md mt-2" />
+        </View>
+
+        {/* Info Blocks Skeleton */}
+        {[...Array(3)].map((_, index) => (
+          <View key={index} className="bg-white p-4 rounded-xl w-full border border-gray-200 overflow-hidden">
+            <ShimmerOverlay />
+            <View className="h-6 w-1/3 bg-gray-200 rounded-md mb-4" />
+            <View className="h-5 w-full bg-gray-200 rounded-md mb-2" />
+            <View className="h-5 w-3/4 bg-gray-200 rounded-md" />
+          </View>
+        ))}
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
 const BookingResult = () => {
   const params = useLocalSearchParams()
   const router = useRouter()
@@ -63,10 +117,12 @@ const BookingResult = () => {
     | "PENDING"
   const bookingId = params.bookingId as string
   const bookingCode = params.bookingCode as string
+  const [isLoading, setIsLoading] = useState(true);
   const [bookingDetails, setBookingDetails] = useState<BookingResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [hasInitialData, setHasInitialData] = useState(false)
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
+  const [isCodeCopied, setIsCodeCopied] = useState(false);
 
   // Parse initialDetails từ params để tránh double-fetch (từ Notifications)
   useEffect(() => {
@@ -76,6 +132,7 @@ const BookingResult = () => {
         const parsedDetails: BookingResponse = JSON.parse(initialDetailsStr)
         setBookingDetails(parsedDetails)
         setHasInitialData(true)
+        setIsLoading(false); // Dữ liệu đã có, không cần loading nữa
         console.log('Used pre-fetched data from params')
       } catch (parseErr) {
         console.warn('Failed to parse initialDetails, fallback to fetch:', parseErr)
@@ -87,22 +144,27 @@ const BookingResult = () => {
   const shouldFetchDetails = bookingId && status !== "failure" && !hasInitialData
   useEffect(() => {
     if (shouldFetchDetails) {
-      showLoading(async () => {
+      const fetchDetails = async () => {
+        setIsLoading(true);
         try {
-          const details = await getBookingDetailsById(bookingId)
-          setBookingDetails(details)
-          // Delay nhỏ để UX mượt (tùy chọn)
-          await new Promise((resolve) => setTimeout(resolve, 200))
+          const details = await getBookingDetailsById(bookingId);
+          setBookingDetails(details);
         } catch (err: any) {
-          setError(err.message || "Không thể tải chi tiết đơn đặt vé.")
+          setError(err.message || "Không thể tải chi tiết đơn đặt vé.");
+        } finally {
+          setIsLoading(false);
         }
-      }, 300)
+      };
+      fetchDetails();
+    } else if (!shouldFetchDetails && !hasInitialData) {
+      // Nếu không có gì để fetch và cũng không có initial data, ngừng loading
+      setIsLoading(false);
     }
   }, [shouldFetchDetails, bookingId])
 
   // Countdown timer effect
   useEffect(() => {
-    // Tính toán thời gian hết hạn: 10 phút sau khi đặt vé
+    // Tính toán thời gian hết hạn: 30 phút sau khi đặt vé
     if (bookingDetails?.bookingDate) {
       const bookingTime = new Date(bookingDetails.bookingDate).getTime()
       const PAYMENT_DURATION_MINUTES = 30
@@ -238,6 +300,13 @@ const BookingResult = () => {
       Alert.alert("Lỗi", error.message)
     }
   }
+  const handleCopyCode = async () => {
+    if (!bookingDetails?.bookingCode) return;
+    await Clipboard.setStringAsync(bookingDetails.bookingCode);
+    setIsCodeCopied(true);
+    // Reset icon sau 2 giây
+    setTimeout(() => setIsCodeCopied(false), 2000);
+  };
 
   // Nhóm các dịch vụ theo loại để hiển thị (tối ưu deps)
   const groupedServices = useMemo(() => {
@@ -350,188 +419,209 @@ const BookingResult = () => {
   const isSuccessState = status === "success" || status === "CONFIRMED"
   const isViewableState = isSuccessState || status === "COMPLETED" || status === "CANCELLED"
 
-  // Render cơ bản nếu có bookingId (status + booking code)
   const hasBasicInfo = !!bookingId
-  // Render full details nếu có bookingDetails
   const hasFullDetails = !!bookingDetails
-  // Điều kiện để render nội dung: chỉ khi có lỗi hoặc đã có đủ thông tin chi tiết
-  const canRenderContent = !!error || hasFullDetails
-  if (!canRenderContent && status !== "failure") {
-    return null // Không render gì cả trong khi đang tải và chưa có lỗi
+
+  if (isLoading && !hasInitialData) {
+    return <BookingResultSkeleton />;
   }
 
   return (
     <SafeAreaView className="flex-1 bg-gray-100" edges={["top"]}>
-      <ScrollView className="flex-1">
-        <View className="p-4 items-center">
-          {/* Trạng thái đặt vé (luôn hiển thị nếu có status) */}
-          {hasBasicInfo && (
-            <View className="items-center my-6">
-              <View className={`w-24 h-24 rounded-full items-center justify-center ${statusInfo.bgColor}`}>
-                <Ionicons name={statusInfo.icon as any} size={80} color={statusInfo.color} />
-              </View>
-              <Text className="text-2xl font-bold mt-4" style={{ color: statusInfo.color }}>
-                {statusInfo.title}
-              </Text>
-              <Text className="text-gray-600 mt-1 text-center">{statusInfo.message}</Text>
-            </View>
-          )}
-
-          {/* Thông tin đặt vé cơ bản (mã code) */}
-          {hasBasicInfo && (
-            <View className="bg-white p-4 rounded-xl w-full border border-gray-200">
-              <Text className="text-lg font-bold text-blue-900 mb-3 border-b border-gray-200 pb-2">
-                Thông tin đặt vé
-              </Text>
-
-              <View className="flex-row justify-between items-center mb-3">
-                <Text className="text-base text-gray-600">Mã đặt chỗ:</Text>
-                <Text className="text-base font-bold text-blue-900 bg-blue-100 px-3 py-1 rounded-full">
-                  {bookingDetails!==null?bookingDetails?.bookingCode : "..."}
+      <View style={StyleSheet.absoluteFill}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+          <View className="p-4 items-center">
+            {/* Trạng thái đặt vé (luôn hiển thị nếu có status) */}
+            {hasBasicInfo && (
+              <View className="items-center my-6">
+                <View className={`w-24 h-24 rounded-full items-center justify-center ${statusInfo.bgColor}`}>
+                  <Ionicons name={statusInfo.icon as any} size={80} color={statusInfo.color} />
+                </View>
+                <Text className="text-2xl font-bold mt-4" style={{ color: statusInfo.color }}>
+                  {statusInfo.title}
                 </Text>
+                <Text className="text-gray-600 mt-1 text-center">{statusInfo.message}</Text>
               </View>
+            )}
 
-              {isSuccessState && !hasFullDetails && (
-                <Text className="text-gray-600 mt-2 text-center">
-                  Thông tin chi tiết về chuyến bay đã được gửi đến email của bạn. Bạn cũng có thể xem lại trong mục
-                  &apos;Chuyến đi của tôi&apos;.
+            {/* Thông tin đặt vé cơ bản (mã code) */}
+            {hasBasicInfo && (
+              <View className="bg-white p-4 rounded-xl w-full border border-gray-200">
+                <Text className="text-lg font-bold text-blue-900 mb-3 border-b border-gray-200 pb-2">
+                  Thông tin đặt vé
                 </Text>
-              )}
-              {/* Nút kiểm tra thanh toán khi đang pending */}
-              {(status === "pending" || status === "PENDING") &&
-                bookingDetails?.payment && (
-                  <View className="mt-4">
-                    {/* Hiển thị QR cho Bank Transfer */}
-                    {bookingDetails.payment.paymentMethod === "BANK_TRANSFER" && bookingDetails.payment.checkoutUrl && (
-                      <View className="items-center mb-4">
-                        <Text className="text-center text-gray-600 mb-4">
-                          Sử dụng ứng dụng Ngân hàng hoặc Ví điện tử hỗ trợ VietQR để hoàn tất.
-                        </Text>
-                        <Image
-                          source={{ uri: bookingDetails.payment.checkoutUrl }}
-                          className="w-64 h-64 border-4 border-white rounded-lg shadow-lg"
-                        />
-                      </View>
-                    )}
 
-                    {/* Hiển thị thời gian còn lại */}
-                    {timeLeft !== null && timeLeft > 0 && (
-                      <View className="items-center my-4">
-                        <Text className="text-gray-500">Thời gian thanh toán còn lại:</Text>
-                        <Text className="text-2xl font-bold text-red-600 mt-1">{formatTime(timeLeft)}</Text>
-                      </View>
-                    )}
-                    {/* {timeLeft === 0 && (
-                      <Text className="text-center font-bold text-red-600 my-4">Đã hết hạn thanh toán</Text>
-                    )} */}
-
-                    {/* Nút kiểm tra thanh toán */}
-                    <TouchableOpacity onPress={handleCheckPayment} className="bg-blue-900 py-3 rounded-full">
-                      <Text className="text-white text-center font-bold">Kiểm tra</Text>
+                <View className="flex-row justify-between items-center mb-3">
+                  <Text className="text-base text-gray-600">Mã đặt chỗ:</Text>
+                  <View className="flex-row items-center bg-blue-100 rounded-full">
+                    <Text className="text-base font-bold text-blue-900 px-3 py-1">
+                      {bookingDetails?.bookingCode || "..."}
+                    </Text>
+                    <TouchableOpacity onPress={handleCopyCode} className="p-2 pr-3">
+                      <Ionicons name={isCodeCopied ? "checkmark-done" : "copy-outline"} size={18} color="#1e3a8a" />
                     </TouchableOpacity>
                   </View>
-                )}
-            </View>
-          )}
-
-          {/* Chi tiết đầy đủ nếu có bookingDetails */}
-          {hasFullDetails && isViewableState && (
-            <View className="w-full mt-4 space-y-4">
-              {/* Flight Segments */}
-              {bookingDetails.flightSegments.map((segment, index) => (
-                <View key={index} className="bg-white p-4 rounded-xl w-full border border-gray-200">
-                  <Text className="text-lg font-bold text-blue-900 mb-3">
-                    {segment.segmentOrder === 1 ? "Chuyến đi" : "Chuyến về"}
-                  </Text>
-                  <View className="flex-row justify-between items-center">
-                    <View className="items-start">
-                      <Text className="text-xl font-bold text-blue-900">
-                        {new Date(segment.departureTime).toLocaleTimeString("vi-VN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </Text>
-                      <Text className="text-gray-500 font-semibold">{segment.departureAirport.airportCode}</Text>
-                    </View>
-                    <View className="items-center">
-                      <Ionicons name="airplane" size={24} color="#1e3a8a" />
-                      <Text className="text-xs text-gray-500">{segment.duration}</Text>
-                    </View>
-                    <View className="items-end">
-                      <Text className="text-xl font-bold text-blue-900">
-                        {new Date(segment.arrivalTime).toLocaleTimeString("vi-VN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </Text>
-                      <Text className="text-gray-500 font-semibold">{segment.arrivalAirport.airportCode}</Text>
-                    </View>
-                  </View>
-                  <Text className="text-sm text-gray-500 text-center mt-2">
-                    {new Date(segment.departureTime).toLocaleDateString("vi-VN", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </Text>
                 </View>
-              ))}
 
-              {/* Passengers & Services */}
-              <View className="bg-white p-4 rounded-xl w-full border border-gray-200">
-                <Text className="text-lg font-bold text-blue-900 mb-2">Hành khách & Dịch vụ</Text>
-                {bookingDetails.passengers.map((p, index) => (
-                  <View key={index} className="py-3 border-b border-gray-100 last:border-b-0">
-                    <Text className="text-base font-semibold text-gray-800">
-                      {p.lastName} {p.firstName} {p.type}
+                {isSuccessState && !hasFullDetails && (
+                  <Text className="text-gray-600 mt-2 text-center">
+                    Thông tin chi tiết về chuyến bay đã được gửi đến email của bạn. Bạn cũng có thể xem lại trong mục
+                    &apos;Chuyến đi của tôi&apos;.
+                  </Text>
+                )}
+                {/* Nút kiểm tra thanh toán khi đang pending */}
+                {(status === "pending" || status === "PENDING") &&
+                  bookingDetails?.payment && (
+                    <View className="mt-4">
+                      {/* Hiển thị QR cho Bank Transfer */}
+                      {bookingDetails.payment.paymentMethod === "BANK_TRANSFER" && bookingDetails.payment.checkoutUrl && (
+                        <View className="items-center mb-4">
+                          <Text className="text-center text-gray-600 mb-4">
+                            Sử dụng ứng dụng Ngân hàng hoặc Ví điện tử hỗ trợ VietQR để hoàn tất.
+                          </Text>
+                          <Image
+                            source={{ uri: bookingDetails.payment.checkoutUrl }}
+                            className="w-64 h-64 border-4 border-white rounded-lg shadow-lg"
+                          />
+                        </View>
+                      )}
+
+                      {/* Hiển thị thời gian còn lại */}
+                      {timeLeft !== null && timeLeft > 0 && (
+                        <View className="items-center my-4">
+                          <Text className="text-gray-500">Thời gian thanh toán còn lại:</Text>
+                          <Text className="text-2xl font-bold text-red-600 mt-1">{formatTime(timeLeft)}</Text>
+                        </View>
+                      )}
+
+                      {/* Nút kiểm tra thanh toán */}
+                      <TouchableOpacity onPress={handleCheckPayment} className="bg-blue-900 py-3 rounded-full">
+                        <Text className="text-white text-center font-bold">Kiểm tra</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+              </View>
+            )}
+
+            {/* Chi tiết đầy đủ nếu có bookingDetails */}
+            {hasFullDetails && isViewableState && (
+              <View className="w-full mt-4 space-y-4">
+                {/* Flight Segments */}
+                {bookingDetails.flightSegments.map((segment, index) => (
+                  <View key={index} className="bg-white p-4 rounded-xl w-full border border-gray-200">
+                    <Text className="text-lg font-bold text-blue-900 mb-3">
+                      {segment.segmentOrder === 1 ? "Chuyến đi" : "Chuyến về"}
                     </Text>
-                    {/* Hiển thị dịch vụ đã nhóm */}
-                    {Object.entries(groupedServices[p.passengerId] || {}).map(([groupName, services], gIdx) => (
-                      <View key={gIdx} className="mt-2">
-                        <Text className="text-sm font-semibold text-gray-700">{groupName}:</Text>
-                        {services.map((service, sIdx) => (
-                          <View key={sIdx} className="flex-row items-center ml-2 mt-1">
-                            {service.icon.library === "Ionicons" ? (
-                              <Ionicons name={service.icon.name} size={14} color="#4b5563" />
-                            ) : (
-                              <MaterialIcons name={service.icon.name} size={14} color="#4b5563" />
-                            )}
-                            <Text className="text-sm text-gray-600 ml-1">{service.name}</Text>
-                          </View>
-                        ))}
+                    <View className="flex-row justify-between items-center">
+                      <View className="items-start">
+                        <Text className="text-xl font-bold text-blue-900">
+                          {new Date(segment.departureTime).toLocaleTimeString("vi-VN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </Text>
+                        <Text className="text-gray-500 font-semibold">{segment.departureAirport.airportCode}</Text>
                       </View>
-                    ))}
+                      <View className="items-center">
+                        <Ionicons name="airplane" size={24} color="#1e3a8a" />
+                        <Text className="text-xs text-gray-500">{segment.duration}</Text>
+                      </View>
+                      <View className="items-end">
+                        <Text className="text-xl font-bold text-blue-900">
+                          {new Date(segment.arrivalTime).toLocaleTimeString("vi-VN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </Text>
+                        <Text className="text-gray-500 font-semibold">{segment.arrivalAirport.airportCode}</Text>
+                      </View>
+                    </View>
+                    <Text className="text-sm text-gray-500 text-center mt-2">
+                      {new Date(segment.departureTime).toLocaleDateString("vi-VN", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </Text>
                   </View>
                 ))}
-              </View>
 
-              {/* Payment Summary */}
-              <View className="bg-white p-4 rounded-xl w-full border border-gray-200">
-                <Text className="text-lg font-bold text-blue-900 mb-2">Thanh toán</Text>
-                <View className="flex-row justify-between items-center">
-                  <Text className="text-base text-gray-600">Tổng cộng:</Text>
-                  <Text className="text-xl font-bold text-red-600">
-                    {bookingDetails.totalAmount.toLocaleString("vi-VN")} ₫
-                  </Text>
+                {/* Passengers & Services */}
+                <View className="bg-white p-4 rounded-xl w-full border border-gray-200">
+                  <Text className="text-lg font-bold text-blue-900 mb-2">Hành khách & Dịch vụ</Text>
+                  {bookingDetails.passengers.map((p, index) => (
+                    <View key={index} className="py-3 border-b border-gray-100 last:border-b-0">
+                      <Text className="text-base font-semibold text-gray-800">
+                        {p.lastName} {p.firstName} ({p.type})
+                      </Text>
+                      {/* Hiển thị dịch vụ đã nhóm */}
+                      {Object.entries(groupedServices[p.passengerId] || {}).map(([groupName, services], gIdx) => (
+                        <View key={gIdx} className="mt-2">
+                          <Text className="text-sm font-semibold text-gray-700">{groupName}:</Text>
+                          {services.map((service, sIdx) => (
+                            <View key={sIdx} className="flex-row items-center ml-2 mt-1">
+                              {service.icon.library === "Ionicons" ? (
+                                <Ionicons name={service.icon.name} size={14} color="#4b5563" />
+                              ) : (
+                                <MaterialIcons name={service.icon.name} size={14} color="#4b5563" />
+                              )}
+                              <Text className="text-sm text-gray-600 ml-1">{service.name}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      ))}
+                    </View>
+                  ))}
                 </View>
-                <View className="flex-row justify-between items-center mt-1">
-                  <Text className="text-base text-gray-600">Phương thức:</Text>
-                  <Text className="text-base font-semibold text-gray-800">
-                    {bookingDetails.payment?.paymentMethod || "Không xác định"}
-                  </Text>
+
+                {/* Payment Summary */}
+                <View className="bg-white p-4 rounded-xl w-full border border-gray-200">
+                  <Text className="text-lg font-bold text-blue-900 mb-2">Thanh toán</Text>
+                  <View className="flex-row justify-between items-center">
+                    <Text className="text-base text-gray-600">Tổng cộng:</Text>
+                    <Text className="text-xl font-bold text-red-600">
+                      {bookingDetails.totalAmount.toLocaleString("vi-VN")} ₫
+                    </Text>
+                  </View>
+                  {/* Hiển thị thông tin giảm giá */}
+                  {bookingDetails.dealDiscountAmount > 0 && (
+                    <View className="flex-row justify-between items-center mt-1">
+                      <Text className="text-sm text-green-600">Giảm giá ưu đãi ({bookingDetails.dealCode}):</Text>
+                      <Text className="text-sm font-semibold text-green-600">
+                        - {bookingDetails.dealDiscountAmount.toLocaleString("vi-VN")} ₫
+                      </Text>
+                    </View>
+                  )}
+                  {bookingDetails.pointsDiscountAmount > 0 && (
+                    <View className="flex-row justify-between items-center mt-1">
+                      <Text className="text-sm text-green-600">
+                        Giảm từ {bookingDetails.pointsRedeemed?.toLocaleString('vi-VN')} điểm
+                      </Text>
+                      <Text className="text-sm font-semibold text-green-600">
+                        - {bookingDetails.pointsDiscountAmount.toLocaleString("vi-VN")} ₫
+                      </Text>
+                    </View>
+                  )}
+
+                  <View className="flex-row justify-between items-center mt-1">
+                    <Text className="text-base text-gray-600">Phương thức:</Text>
+                    <Text className="text-base font-semibold text-gray-800">
+                      {bookingDetails.payment?.paymentMethod || "Không xác định"}
+                    </Text>
+                  </View>
+
+                  {error && <Text className="text-red-500 text-center mt-4">{error}</Text>}
                 </View>
               </View>
-            </View>
-          )}
-
-          {error && <Text className="text-red-500 text-center mt-4">{error}</Text>}
-        </View>
-      </ScrollView>
+            )}
+          </View>
+        </ScrollView>
+      </View>
 
       {/* Bottom bar chỉ khi có full details */}
       {hasFullDetails && (
-        <View className="p-4 bg-white border-t border-gray-200 flex-row items-center gap-x-3">
+        <View className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 flex-row items-center gap-x-3">
           {isViewableState && (
             <TouchableOpacity onPress={handleShare} className="bg-gray-200 p-3 rounded-full shadow-md">
               <Ionicons name="share-social-outline" size={24} color="#1e3a8a" />
@@ -556,3 +646,4 @@ const BookingResult = () => {
 }
 
 export default BookingResult
+

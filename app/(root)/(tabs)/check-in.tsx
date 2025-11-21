@@ -817,7 +817,7 @@ const CheckIn = () => {
       { step: CheckinStep.SELECT_PASSENGER, label: "Chọn hành khách" },
       {
         step: CheckinStep.CONFIRM_AND_COMPLETE,
-        label: "Xác nhận & Hoàn thành",
+        label: "Xác nhận",
       },
     ];
 
@@ -828,11 +828,11 @@ const CheckIn = () => {
         : steps;
 
     return (
-      <View className="flex-row justify-between items-center px-4 py-3 bg-blue-50">
+      <View className="flex-row justify-between items-center px-4 py-3 bg-white rounded-t-[40px]">
         {filteredSteps.map((step, index) => (
           <View key={step.step} className="flex-1 items-center">
             <View
-              className={`w-8 h-8 rounded-full items-center justify-center ${currentStep >= step.step ? "bg-blue-600" : "bg-gray-300"
+              className={`w-8 h-8 rounded-full items-center justify-center ${currentStep >= step.step ? "bg-blue-900" : "bg-gray-300"
                 }`}
             >
               <Text
@@ -843,7 +843,7 @@ const CheckIn = () => {
               </Text>
             </View>
             <Text
-              className={`text-xs mt-1 ${currentStep >= step.step ? "text-blue-600" : "text-gray-500"
+              className={`text-xs mt-1 ${currentStep >= step.step ? "text-blue-900" : "text-gray-500"
                 }`}
             >
               {step.label}
@@ -1028,7 +1028,7 @@ const CheckIn = () => {
                   color={canCheckIn ? "#9ca3af" : "#d1d5db"}
                 />
                 <Text className="text-xs text-gray-500 mt-1">
-                  {segment.duration}
+                  {segment.duration} phút
                 </Text>
               </View>
 
@@ -1909,8 +1909,6 @@ const CheckIn = () => {
         style={{
           backgroundColor: "white",
           flex: 1,
-          borderTopLeftRadius: 40,
-          borderTopRightRadius: 40,
         }}
       >
         {renderCurrentStep()}

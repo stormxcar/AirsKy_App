@@ -1,4 +1,4 @@
-import { AuthResponse, LoginRequest, RegisterRequest } from "@/app/types/auth";
+import { AuthResponse, ChangePasswordRequest, LoginRequest, RegisterRequest } from "@/app/types/auth";
 import api from "./api";
 
 type ApiResponse<T> = {
@@ -45,12 +45,12 @@ export const register = async (data: RegisterRequest): Promise<string> => {
 };
 
 /**
- * Gửi yêu cầu xác thực tài khoản bằng OTP.
+ * Gửi yêu cầu xác thực tài khoản sau khi đăng ký bằng OTP.
  * @param email - Email cần xác thực.
  * @param otp - Mã OTP người dùng nhập.
  * @returns Promise chứa thông báo từ server.
  */
-export const verifyAccount = async (email: string, otp: string): Promise<string> => {
+export const verifyRegistration = async (email: string, otp: string): Promise<string> => {
     try {
         const response = await api.post<ApiResponse<null>>('/auth/verify-account', { email, otp });
         return response.data.message;
@@ -80,6 +80,63 @@ export const forgotPassword = async (email: string): Promise<string> => {
         }
     }
 };
+
+
+/**
+ * Gửi yêu cầu gửi lại OTP code để nhận Oguiwr TP qua email.
+ * @param email - Email của tài khoản cần reset mật khẩu.
+ * @returns Promise chứa thông báo từ server.
+ */
+export const resendVerificationCode = async (email: string): Promise<string> => {
+    try {
+        const response = await api.post<ApiResponse<null>>('/auth/resend-verification', { email });
+        return response.data.message;
+    } catch (error: any) {
+        if (error.response && error.response.data && error.response.data.message) {
+            throw new Error(error.response.data.message);
+        } else {
+            throw new Error('Yêu cầu quên mật khẩu thất bại. Vui lòng thử lại.');
+        }
+    }
+};
+/**
+ * Đặt lại mật khẩu.
+ * @param email - Email của tài khoản cần reset mật khẩu.
+ * @param otpCode - nhận từ email
+ * @param newPassword - mật khẩu mới 
+ * @returns Promise chứa thông báo từ server.
+ */
+export const resetPassword = async (email: string,otpCode:string,newPassword:string): Promise<string> => {
+    try {
+        const response = await api.post<ApiResponse<null>>('/auth/reset-password', { email,otpCode,newPassword });
+        return response.data.message;
+    } catch (error: any) {
+        if (error.response && error.response.data && error.response.data.message) {
+            throw new Error(error.response.data.message);
+        } else {
+            throw new Error('Yêu cầu quên mật khẩu thất bại. Vui lòng thử lại.');
+        }
+    }
+};
+
+/**
+ * Thay đổi mật khẩu người dùng.
+ * @param data - Dữ liệu chứa mật khẩu cũ và mật khẩu mới.
+ * @returns Promise chứa thông báo từ server.
+ */
+export const changePassword = async (data: ChangePasswordRequest): Promise<string> => {
+    try {
+        const response = await api.post<ApiResponse<null>>('/auth/change-password', data);
+        return response.data.message;
+    } catch (error: any) {
+        if (error.response && error.response.data && error.response.data.message) {
+            throw new Error(error.response.data.message);
+        } else {
+            throw new Error('Yêu cầu đổi mật khẩu thất bại. Vui lòng thử lại.');
+        }
+    }
+};
+
 
 
 /**

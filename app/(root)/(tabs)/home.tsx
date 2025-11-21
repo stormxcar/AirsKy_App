@@ -11,7 +11,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Dimensions, ImageBackground, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Dimensions, ImageBackground, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   Extrapolate,
   interpolate,
@@ -24,6 +24,24 @@ import Animated, {
 const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons);
 const SCREEN_W = Dimensions.get("window").width;
 const ITEM_WIDTH = SCREEN_W * 0.8;
+
+// Skeleton Component cho Blog Card
+const BlogCardSkeleton = () => (
+  <View style={{ width: ITEM_WIDTH, marginRight: 12, borderRadius: 16, overflow: "hidden", backgroundColor: "#fff", borderWidth: 1, borderColor: "#e2e8f0" }}>
+    {/* Skeleton cho ảnh */}
+    <View style={{ width: ITEM_WIDTH, height: 180, backgroundColor: '#e5e7eb' }} />
+    <View style={{ padding: 12 }}>
+      {/* Skeleton cho category */}
+      <View style={{ backgroundColor: '#e5e7eb', height: 12, width: '30%', borderRadius: 4, marginBottom: 8 }} />
+      {/* Skeleton cho title */}
+      <View style={{ backgroundColor: '#e5e7eb', height: 16, width: '90%', borderRadius: 4, marginBottom: 6 }} />
+      <View style={{ backgroundColor: '#e5e7eb', height: 16, width: '60%', borderRadius: 4, marginBottom: 8 }} />
+      {/* Skeleton cho excerpt */}
+      <View style={{ backgroundColor: '#e5e7eb', height: 14, width: '100%', borderRadius: 4, marginBottom: 4 }} />
+      <View style={{ backgroundColor: '#e5e7eb', height: 14, width: '80%', borderRadius: 4 }} />
+    </View>
+  </View>
+);
 
 const Home = () => {
   const { user } = useAuth();
@@ -165,9 +183,11 @@ const Home = () => {
 
 
           {isLoadingBlogs ? (
-            <View className="h-[280px] justify-center items-center">
-              <ActivityIndicator size="large" color="#1e3a8a" />
-            </View>
+            // Sử dụng Skeleton Loader
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+              <BlogCardSkeleton />
+              <BlogCardSkeleton />
+            </ScrollView>
           ) : (
             <Animated.ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
               {blogs.map((item) => (

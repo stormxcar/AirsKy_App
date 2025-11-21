@@ -11,6 +11,7 @@ const AUTH_KEY = 'auth-data';
 type AuthContextType = {
     authData: AuthResponse | null;
     user: User | null;
+    updateUser: (updatedUser: User) => void;
     setAuthData: (data: AuthResponse | null) => Promise<void>;
     logout: () => void;
     isLoading: boolean;
@@ -19,6 +20,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType>({
     authData: null,
     user: null,
+    updateUser: () => { },
     setAuthData: async () => { },
     logout: () => { },
     isLoading: true,
@@ -119,7 +121,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setAuthData(null);
     };
 
-    const value = { authData, user, setAuthData, logout, isLoading };
+    const updateUser = (updatedUser: User) => {
+        setUser(updatedUser);
+    };
+
+    const value = { authData, user, setAuthData, logout, isLoading, updateUser };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

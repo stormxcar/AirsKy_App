@@ -69,6 +69,13 @@ const SkeletonCard = () => {
     );
 };
 
+const CategoryChipSkeleton = () => (
+    <View style={{ marginRight: 12 }}>
+        <View style={{ backgroundColor: '#e5e7eb', height: 36, width: 100, borderRadius: 999 }} />
+    </View>
+);
+
+
 
 const CategoryChip = ({
     category,
@@ -219,14 +226,21 @@ const AllBlog = () => {
                     </Pressable>
 
                     {/* Category chips */}
-                    {categories.map((c) => (
-                        <CategoryChip
-                            key={c.categoryId}
-                            category={c}
-                            selected={selectedCategory === c.categoryId}
-                            onPress={() => setSelectedCategory(c.categoryId)}
-                        />
-                    ))}
+                    {loadingCategories ? (
+                        <>
+                            <CategoryChipSkeleton />
+                            <CategoryChipSkeleton />
+                            <CategoryChipSkeleton />
+                        </>
+                    ) : (
+                        categories.map((c) => (
+                            <CategoryChip
+                                key={c.categoryId}
+                                category={c}
+                                selected={selectedCategory === c.categoryId}
+                                onPress={() => setSelectedCategory(c.categoryId)}
+                            />
+                        )))}
                 </ScrollView>
 
                 {/* Search */}

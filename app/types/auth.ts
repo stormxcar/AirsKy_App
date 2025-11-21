@@ -11,6 +11,27 @@ export interface LoginRequest {
 }
 
 /**
+ * Dữ liệu gửi đi khi yêu cầu đăng ký.
+ */
+export interface RegisterRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  phoneNumber: string;
+}
+
+/**
+ * Dữ liệu gửi đi khi yêu cầu đổi mật khẩu.
+ */
+export interface ChangePasswordRequest {
+  email: string;
+  oldPassword: string;
+  newPassword: string;
+}
+
+
+/**
  * Dữ liệu nhận về sau khi đăng nhập thành công.
  */
 export interface AuthResponse {
@@ -25,6 +46,11 @@ export interface AuthResponse {
  * Cấu trúc này nên tương ứng với UserResponse DTO từ backend.
  */
 export interface User {
+  membershipCode: string;
+  authProvider: string;
+  dateOfBirth: any;
+  passportNumber: string;
+  passportExpiry: any;
   id: number;
   email: string;
   firstName: string;
@@ -35,4 +61,3 @@ export interface User {
   loyaltyTier?: string; // e.g., 'BRONZE', 'SILVER'
   loyaltyPoints?: number;
 }
-
