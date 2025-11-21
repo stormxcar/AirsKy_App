@@ -1,5 +1,6 @@
 import { useLoading } from "@/context/loading-context";
 import { executePayPalPayment } from "@/services/payment-service";
+import * as Linking from "expo-linking";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
 import { Alert } from "react-native";
@@ -7,109 +8,112 @@ import { Alert } from "react-native";
 const PaymentResultHandler = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { showLoading, hideLoading } = useLoading();
-  const isProcessing = useRef(false); // Cờ để ngăn việc xử lý lặp lại
+  const { showLoading } = useLoading();
+  const isProcessing = useRef(false); // Cờ để ngăn xử lý lặp lại
 
-  useEffect(() => {
-    showLoading(async () => {
-      // Nếu đang xử lý rồi thì không làm gì cả
-      if (isProcessing.current) {
-        console.log(
-          "Payment is already being processed. Skipping duplicate call."
-        );
-        return;
-      }
+  const handlePaymentRedirect = async (redirectParams: any) => {
+    const paymentId = redirectParams.paymentId as string;
+    const payerId = redirectParams.PayerID as string;
+    const bookingId = redirectParams.bookingId as string;
+    const returnTo = redirectParams.returnTo as string; 
+    const paymentType = redirectParams.type as string;
 
-      const paymentId = params.paymentId as string;
-      const payerId = params.PayerID as string;
-      const bookingId = params.bookingId as string;
-      const returnTo = params.returnTo as string; // Để biết return về đâu
-      const paymentType = params.type as string; // BOOKING hoặc SEAT_CHANGE
+    if (!bookingId) return;
 
-      // Kiểm tra xem có phải là redirect từ PayPal không
-      if (paymentId && payerId && bookingId) {
-        isProcessing.current = true; // Đánh dấu là bắt đầu xử lý
+    if (paymentId && payerId && bookingId) {
+      if (isProcessing.current) return;
+      isProcessing.current = true;
 
-        try {
-          // Gọi API backend để thực thi thanh toán
-          await executePayPalPayment(paymentId, payerId, parseInt(bookingId));
+      try {
+        await executePayPalPayment(paymentId, payerId, parseInt(bookingId));
 
-          // Thanh toán thành công - route dựa trên type và returnTo
+        if (paymentType === "SEAT_CHANGE" && returnTo === "check-in") {
+          router.replace({
+            pathname: "/(root)/(tabs)/check-in",
+            params: {
+              paymentSuccess: "true",
+              returnTo: "check-in",
+              bookingCode: redirectParams.bookingCode,
+              passengerFullName: redirectParams.passengerFullName,
+              passengerId: redirectParams.passengerId,
+              newSeatId: redirectParams.newSeatId,
+              segmentId: redirectParams.segmentId,
+            },
+          });
+        } else {
+          router.replace({
+            pathname: "/(root)/(booking)/booking-result",
+            params: { status: "success", bookingId },
+          });
+        }
+      } catch (error: any) {
+        console.error("Error executing PayPal payment:", error);
+        const isCompleted =
+          error.message && error.message.includes("COMPLETED");
+
+        if (isCompleted) {
           if (paymentType === "SEAT_CHANGE" && returnTo === "check-in") {
-            // Return về check-in với payment success params
             router.replace({
               pathname: "/(root)/(tabs)/check-in",
-              params: {
-                paymentSuccess: "true",
-                returnTo: "check-in",
-                bookingCode: params.bookingCode,
-                passengerFullName: params.passengerFullName,
-                passengerId: params.passengerId,
-                newSeatId: params.newSeatId,
-                segmentId: params.segmentId,
-              },
+              params: { paymentSuccess: "true", returnTo: "check-in" },
             });
           } else {
-            // Default booking flow
             router.replace({
               pathname: "/(root)/(booking)/booking-result",
-              params: { status: "success", bookingId: bookingId },
+              params: { status: "success", bookingId },
             });
           }
-        } catch (error: any) {
-          console.error("Error executing PayPal payment:", error);
-
-          // Xử lý trường hợp thanh toán đã được hoàn tất trước đó
-          if (error.message && error.message.includes("COMPLETED")) {
-            if (paymentType === "SEAT_CHANGE" && returnTo === "check-in") {
-              router.replace({
-                pathname: "/(root)/(tabs)/check-in",
-                params: {
-                  paymentSuccess: "true",
-                  returnTo: "check-in",
-                  bookingCode: params.bookingCode,
-                  passengerFullName: params.passengerFullName,
-                  passengerId: params.passengerId,
-                  newSeatId: params.newSeatId,
-                  segmentId: params.segmentId,
-                },
-              });
-            } else {
-              router.replace({
-                pathname: "/(root)/(booking)/booking-result",
-                params: { status: "success", bookingId: bookingId },
-              });
-            }
-            return; // Dừng xử lý thêm
-          }
-
-          Alert.alert(
-            "Lỗi thanh toán",
-            error.message ||
-              "Không thể hoàn tất thanh toán PayPal. Vui lòng thử lại hoặc liên hệ hỗ trợ."
-          );
-
-          if (paymentType === "SEAT_CHANGE" && returnTo === "check-in") {
-            // Return về check-in với error
-            router.replace({
-              pathname: "/(root)/(tabs)/check-in",
-              params: { paymentError: "true" },
-            });
-          } else {
-            router.replace({
-              pathname: "/(root)/(booking)/booking-result", // Vẫn truyền bookingId để người dùng biết đơn nào lỗi
-              params: { status: "failure", bookingCode: bookingId },
-            });
-          }
+          return;
         }
-      } else if (params.bookingCode) {
-        // Trường hợp người dùng tự quay lại hoặc từ luồng QR
-        router.replace({
-          pathname: "/(root)/(booking)/booking-result",
-          params: { ...params, status: params.status || "pending" },
-        });
+
+        Alert.alert(
+          "Lỗi thanh toán",
+          error.message ||
+            "Không thể hoàn tất thanh toán PayPal. Vui lòng thử lại hoặc liên hệ hỗ trợ."
+        );
+
+        if (paymentType === "SEAT_CHANGE" && returnTo === "check-in") {
+          router.replace({
+            pathname: "/(root)/(tabs)/check-in",
+            params: { paymentError: "true" },
+          });
+        } else {
+          router.replace({
+            pathname: "/(root)/(booking)/booking-result",
+            params: { status: "failure", bookingCode: bookingId },
+          });
+        }
+      }
+    } else {
+      // Nếu chỉ có bookingCode, default pending
+      router.replace({
+        pathname: "/(root)/(booking)/booking-result",
+        params: { ...redirectParams, status: redirectParams.status || "pending" },
+      });
+    }
+  };
+
+  useEffect(() => {
+    // 1️⃣ Nếu app được mở bằng URL (custom scheme)
+    const handleUrl = (event: { url: string }) => {
+      const { queryParams } = Linking.parse(event.url);
+      handlePaymentRedirect(queryParams);
+    };
+
+    const subscription = Linking.addEventListener("url", handleUrl);
+
+    // 2️⃣ Nếu app được mở từ trạng thái đóng
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        const { queryParams } = Linking.parse(url);
+        handlePaymentRedirect(queryParams);
       }
     });
+
+    // 3️⃣ Xử lý params truyền trực tiếp từ router (fallback)
+    handlePaymentRedirect(params);
+
+    return () => subscription.remove();
   }, [params]);
 
   return null;

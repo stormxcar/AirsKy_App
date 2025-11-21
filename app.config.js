@@ -2,6 +2,7 @@ import 'dotenv/config';
 
 export default {
   expo: {
+    
     name: "AirsKy_App",
     slug: "AirsKy_App",
     version: "1.0.0",
@@ -13,11 +14,9 @@ export default {
       supportsTablet: true
     },
     android: {
+      package: "com.nguyentruongan0610.airskyapp",
       adaptiveIcon: {
         backgroundColor: "#E6F4FE",
-        // "foregroundImage": "./assets/images/android-icon-foreground.png",
-        // "backgroundImage": "./assets/images/android-icon-background.png",
-        // "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
@@ -30,18 +29,18 @@ export default {
     },
     plugins: [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          },
-        }
-      ],
+      // [
+      //   "expo-splash-screen",
+      //   {
+      //     "image": "./assets/images/splash-icon.png",
+      //     "imageWidth": 200,
+      //     "resizeMode": "contain",
+      //     "backgroundColor": "#ffffff",
+      //     "dark": {
+      //       "backgroundColor": "#000000"
+      //     },
+      //   }
+      // ],
       "expo-web-browser"
     ],
     experiments: {
@@ -52,6 +51,9 @@ export default {
     extra: {
       API_BASE_URL: process.env.API_BASE_URL,
       API_SOCKET_URL: process.env.API_SOCKET_URL,
+      eas: {
+        projectId: '6494497f-bf83-40f0-a72b-397d07505ee1', // copy từ log
+      },
     },
   }
 };
