@@ -16,6 +16,7 @@ export default {
     },
     android: {
       package: "com.nguyentruongan0610.airskyapp",
+      googleServicesFile: "./google-services.json",
       adaptiveIcon: {
         backgroundColor: "#E6F4FE",
       },
