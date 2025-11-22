@@ -22,12 +22,24 @@ export default {
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
       usesCleartextTraffic: true, // Giữ lại dòng này để gọi API http trên Android
+      intentFilters: [
+        {
+          action: "VIEW",
+          data: [
+            {
+              scheme: "airskyapp" // Cần phải khớp với trường "scheme" ở ngoài
+            }
+          ],
+          category: ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     web: {
       bundler: "metro",
       output: "static",
       // "favicon": "./assets/images/favicon.png"
     },
+
 
 
     plugins: [
