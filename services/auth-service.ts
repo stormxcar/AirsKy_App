@@ -147,7 +147,7 @@ export const changePassword = async (data: ChangePasswordRequest): Promise<strin
 export const loginWithGoogle = async (idToken: string): Promise<AuthResponse> => {
     try {
         const response = await api.post<ApiResponse<AuthResponse>>('/auth/google-login', { idToken });
-        console.log("Login with Google response:", response)
+        // console.log("Login with Google response:", response)
         return response.data.data; 
     } catch (error: any) {
         if (error.response && error.response.data && error.response.data.message) {

@@ -1,8 +1,8 @@
 import { Flight, TicketClass } from "@/app/types/types";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import React, { memo } from "react";
-import Animated, { useAnimatedStyle, withTiming, Easing, useSharedValue } from 'react-native-reanimated';
 import { Image, Text, TouchableOpacity, View } from "react-native";
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import TicketClassCarousel from "./ticket-class-carousel";
 
 type FlightItemProps = {
@@ -31,7 +31,7 @@ const FlightItem = memo(({ flight, isSelected, selectedClassId, onSelect, onSele
             overflow: 'hidden', // Quan trọng: ẩn nội dung khi chiều cao là 0
         };
     });
- console.log(flight);
+//  console.log(flight);    
     return (
         <TouchableOpacity activeOpacity={0.8} onPress={onSelect} className="bg-white rounded-xl p-4 mb-4 border border-gray-100 shadow-sm overflow-hidden">
             {/* Airline Info */}

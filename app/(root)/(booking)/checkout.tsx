@@ -242,8 +242,8 @@ const Checkout = () => {
                 // 2. Gọi API để tạo booking
                 const createdBooking = await createBooking(bookingData)
                 // 3. Lấy checkoutUrl từ response của createBooking
-                console.log("booking req:", bookingData)
-                console.log("booking:", createdBooking)
+                // console.log("booking req:", bookingData)
+                // console.log("booking:", createdBooking)
                 const checkoutUrl = createdBooking.payment?.checkoutUrl
                 if (!checkoutUrl) {
                     throw new Error("Không nhận được đường dẫn thanh toán từ máy chủ.")

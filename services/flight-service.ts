@@ -1,7 +1,7 @@
-import { Flight,Seat } from "@/app/types/types";
-import { FlightResponse, SeatResponse } from "@/app/types/flight";
-import { mapApiFlightToFlight, mapApiSeatToSeat } from "@/mappers/flight-mapper";
-import { ApiResponse, PageResponse, UnifiedFlightSearchResponse } from "@/app/types/common";
+import { ApiResponse, UnifiedFlightSearchResponse } from "@/app/types/common";
+import { SeatResponse } from "@/app/types/flight";
+import { Seat } from "@/app/types/types";
+import { mapApiSeatToSeat } from "@/mappers/flight-mapper";
 import api from "./api"; // Import axios instance
 
 /**
@@ -27,12 +27,12 @@ export interface UnifiedSearchParams {
  */
 export const searchUnifiedFlights = async (request: UnifiedSearchParams): Promise<UnifiedFlightSearchResponse> => {
     try {
-        console.log("Sending unified search request to API:", JSON.stringify(request, null, 2));
+        // console.log("Sending unified search request to API:", JSON.stringify(request, null, 2));
         // Backend mong muốn một POST request với request body
         const response = await api.post<ApiResponse<UnifiedFlightSearchResponse>>('/flights/search-unified', request);
         return response.data.data;
     } catch (error: any) {
-        console.error("Error in unified flight search:", error.response ? error.response.data : error.message);
+        // console.error("Error in unified flight search:", error.response ? error.response.data : error.message);
         throw new Error(error.response?.data?.message || "An unexpected error occurred while searching flights.");
     }
 };
@@ -49,7 +49,7 @@ export const fetchSeatsByFlightId = async (flightId: number): Promise<Seat[]> =>
         const apiSeats = response.data.data || [];
         return apiSeats.map(mapApiSeatToSeat);
     } catch (error: any) {
-        console.error(`Error fetching seats for flight ${flightId}:`, error.response ? error.response.data : error.message);
+        // console.error(`Error fetching seats for flight ${flightId}:`, error.response ? error.response.data : error.message);
         throw new Error(error.response?.data?.message || `An unexpected error occurred while fetching seats for flight ${flightId}.`);
     }
 };

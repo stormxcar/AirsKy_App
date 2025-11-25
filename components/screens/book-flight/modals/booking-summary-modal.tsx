@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react'; 
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions, ScrollView } from 'react-native';
+import { BaggagePackage, MOCK_ANCILLARY_SERVICES, Passenger, Seat, SelectedFlight } from '@/app/types/types';
 import { Ionicons } from '@expo/vector-icons';
-import { Passenger, Seat, BaggagePackage, MOCK_ANCILLARY_SERVICES, SelectedFlight } from '@/app/types/types';
+import React, { useState } from 'react';
+import { Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const { height: screenHeight } = Dimensions.get('window');
 
