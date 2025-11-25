@@ -306,12 +306,17 @@ function FormSearchFlight() {
                             </TouchableOpacity>
                         </View>
 
-                        {/* Promo Code */}
+                        {/* Promo Code
                         <View>
-                            <TouchableOpacity className="bg-gray-50 border border-gray-200 rounded-xl py-6 px-4">
-                                <Text className="text-gray-400  font-semibold">MÃ KHUYẾN MÃI</Text>
-                            </TouchableOpacity>
-                        </View>
+                            <TextInput
+                                label="MÃ KHUYẾN MÃI"
+                                mode="outlined"
+                                className="flex-1 border border-gray-200 text-gray-400  font-semibold rounded-xl py-6 px-4"
+                                style={{ backgroundColor: '#f9fafb', fontSize: 14 }}
+                                autoCapitalize="characters"
+
+                            />
+                        </View> */}
 
                         {/* Search Button */}
                         <TouchableOpacity onPress={handleSearch} className="bg-blue-950 py-4 rounded-full shadow-md">

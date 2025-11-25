@@ -2,6 +2,7 @@ import { BaggagePackage, MOCK_ANCILLARY_SERVICES, Passenger, Seat, SelectedFligh
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -114,7 +115,7 @@ const BookingSummaryModal = ({
     };
 
     return (
-        <View style={styles.container} className="bg-white border-t border-gray-200 shadow-lg">
+        <SafeAreaView style={styles.container} className="bg-white border-t border-gray-200 shadow-lg">
             {/* Header / Toggle Bar - Hiển thị khi thu gọn */}
             <TouchableOpacity onPress={toggleExpand} style={styles.toggleBar} className="flex-row justify-between items-center p-4">
                 <View className="flex-row items-center">
@@ -192,7 +193,7 @@ const BookingSummaryModal = ({
                     </TouchableOpacity>
                 </View>
             )}
-        </View>
+        </SafeAreaView>
     );
 };
 
