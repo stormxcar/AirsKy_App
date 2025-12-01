@@ -428,7 +428,7 @@ const ServiceAndSeatSelection = () => {
   return (
     <SafeAreaView
       className="flex-1 bg-gray-100"
-      edges={["top", "left", "right"]}
+      edges={["top", "left", "right", "bottom"]}
     >
       <ScrollView
         className="bg-gray-100"

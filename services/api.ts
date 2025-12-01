@@ -12,7 +12,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
-console.log(env.API_BASE_URL)
+// console.log(env.API_BASE_URL)
 
 const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach(prom => {

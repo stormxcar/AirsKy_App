@@ -1,8 +1,8 @@
-import React from "react";
-import { Modal, View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { Flight, TicketClass } from "@/app/types/types";
 import { Ionicons } from "@expo/vector-icons";
 import { format } from "date-fns";
-import { Flight, TicketClass } from "@/app/types/types";
+import React from "react";
+import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 interface FlightSummaryModalProps {
   visible: boolean;

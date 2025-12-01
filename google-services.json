@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "436275118476",
+    "project_id": "airsky-app",
+    "storage_bucket": "airsky-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:436275118476:android:486447b4aff4f1b597d6a9",
+        "android_client_info": {
+          "package_name": "com.nguyentruongan0610.airskyapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAhJg2J-gdhmyk6ecj3Em9_sEpHU4TdGYM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

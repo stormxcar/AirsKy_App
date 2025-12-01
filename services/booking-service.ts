@@ -11,10 +11,10 @@ export const createBooking = async (
   bookingData: BookingRequest
 ): Promise<BookingResponse> => {
     try {
-        console.log(
-            "Sending booking request to API:",
-            JSON.stringify(bookingData, null, 2)
-        );
+        // console.log(
+        //     "Sending booking request to API:",
+        //     JSON.stringify(bookingData, null, 2)
+        // );
         // API backend trả về dữ liệu trong cấu trúc ApiResponse<BookingResponse>
         const response = await api.post<ApiResponse<BookingResponse>>(
             "/bookings",

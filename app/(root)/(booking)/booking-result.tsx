@@ -133,7 +133,7 @@ const BookingResult = () => {
         setBookingDetails(parsedDetails)
         setHasInitialData(true)
         setIsLoading(false); // Dữ liệu đã có, không cần loading nữa
-        console.log('Used pre-fetched data from params')
+        // console.log('Used pre-fetched data from params')
       } catch (parseErr) {
         console.warn('Failed to parse initialDetails, fallback to fetch:', parseErr)
       }
@@ -471,7 +471,7 @@ const BookingResult = () => {
                 )}
                 {/* Nút kiểm tra thanh toán khi đang pending */}
                 {(status === "pending" || status === "PENDING") &&
-                  bookingDetails?.payment && (
+                  bookingDetails?.payment && bookingDetails.payment.status === "PENDING" && (
                     <View className="mt-4">
                       {/* Hiển thị QR cho Bank Transfer */}
                       {bookingDetails.payment.paymentMethod === "BANK_TRANSFER" && bookingDetails.payment.checkoutUrl && (
