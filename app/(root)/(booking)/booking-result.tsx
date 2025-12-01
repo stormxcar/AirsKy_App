@@ -425,7 +425,6 @@ const BookingResult = () => {
   if (isLoading && !hasInitialData) {
     return <BookingResultSkeleton />;
   }
-
   return (
     <SafeAreaView className="flex-1 bg-gray-100" edges={["top"]}>
       <View style={StyleSheet.absoluteFill}>
@@ -441,15 +440,27 @@ const BookingResult = () => {
                   {statusInfo.title}
                 </Text>
                 <Text className="text-gray-600 mt-1 text-center">{statusInfo.message}</Text>
+
               </View>
             )}
 
             {/* Thông tin đặt vé cơ bản (mã code) */}
             {hasBasicInfo && (
               <View className="bg-white p-4 rounded-xl w-full border border-gray-200">
+                  {bookingDetails?.status === "CANCELLED" && (
+                  <View className="bg-white p-4">
+                    <Text className="text-lg text-red-600 text-center font-bold">
+                      <Text className="font-bold">Lý do hủy:</Text>
+                      {" "}
+                      {bookingDetails?.cancellationReason || "Quá hạn thanh toán"}
+                    </Text>
+                  </View>
+                )}
                 <Text className="text-lg font-bold text-blue-900 mb-3 border-b border-gray-200 pb-2">
                   Thông tin đặt vé
-                </Text>
+                </Text>   {/* Hiển thị lý do hủy nếu vé đã bị hủy */}
+              
+
 
                 <View className="flex-row justify-between items-center mb-3">
                   <Text className="text-base text-gray-600">Mã đặt chỗ:</Text>
@@ -461,7 +472,9 @@ const BookingResult = () => {
                       <Ionicons name={isCodeCopied ? "checkmark-done" : "copy-outline"} size={18} color="#1e3a8a" />
                     </TouchableOpacity>
                   </View>
+
                 </View>
+
 
                 {isSuccessState && !hasFullDetails && (
                   <Text className="text-gray-600 mt-2 text-center">
@@ -502,11 +515,11 @@ const BookingResult = () => {
                   )}
               </View>
             )}
-
             {/* Chi tiết đầy đủ nếu có bookingDetails */}
             {hasFullDetails && isViewableState && (
               <View className="w-full mt-4 space-y-4">
                 {/* Flight Segments */}
+
                 {bookingDetails.flightSegments.map((segment, index) => (
                   <View key={index} className="bg-white p-4 rounded-xl w-full border border-gray-200">
                     <Text className="text-lg font-bold text-blue-900 mb-3">
@@ -544,8 +557,10 @@ const BookingResult = () => {
                         day: "numeric",
                       })}
                     </Text>
+
                   </View>
                 ))}
+
 
                 {/* Passengers & Services */}
                 <View className="bg-white p-4 rounded-xl w-full border border-gray-200">
@@ -603,7 +618,7 @@ const BookingResult = () => {
                       </Text>
                     </View>
                   )}
-                
+
 
                   <View className="flex-row justify-between items-center mt-1">
                     <Text className="text-base text-gray-600">Phương thức:</Text>

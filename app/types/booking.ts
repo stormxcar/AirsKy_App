@@ -245,4 +245,5 @@ export interface BookingResponse {
   ancillaryServicesAmount?: number; // BigDecimal in Java
   seatTypeAmount?: number; // BigDecimal in Java
   seatTypeDetails?: SeatTypePricingDetail[];
+  cancellationReason?: string;
 }
