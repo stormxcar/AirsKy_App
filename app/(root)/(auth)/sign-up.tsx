@@ -10,7 +10,7 @@ const SignUp = () => {
   const [step, setStep] = useState(1); // 1: Đăng ký, 2: Xác thực OTP
   const [lastName, setLastName] = useState("");
   const [firstName, setFirstName] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [otp, setOtp] = useState("");
@@ -37,7 +37,7 @@ const SignUp = () => {
 
   // Bước 1: Xử lý đăng ký
   const handleSignUp = async () => {
-    if (!firstName || !lastName || !email || !password || !confirmPassword || !phoneNumber || !agreedToTerms) {
+    if (!firstName || !lastName || !email || !password || !confirmPassword || !phone || !agreedToTerms) {
       Alert.alert("Lỗi", "Vui lòng điền đầy đủ thông tin.");
       return;
     }
@@ -57,7 +57,7 @@ const SignUp = () => {
 
     setLoading(true);
     try {
-      const message = await register({ firstName, lastName, email, password, phoneNumber });
+      const message = await register({ firstName, lastName, email, password, phone });
       Alert.alert("Thành công", message, [{
         text: "OK", onPress: () => {
           setStep(2);
@@ -115,7 +115,7 @@ const SignUp = () => {
           </View>
           <TextInput label="Họ" mode="outlined" value={firstName} onChangeText={setFirstName} className="mb-4" />
           <TextInput label="Tên" mode="outlined" value={lastName} onChangeText={setLastName} className="mb-4" />
-          <TextInput label="Số điện thoại" mode="outlined" value={phoneNumber} onChangeText={setPhoneNumber} className="mb-4" autoCapitalize="none" keyboardType="phone-pad" />
+          <TextInput label="Số điện thoại" mode="outlined" value={phone} onChangeText={setPhone} className="mb-4" autoCapitalize="none" keyboardType="phone-pad" />
           <TextInput label="Email" mode="outlined" value={email} onChangeText={setEmail} className="mb-4" autoCapitalize="none" keyboardType="email-address" />
           <TextInput label="Mật khẩu" mode="outlined" secureTextEntry={!isPasswordVisible} value={password} onChangeText={setPassword} className="mb-4" right={<TextInput.Icon icon={isPasswordVisible ? "eye-off" : "eye"} onPress={() => setIsPasswordVisible(!isPasswordVisible)} />} />
           <TextInput label="Xác nhận mật khẩu" mode="outlined" secureTextEntry={!isConfirmPasswordVisible} value={confirmPassword} onChangeText={setConfirmPassword} className="mb-4" right={<TextInput.Icon icon={isConfirmPasswordVisible ? "eye-off" : "eye"} onPress={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)} />} />
@@ -137,7 +137,7 @@ const SignUp = () => {
 
           </View>
 
-          <Button mode="contained" onPress={handleSignUp} loading={loading} disabled={loading || !firstName || !lastName || !email || !password || !confirmPassword || !phoneNumber || !agreedToTerms} style={{ borderRadius: 16, paddingVertical: 6, marginTop: 8 }} labelStyle={{ fontSize: 16, fontWeight: 'bold' }} >
+          <Button mode="contained" onPress={handleSignUp} loading={loading} disabled={loading || !firstName || !lastName || !email || !password || !confirmPassword || !phone || !agreedToTerms} style={{ borderRadius: 16, paddingVertical: 6, marginTop: 8 }} labelStyle={{ fontSize: 16, fontWeight: 'bold' }} >
             Đăng ký
           </Button>
           <View className="mt-8 flex-row justify-center pb-4">

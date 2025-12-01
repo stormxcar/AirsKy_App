@@ -584,16 +584,16 @@ const BookingResult = () => {
                       {bookingDetails.totalAmount.toLocaleString("vi-VN")} ₫
                     </Text>
                   </View>
-                  {/* Hiển thị thông tin giảm giá */}
-                  {bookingDetails.dealDiscountAmount > 0 && (
+                  {/* Hiển thị thông tin giảm giá từ deal */}
+                  {bookingDetails.discountAmount && bookingDetails.discountAmount > 0 && (
                     <View className="flex-row justify-between items-center mt-1">
-                      <Text className="text-sm text-green-600">Giảm giá ưu đãi ({bookingDetails.dealCode}):</Text>
+                      <Text className="text-sm text-green-600">Giảm giá ưu đãi ({bookingDetails.appliedDealCode || "Deal"}):</Text>
                       <Text className="text-sm font-semibold text-green-600">
-                        - {bookingDetails.dealDiscountAmount.toLocaleString("vi-VN")} ₫
+                        - {bookingDetails.discountAmount.toLocaleString("vi-VN")} ₫
                       </Text>
                     </View>
                   )}
-                  {bookingDetails.pointsDiscountAmount > 0 && (
+                  {bookingDetails.pointsDiscountAmount && bookingDetails.pointsDiscountAmount > 0 && (
                     <View className="flex-row justify-between items-center mt-1">
                       <Text className="text-sm text-green-600">
                         Giảm từ {bookingDetails.pointsRedeemed?.toLocaleString('vi-VN')} điểm
@@ -603,6 +603,7 @@ const BookingResult = () => {
                       </Text>
                     </View>
                   )}
+                
 
                   <View className="flex-row justify-between items-center mt-1">
                     <Text className="text-base text-gray-600">Phương thức:</Text>
@@ -646,4 +647,3 @@ const BookingResult = () => {
 }
 
 export default BookingResult
-

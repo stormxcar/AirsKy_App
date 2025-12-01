@@ -123,16 +123,16 @@ const Checkout = () => {
         priceAfterDeal = Math.max(0, basePrice - totalDiscountFromDealsAndPoints)
 
         // 3. Áp dụng giảm giá hạng thành viên (tính trên giá SAU khi đã trừ deal và điểm)
-         let tierDiscount = 0;
-         if (user?.loyaltyTier && LOYALTY_TIER_DISCOUNTS[user.loyaltyTier]) {
-             // Tính giảm giá hạng thành viên trên giá gốc (basePrice) đã trừ deal
+        let tierDiscount = 0;
+        if (user?.loyaltyTier && LOYALTY_TIER_DISCOUNTS[user.loyaltyTier]) {
+            // Tính giảm giá hạng thành viên trên giá gốc (basePrice) đã trừ deal
             //  tierDiscount = (basePrice - calculatedDealDiscount) * LOYALTY_TIER_DISCOUNTS[user.loyaltyTier];
-         tierDiscount = priceAfterDeal * LOYALTY_TIER_DISCOUNTS[user.loyaltyTier]
-            }
+            tierDiscount = priceAfterDeal * LOYALTY_TIER_DISCOUNTS[user.loyaltyTier]
+        }
 
         // 4. Tính giá cuối cùng
         const finalPrice = Math.max(0, priceAfterDeal - tierDiscount)
-    
+      
         // Trả về tổng giảm giá từ deal và điểm để hiển thị
         return { finalPrice, dealDiscount: totalDiscountFromDealsAndPoints, tierDiscount }
     }, [basePrice, selectedDeal, user, pointsDiscount])
@@ -508,7 +508,7 @@ const Checkout = () => {
                                                         )
                                                     })}
                                                 {Object.keys(ancillary).length === 0 && !seatDepart && !seatReturn && !baggage && (
-                                                    <Text className="text-sm text-gray-400 italic pt-2">{p.type === 'infant'? "Không áp dụng":"Không có dịch vụ nào được chọn."}</Text>
+                                                    <Text className="text-sm text-gray-400 italic pt-2">{p.type === 'infant' ? "Không áp dụng" : "Không có dịch vụ nào được chọn."}</Text>
                                                 )}
 
                                                 {/* Tổng tiền cho hành khách */}
@@ -653,7 +653,7 @@ const Checkout = () => {
                                             </Text>
                                         </View>
                                     )}
-                                     {tierDiscount > 0 && (
+                                    {tierDiscount > 0 && (
                                         <View className="flex-row justify-between items-center">
                                             <Text className="text-sm text-emerald-600 font-medium">Ưu đãi hạng {user?.loyaltyTier}:</Text>
                                             <Text className="text-sm text-emerald-600 font-semibold">
@@ -669,7 +669,7 @@ const Checkout = () => {
                                             </Text>
                                         </View>
                                     )}
-                                   
+
                                 </>
                             )}
 

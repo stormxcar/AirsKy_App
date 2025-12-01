@@ -1,5 +1,4 @@
 import { useAuth } from "@/context/auth-context";
-import { useLoading } from "@/context/loading-context";
 import { changePassword } from "@/services/auth-service";
 import { updateProfile } from "@/services/user-service";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,18 +14,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const Profile = () => {
   const router = useRouter();
   const { user, logout, isLoading: isAuthLoading, updateUser } = useAuth();
-  const { showLoading } = useLoading();
+
   const [isEditModalVisible, setEditModalVisible] = useState(false);
   const [isChangePasswordModalVisible, setChangePasswordModalVisible] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false); // State để quản lý loading khi cập nhật
-  const [hasChanges, setHasChanges] = useState(false); // State để theo dõi thay đổi
   // States for editable fields in the modal
   const [editedFirstName, setEditedFirstName] = useState(user?.firstName || '');
   const [editedLastName, setEditedLastName] = useState(user?.lastName || '');
   const [editedPhone, setEditedPhone] = useState(user?.phone || '');
   const [editedAvatar, setEditedAvatar] = useState(user?.avatar || '');
-  const [dateOfBirth, setDateOfBirth] = useState(user?.dateOfBirth ? new Date(user.dateOfBirth) : new Date());
+  const [dateOfBirth, setDateOfBirth] = useState(user?.dateOfBirth ? new Date(user?.dateOfBirth) : new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false); // State để theo dõi thay đổi
 
   // States for change password modal
   const [oldPassword, setOldPassword] = useState('');
@@ -43,7 +42,7 @@ const Profile = () => {
     setEditedPhone(user?.phone || '');
     setEditedAvatar(user?.avatar || `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}&background=0D8ABC&color=fff`);
     if (user?.dateOfBirth) {
-      setDateOfBirth(new Date(user.dateOfBirth));
+      setDateOfBirth(new Date(user?.dateOfBirth));
     }
   }, [user, isEditModalVisible]);
 
@@ -54,31 +53,36 @@ const Profile = () => {
       return;
     }
 
-    const firstNameChanged = editedFirstName !== (user.firstName || '');
-    const lastNameChanged = editedLastName !== (user.lastName || '');
-    const phoneChanged = editedPhone !== (user.phone || '');
-    const avatarChanged = editedAvatar !== (user.avatar || `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}&background=0D8ABC&color=fff`);
-    const dobChanged = user.dateOfBirth
-      ? format(dateOfBirth, 'yyyy-MM-dd') !== format(new Date(user.dateOfBirth), 'yyyy-MM-dd')
+    const firstNameChanged = editedFirstName !== (user?.firstName || '');
+    const lastNameChanged = editedLastName !== (user?.lastName || '');
+    const phoneChanged = editedPhone !== (user?.phone || '');
+    const avatarChanged = editedAvatar !== (user?.avatar || `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}&background=0D8ABC&color=fff`);
+    const dobChanged = user?.dateOfBirth
+      ? format(dateOfBirth, 'yyyy-MM-dd') !== format(new Date(user?.dateOfBirth), 'yyyy-MM-dd')
       : format(dateOfBirth, 'yyyy-MM-dd') !== format(new Date(), 'yyyy-MM-dd'); // So sánh với ngày hiện tại nếu DOB ban đầu là null
 
     setHasChanges(firstNameChanged || lastNameChanged || phoneChanged || avatarChanged || dobChanged);
   }, [editedFirstName, editedLastName, editedPhone, editedAvatar, dateOfBirth, user]);
 
-  useEffect(() => {
-    // Chỉ thực hiện khi quá trình xác thực ban đầu đã hoàn tất và người dùng chưa đăng nhập
-    if (!user) {
-      // Hiển thị loading overlay, sau 3 giây thì chuyển đến trang đăng nhập
-      showLoading(() => {
-        router.replace("/(root)/(auth)/sign-in");
-      }, 1000);
-    }
-  }, [user]);
+  if (!user) {
+    return (
+      <SafeAreaView className="flex-1 bg-white justify-center items-center p-8">
+        <Ionicons name="person-circle-outline" size={80} color="#cbd5e1" />
+        <Text className="text-xl font-bold text-gray-700 mt-4 text-center">Ooppss!</Text>
+        <Text className="text-base text-gray-500 mt-2 text-center">Bạn cần đăng nhập để xem thông tin cá nhân và các ưu đãi đặc biệt.</Text>
+        <TouchableOpacity 
+          onPress={() => router.push('/(root)/(auth)/sign-in')} 
+          className="bg-blue-900 py-3 px-8 rounded-full mt-8">
+          <Text className="text-white font-bold text-base">Đăng nhập ngay</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
 
   const handleSaveChanges = async () => {
-    if (!user || isUpdating) return; // Ngăn chặn click nhiều lần
+    if (!user || isUpdating) return;
 
-    setIsUpdating(true); // Bắt đầu quá trình cập nhật
+    setIsUpdating(true); 
     const profileData = {
       firstName: editedFirstName,
       lastName: editedLastName,
@@ -88,7 +92,7 @@ const Profile = () => {
     };
 
     try {
-      const updatedUser = await updateProfile(user.id, profileData);
+      const updatedUser = await updateProfile(user?.id, profileData);
       updateUser(updatedUser); // Cập nhật user trong context
       Alert.alert("Thành công", "Thông tin hồ sơ đã được cập nhật.");
       setEditModalVisible(false);
@@ -165,28 +169,27 @@ const Profile = () => {
   return (
     <SafeAreaView className="flex-1 bg-blue-950" edges={["top", "left", "right"]}>
       <Text className="p-4 text-center text-white font-bold uppercase">Hồ sơ cá nhân</Text>
-      {user ? (
-        <ScrollView className="bg-white rounded-t-[40px]">
+        <ScrollView className="bg-white rounded-t-[40px]" contentContainerStyle={{ paddingBottom: 20 }}>
           {/* User Header */}
           <View className="bg-white p-6 items-center shadow-sm border-b border-gray-200">
             <Image
-              source={{ uri: user.avatar || `https://ui-avatars.com/api/?name=${user.firstName}+${user.lastName}&background=0D8ABC&color=fff` }}
+              source={{ uri: user?.avatar || `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}&background=0D8ABC&color=fff` }}
               className="w-24 h-24 rounded-full mb-3 border-2 border-blue-200"
             />
-            <Text className="text-2xl font-bold text-blue-900">{user.firstName} {user.lastName}</Text>
-            <Text className="text-gray-600 mt-1">{user.email}</Text>
+            <Text className="text-2xl font-bold text-blue-900">{user?.firstName} {user?.lastName}</Text>
+            <Text className="text-gray-600 mt-1">{user?.email}</Text>
           </View>
 
           {/* Loyalty Program Card */}
           <View className="p-4">
             <View className="bg-blue-950 rounded-xl p-5 shadow-lg">
               <View className="flex-row justify-between items-center">
-                <Text className="text-white font-semibold uppercase">{user.loyaltyTier || 'STANDARD'}</Text>
-                <Text className="text-white font-mono tracking-widest">{user.membershipCode || 'N/A'}</Text>
+                <Text className="text-white font-semibold uppercase">{user?.loyaltyTier || 'STANDARD'}</Text>
+                <Text className="text-white font-mono tracking-widest">{user?.membershipCode || 'N/A'}</Text>
               </View>
               <View className="mt-4">
                 <Text className="text-white font-semibold">Điểm tích lũy</Text>
-                <Text className="text-white font-bold text-3xl mt-1">{user.loyaltyPoints?.toLocaleString('vi-VN') || 0}</Text>
+                <Text className="text-white font-bold text-3xl mt-1">{user?.loyaltyPoints?.toLocaleString('vi-VN') || 0}</Text>
                 <TouchableOpacity>
                   <Text className="text-blue-300 text-xs mt-2 underline">Xem lịch sử điểm</Text>
                 </TouchableOpacity>
@@ -203,7 +206,7 @@ const Profile = () => {
                 <Text className="text-base text-gray-700 ml-4">Chỉnh sửa thông tin</Text>
                 <Ionicons name="chevron-forward-outline" size={20} color="#9ca3af" style={{ marginLeft: 'auto' }} />
               </TouchableOpacity>
-              {user.authProvider !== 'GOOGLE' && (
+              {user?.authProvider !== 'GOOGLE' && (
                 <>
                   <View className="h-[1px] bg-gray-100 mx-3" />
                   <TouchableOpacity onPress={() => setChangePasswordModalVisible(true)} className="flex-row items-center p-3">
@@ -225,11 +228,7 @@ const Profile = () => {
             </View>
           </View>
         </ScrollView>
-      ) : (
-        // Hiển thị màn hình trống trong khi chờ chuyển hướng
-        <View className="flex-1 bg-white justify-center items-center" />
-      )}
-
+      
       {/* Edit Profile Modal */}
       <Modal
         animationType="slide"

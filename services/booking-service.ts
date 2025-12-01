@@ -1,6 +1,6 @@
 import { BookingRequest, BookingResponse } from "@/app/types/booking";
-import { ApiResponse } from "@/app/types/common"; 
-import api from "./api"; 
+import { ApiResponse } from "@/app/types/common";
+import api from "./api";
 
 /**
  * Gửi yêu cầu tạo một booking mới đến backend.
@@ -25,7 +25,7 @@ export const createBooking = async (
     } catch (error: any) {
         console.error("Error creating booking:", error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
         // Ném lỗi ra ngoài để component có thể bắt và xử lý (ví dụ: hiển thị thông báo cho người dùng)
-        throw new Error(error.response?.data?.message || "Đã có lỗi không mong muốn xảy ra khi tạo đặt vé.");
+        throw new Error(error.response?.data?.error || "Đã có lỗi không mong muốn xảy ra khi tạo đặt vé.");
     }
 };
 
