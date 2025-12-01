@@ -1,50 +1,120 @@
-# Welcome to your Expo app 👋
+# Ứng dụng Di động AirsKy Airlines
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+![AirsKy](https://raw.githubusercontent.com/shadcn/ui/main/apps/www/public/og.jpg)
 
-## Get started
+Chào mừng bạn đến với dự án ứng dụng di động của AirsKy Airlines! Đây là một ứng dụng đặt vé máy bay toàn diện được xây dựng bằng React Native và Expo, cung cấp cho người dùng trải nghiệm liền mạch từ tìm kiếm chuyến bay, đặt vé, quản lý chuyến đi cho đến làm thủ tục trực tuyến (check-in).
 
-1. Install dependencies
+## ✨ Tính năng nổi bật
 
-   ```bash
-   npm install
-   ```
+Ứng dụng bao gồm đầy đủ các chức năng cần thiết cho một hãng hàng không hiện đại:
 
-2. Start the app
+-   **Xác thực người dùng**:
+    -   Đăng nhập, đăng ký tài khoản truyền thống (email/mật khẩu).
+    -   Đăng nhập nhanh chóng và an toàn qua Google.
+    -   Quy trình quên mật khẩu và đặt lại mật khẩu.
+    -   Xác thực tài khoản qua mã OTP.
 
-   ```bash
-   npx expo start
-   ```
+-   **Trang chủ (Dashboard)**:
+    -   Giao diện hiện đại với header động.
+    -   Các lối tắt nhanh đến các chức năng quan trọng.
+    -   Hiển thị các bài viết, tin tức và khuyến mãi mới nhất.
+    -   Hệ thống thông báo trong ứng dụng.
 
-In the output, you'll find options to open the app in a
+-   **Đặt vé máy bay**:
+    -   Tìm kiếm chuyến bay một chiều và khứ hồi.
+    -   Lựa chọn điểm đi, điểm đến, ngày và số lượng hành khách.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+-   **Quản lý chuyến đi của tôi**:
+    -   Giao diện theo thẻ (tab) để dễ dàng lọc các chuyến đi: *Chờ thanh toán*, *Sắp tới*, *Đã hoàn thành*, và *Đã hủy*.
+    -   Xem chi tiết lịch sử đặt vé.
+    -   Tìm kiếm và truy xuất thông tin đặt vé khi chưa đăng nhập.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+-   **Check-in trực tuyến**:
+    -   Tìm kiếm đặt vé bằng Mã đặt chỗ (PNR) và Họ tên.
+    -   Lựa chọn chuyến bay và hành khách để làm thủ tục.
+    -   Sơ đồ ghế ngồi trực quan, cho phép chọn hoặc thay đổi ghế.
+    -   Xử lý thanh toán cho các dịch vụ phát sinh (ví dụ: chọn ghế có phí).
+    -   Tạo và hiển thị Boarding Pass điện tử.
+    -   Lưu Boarding Pass về thư viện ảnh của thiết bị.
 
-## Get a fresh project
+-   **Kết quả đặt vé**:
+    -   Hiển thị chi tiết trạng thái đặt vé (Thành công, Thất bại, Chờ thanh toán, Đã hủy).
+    -   Hiển thị mã QR và bộ đếm thời gian cho các thanh toán đang chờ.
+    -   Chia sẻ thông tin chuyến bay qua các ứng dụng khác.
 
-When you're ready, run:
+-   **Hồ sơ người dùng**:
+    -   Xem và chỉnh sửa thông tin cá nhân (tên, ngày sinh, ảnh đại diện).
+    -   Thay đổi mật khẩu.
+    -   Xem thông tin chương trình khách hàng thân thiết (hạng thành viên, điểm tích lũy).
 
-```bash
-npm run reset-project
-```
+## 🚀 Công nghệ sử dụng
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Dự án được xây dựng trên một nền tảng công nghệ hiện đại và mạnh mẽ:
 
-## Learn more
+-   **Framework**: React Native & Expo
+-   **Ngôn ngữ**: TypeScript
+-   **Styling**: Tailwind CSS (thông qua `nativewind`)
+-   **Routing**: Expo Router (hệ thống routing dựa trên file)
+-   **Quản lý trạng thái & Cache**: React Query (`@tanstack/react-query`)
+-   **UI Components**: React Native Paper
+-   **Xác thực**: Expo Auth Session (cho Google Login), JWT
+-   **Thư viện khác**: `date-fns`, `expo-image-picker`, `expo-media-library`
 
-To learn more about developing your project with Expo, look at the following resources:
+## 📂 Cấu trúc thư mục
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Cấu trúc dự án được tổ chức một cách khoa học, tận dụng tối đa sức mạnh của Expo Router.
 
-## Join the community
 
-Join our community of developers creating universal apps.
+## 🛠️ Cài đặt và Chạy dự án
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Làm theo các bước sau để chạy dự án trên máy của bạn.
+
+### Yêu cầu
+
+-   Node.js (phiên bản LTS)
+-   Yarn hoặc npm
+-   Expo Go trên thiết bị di động (iOS hoặc Android)
+-   Expo CLI:
+    ```bash
+    npm install -g expo-cli
+    ```
+
+### Các bước cài đặt
+
+1.  **Clone repository:**
+    ```bash
+    git clone <URL_CUA_REPOSITORY>
+    cd <TEN_THU_MUC_DU_AN>
+    ```
+
+2.  **Cài đặt các dependencies:**
+    ```bash
+    npm install
+    # hoặc
+    yarn install
+    ```
+
+3.  **Thiết lập biến môi trường:**
+
+    Tạo một tệp `.env` ở thư mục gốc và định nghĩa các biến cần thiết, ví dụ như URL của API backend.
+    ```env
+    EXPO_PUBLIC_API_URL=http://your-backend-api-url.com/api
+    ```
+
+4.  **Chạy ứng dụng:**
+    ```bash
+    npx expo start
+    ```
+
+5.  **Mở ứng dụng trên thiết bị:**
+
+    -   Quét mã QR hiển thị trên terminal bằng ứng dụng Camera (iOS) hoặc trong ứng dụng Expo Go (Android).
+    -   Hoặc chạy trên máy ảo bằng cách nhấn `a` (Android) hoặc `i` (iOS Simulator).
+
+## 🤝 Đóng góp
+
+Chúng tôi luôn chào đón các đóng góp để cải thiện dự án. Vui lòng tạo một `Pull Request` hoặc `Issue` nếu bạn có bất kỳ ý tưởng hoặc sửa lỗi nào.
+
+---
+
+Cảm ơn bạn đã quan tâm đến dự án AirsKy! Chúc bạn có những trải nghiệm bay tuyệt vời. ✈️
