@@ -39,11 +39,10 @@ const SignIn = () => {
 
       // Giải mã token để kiểm tra vai trò
       const decodedToken: DecodedToken = jwtDecode(authData.accessToken);
-      // if (decodedToken.role !== 'CUSTOMER') {
-      //   Alert.alert("Truy cập bị từ chối", "Tài khoản của bạn không có quyền truy cập ứng dụng di động. Vui lòng truy cập trang web để sử dụng các chức năng dành cho quản trị viên.");
-      //   return; // Dừng quá trình đăng nhập
-      // }
-
+      if (decodedToken.role !== 'CUSTOMER') {
+        Alert.alert("Truy cập bị từ chối", "Tài khoản của bạn không có quyền truy cập ứng dụng di động. Vui lòng truy cập trang web để sử dụng các chức năng dành cho quản trị viên.");
+        return; // Dừng quá trình đăng nhập
+      }
       // Lưu thông tin xác thực vào context
       await setAuthData(authData);
       // Điều hướng đến trang chủ sau khi đăng nhập thành công

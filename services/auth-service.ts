@@ -19,7 +19,7 @@ export const login = async (credentials: LoginRequest): Promise<AuthResponse> =>
     } catch (error: any) {
         // Ném lại lỗi để component có thể xử lý và hiển thị thông báo
         if (error.response && error.response.data && error.response.data.message) {
-            throw new Error(error.response.data.message);
+            throw new Error(error.response.data.error);
         } else {
             throw new Error('Đã có lỗi xảy ra. Vui lòng thử lại.');
         }
@@ -37,7 +37,7 @@ export const register = async (data: RegisterRequest): Promise<string> => {
         return response.data.message;
     } catch (error: any) {
         if (error.response && error.response.data && error.response.data.message) {
-            throw new Error(error.response.data.message);
+            throw new Error(error.response.data.error);
         } else {
             throw new Error('Đã có lỗi xảy ra trong quá trình đăng ký. Vui lòng thử lại.');
         }
@@ -51,12 +51,17 @@ export const register = async (data: RegisterRequest): Promise<string> => {
  * @returns Promise chứa thông báo từ server.
  */
 export const verifyRegistration = async (email: string, otp: string): Promise<string> => {
+    // Đổi tên thuộc tính 'otp' thành 'otpCode' để khớp với VerifyOtpRequest của backend
+    const requestData = {
+        email: email,
+        otpCode: otp
+    };
     try {
-        const response = await api.post<ApiResponse<null>>('/auth/verify-account', { email, otp });
+        const response = await api.post<ApiResponse<AuthResponse>>('/auth/verify-registration', requestData);
         return response.data.message;
     } catch (error: any) {
-        if (error.response && error.response.data && error.response.data.message) {
-            throw new Error(error.response.data.message);
+        if (error.response && error.response.data && error.response.data.error) {
+            throw new Error(error.response.data.error);
         } else {
             throw new Error('Xác thực OTP thất bại. Vui lòng thử lại.');
         }
@@ -74,7 +79,7 @@ export const forgotPassword = async (email: string): Promise<string> => {
         return response.data.message;
     } catch (error: any) {
         if (error.response && error.response.data && error.response.data.message) {
-            throw new Error(error.response.data.message);
+            throw new Error(error.response.data.error);
         } else {
             throw new Error('Yêu cầu quên mật khẩu thất bại. Vui lòng thử lại.');
         }
@@ -93,7 +98,7 @@ export const resendVerificationCode = async (email: string): Promise<string> => 
         return response.data.message;
     } catch (error: any) {
         if (error.response && error.response.data && error.response.data.message) {
-            throw new Error(error.response.data.message);
+            throw new Error(error.response.data.error);
         } else {
             throw new Error('Yêu cầu quên mật khẩu thất bại. Vui lòng thử lại.');
         }
@@ -106,13 +111,13 @@ export const resendVerificationCode = async (email: string): Promise<string> => 
  * @param newPassword - mật khẩu mới 
  * @returns Promise chứa thông báo từ server.
  */
-export const resetPassword = async (email: string,otpCode:string,newPassword:string): Promise<string> => {
+export const resetPassword = async (email: string, otpCode: string, newPassword: string): Promise<string> => {
     try {
-        const response = await api.post<ApiResponse<null>>('/auth/reset-password', { email,otpCode,newPassword });
+        const response = await api.post<ApiResponse<null>>('/auth/reset-password', { email, otpCode, newPassword });
         return response.data.message;
     } catch (error: any) {
         if (error.response && error.response.data && error.response.data.message) {
-            throw new Error(error.response.data.message);
+            throw new Error(error.response.data.error);
         } else {
             throw new Error('Yêu cầu quên mật khẩu thất bại. Vui lòng thử lại.');
         }
@@ -130,7 +135,7 @@ export const changePassword = async (data: ChangePasswordRequest): Promise<strin
         return response.data.message;
     } catch (error: any) {
         if (error.response && error.response.data && error.response.data.message) {
-            throw new Error(error.response.data.message);
+            throw new Error(error.response.data.error);
         } else {
             throw new Error('Yêu cầu đổi mật khẩu thất bại. Vui lòng thử lại.');
         }
@@ -147,11 +152,9 @@ export const changePassword = async (data: ChangePasswordRequest): Promise<strin
 export const loginWithGoogle = async (idToken: string): Promise<AuthResponse> => {
     try {
         const response = await api.post<ApiResponse<AuthResponse>>('/auth/google-login', { idToken });
-        // console.log("Login with Google response:", response)
-        return response.data.data; 
     } catch (error: any) {
         if (error.response && error.response.data && error.response.data.message) {
-            throw new Error(error.response.data.message);
+            throw new Error(error.response.data.error);
         } else {
             throw new Error('Đăng nhập bằng Google thất bại. Vui lòng thử lại.');
         }
